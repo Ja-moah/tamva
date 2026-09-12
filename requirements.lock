@@ -1,0 +1,20 @@
+# Reproducible deployment input. Refresh deliberately after dependency review.
+celery[redis]==5.5.3
+dj-database-url==3.0.1
+Django==5.2.7
+django-cors-headers==4.9.0
+djangorestframework==3.16.1
+drf-spectacular==0.28.0
+gunicorn==23.0.0
+psycopg[binary]==3.2.10
+python-json-logger==4.0.0
+sentry-sdk[django]==2.42.1
+django-stubs[compatible-mypy]==5.2.7
+factory-boy==3.3.3
+mypy==1.18.2
+pre-commit==4.3.0
+pytest==8.4.2
+pytest-cov==7.0.0
+pytest-django==4.11.1
+ruff==0.14.1
+

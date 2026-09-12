@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: tamva_test
+          POSTGRES_USER: tamva
+          POSTGRES_PASSWORD: tamva
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U tamva -d tamva_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      DJANGO_SECRET_KEY: ci-only-secret
+      DATABASE_URL: postgresql://tamva:tamva@localhost:5432/tamva_test
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/1
+      CELERY_RESULT_BACKEND: redis://localhost:6379/2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.lock
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy apps packages config
+      - run: python manage.py migrate --noinput
+      - run: python manage.py check
+      - run: pytest
+
