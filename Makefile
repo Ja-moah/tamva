@@ -5,7 +5,7 @@ LOCAL_GID ?= 1000
 RUN := $(COMPOSE) run --rm --user $(LOCAL_UID):$(LOCAL_GID) web
 TEST := $(COMPOSE) run --rm --user $(LOCAL_UID):$(LOCAL_GID) -e DJANGO_SETTINGS_MODULE=config.settings.test web
 
-.PHONY: help build up down restart logs ps shell bash migrate migrations superuser test test-unit test-integration lint format format-check typecheck check db-shell django-shell clean bootstrap
+.PHONY: help build up up-staging up-production down restart logs ps shell bash migrate migrations superuser test test-unit test-integration lint format format-check typecheck check db-shell django-shell clean bootstrap
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target>\n\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -15,6 +15,12 @@ build: ## Build application images
 
 up: ## Start all development services
 	$(COMPOSE) up -d
+
+up-staging: ## Start the staging services
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.staging.yml up -d
+
+up-production: ## Start the production services
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 down: ## Stop development services
 	$(COMPOSE) down

@@ -8,6 +8,12 @@ from config.settings.base import env_bool
 DEBUG = False
 if SECRET_KEY in {"unsafe-development-key", "development-only-change-me"}:  # noqa: F405
     raise RuntimeError("DJANGO_SECRET_KEY must be set in production")
+if not ALLOWED_HOSTS:  # noqa: F405
+    raise RuntimeError("DJANGO_ALLOWED_HOSTS must be set in production")
+if not os.getenv("DATABASE_URL"):
+    raise RuntimeError("DATABASE_URL must be set in production")
+if not os.getenv("REDIS_URL"):
+    raise RuntimeError("REDIS_URL must be set in production")
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True

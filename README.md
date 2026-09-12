@@ -89,6 +89,11 @@ make bootstrap
 
 For subsequent work, the common lifecycle is:
 
+Staging and production use separate settings and secret files. Copy
+`.env.staging.example` or `.env.production.example`, fill in the deployment
+values, and use `make up-staging` or `make up-production`. See the [deployment
+runbook](docs/runbooks/deployment.md) for the release sequence.
+
 ```bash
 make up
 make migrate
