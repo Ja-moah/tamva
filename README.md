@@ -6,9 +6,26 @@ TAMVA is financial identity and trust infrastructure. This repository provides a
 
 TAMVA starts as a modular monolith: all domain modules deploy as one Django application, but each domain has explicit ownership, a documented responsibility, and narrow public interfaces. PostgreSQL is the transactional system of record. Redis supports caching and Celery. A transactional outbox provides the foundation for reliable asynchronous events, and institutions provide the shared-database tenancy boundary.
 
-Domain code lives under `apps/`; stable cross-domain primitives live under `packages/`; deployment configuration lives under `config/`. Modules must not reach into another domain's implementation or tables arbitrarily.
+Domain code lives under `apps/`; stable cross-domain primitives live under `packages/`; deployment configuration lives under `config/`. The institution web portal and customer mobile app are API clients only. Modules and clients must not reach into another domain's implementation or database tables arbitrarily.
 
 See the [system overview](docs/architecture/system-overview.md), [tenancy model](docs/architecture/tenancy.md), and [architecture decisions](docs/adr/).
+
+### Institution web
+
+- React 19 and TypeScript
+- Vite
+- TanStack Router, Query, and Table
+- Tailwind CSS and owned shadcn-style components
+- Lucide icons
+
+### Customer mobile
+
+- React Native and Expo
+- TypeScript and Expo Router
+- TanStack Query
+- NativeWind
+- React Hook Form and Zod
+- Expo SecureStore
 
 ## Technology stack
 
@@ -57,6 +74,9 @@ See the [system overview](docs/architecture/system-overview.md), [tenancy model]
 apps/       Domain-owned Django applications
 config/     Django settings, URLs, WSGI/ASGI, and Celery setup
 packages/   Shared contracts, common primitives, events, auth, and observability
+contracts/  Shared TypeScript runtime schemas and checked OpenAPI output
+frontend/   Institution web portal (React + Vite)
+mobile/     Customer application (React Native + Expo)
 tests/      Unit, integration, contract, end-to-end, and security suites
 docs/       Architecture, ADRs, API, events, database, security, and runbooks
 scripts/    Container entry points and operational helpers
@@ -71,6 +91,7 @@ Each directory under `apps/` contains a README defining that domain's responsibi
 - Docker Engine
 - Docker Compose v2
 - GNU Make
+- Node.js 22 or newer and npm 11 or newer
 
 Python 3.13+ is needed on the host only when running tooling outside Docker.
 
@@ -85,7 +106,7 @@ cp .env.example .env
 make bootstrap
 ```
 
-`make bootstrap` does not overwrite an existing `.env`. It builds the images, starts PostgreSQL and Redis, applies migrations, runs Django checks, and starts Django and Celery. `.env` is ignored by Git and must never contain committed secrets.
+`make bootstrap` does not overwrite an existing `.env`. It installs locked client dependencies, builds the images, starts PostgreSQL and Redis, applies migrations, runs Django checks, and starts Django, Celery, and the institution portal. `.env` is ignored by Git and must never contain committed secrets.
 
 For subsequent work, the common lifecycle is:
 
@@ -109,6 +130,7 @@ The development Compose stack contains:
 - `postgres` — PostgreSQL 17 on port `5432`, with a persistent named volume
 - `redis` — Redis 7 on port `6379`
 - `celery-worker` — Celery using the same application image and environment
+- `institution-web` — production-built React portal behind Nginx on port `3000`
 
 Create and apply migrations with:
 
@@ -123,7 +145,8 @@ Migration files must be reviewed for locks, reversibility, constraints, and tena
 
 With the development stack running:
 
-- Application: <http://localhost:8000/>
+- Institution portal: <http://localhost:3000/>
+- Django backend: <http://localhost:8000/>
 - Health check: <http://localhost:8000/health/>
 - Swagger UI: <http://localhost:8000/api/docs/>
 - OpenAPI schema: <http://localhost:8000/api/schema/>
@@ -153,6 +176,17 @@ New public API endpoints belong under `/api/v1/`.
 | `make format` | Format Python files with Ruff |
 | `make typecheck` | Run mypy |
 | `make check` | Run lint, format, type, and Django checks |
+| `make frontend-install` | Install locked web and mobile dependencies |
+| `make frontend-dev` | Run the institution portal with Vite HMR |
+| `make frontend-build` | Build the institution portal for production |
+| `make frontend-test` | Run institution portal tests |
+| `make frontend-typecheck` | Type-check both TypeScript clients |
+| `make mobile-start` | Start the Expo customer app |
+| `make mobile-android` | Open the Expo Android workflow |
+| `make mobile-ios` | Open the Expo iOS workflow |
+| `make mobile-build` | Export the Android application bundle |
+| `make schema` | Refresh the checked OpenAPI schema |
+| `make clients-check` | Verify both client applications |
 
 Run `make help` for the authoritative command list. One-off tools default to UID/GID `1000:1000` so bind-mounted files remain editable. On hosts with different IDs, invoke Make with `LOCAL_UID=<uid> LOCAL_GID=<gid>`.
 

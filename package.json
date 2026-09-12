@@ -1,0 +1,19 @@
+{
+  "name": "tamva-clients",
+  "private": true,
+  "workspaces": [
+    "contracts/client",
+    "frontend/institution-web",
+    "mobile/customer-app"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @tamva/institution-web",
+    "dev:web": "npm run dev --workspace @tamva/institution-web",
+    "dev:mobile": "npm run start --workspace @tamva/customer-app",
+    "test": "npm run test --workspace @tamva/institution-web",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

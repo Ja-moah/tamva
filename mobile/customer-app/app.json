@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "TAMVA",
+    "slug": "tamva-customer",
+    "scheme": "tamva",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": ["expo-router", "expo-secure-store"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tamva.customer"
+    },
+    "android": {
+      "package": "com.tamva.customer",
+      "predictiveBackGestureEnabled": true
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
