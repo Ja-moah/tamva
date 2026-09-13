@@ -56,12 +56,27 @@ services:
       redis:
         condition: service_healthy
 
-  institution-web:
+  admin:
     build:
       context: .
-      dockerfile: frontend/institution-web/Dockerfile
+      dockerfile: frontend/admin/Dockerfile
     ports:
       - "3000:80"
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  customer:
+    build:
+      context: .
+      dockerfile: frontend/customer/Dockerfile
+    ports:
+      - "3001:80"
     depends_on:
       web:
         condition: service_healthy

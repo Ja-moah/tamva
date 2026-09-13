@@ -3,14 +3,16 @@
   "private": true,
   "workspaces": [
     "contracts/client",
-    "frontend/institution-web",
-    "mobile/customer-app"
+    "frontend/admin",
+    "frontend/customer",
+    "mobile"
   ],
   "scripts": {
-    "build": "npm run build --workspace @tamva/institution-web",
-    "dev:web": "npm run dev --workspace @tamva/institution-web",
-    "dev:mobile": "npm run start --workspace @tamva/customer-app",
-    "test": "npm run test --workspace @tamva/institution-web",
+    "build": "npm run build --workspace @tamva/admin --workspace @tamva/customer",
+    "dev:admin": "npm run dev --workspace @tamva/admin",
+    "dev:customer": "npm run dev --workspace @tamva/customer",
+    "dev:mobile": "npm run start --workspace @tamva/mobile",
+    "test": "npm run test --workspace @tamva/admin --workspace @tamva/customer",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "engines": {

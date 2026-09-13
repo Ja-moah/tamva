@@ -56,4 +56,4 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - run: npm run export --workspace @tamva/customer-app
+      - run: npm run export --workspace @tamva/mobile
