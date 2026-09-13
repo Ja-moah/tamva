@@ -59,6 +59,13 @@ The customer experience lives directly at `mobile/` and uses one shared codebase
 - React Hook Form and Zod
 - Expo SecureStore
 
+The current customer release includes Home, Activity, Profile, Passport,
+Protection, Confidence, Consent, Notifications, and Passport creation flows.
+These screens use the local Zustand store and mock fixtures while the
+corresponding Django domain APIs are implemented. The shared health request is
+available through `mobile/lib/api/`; customer decisions and financial data must
+move to versioned backend contracts before production use.
+
 ## Technology stack
 
 ### Backend
@@ -196,7 +203,7 @@ With `make up` or `make bootstrap` running:
 | PostgreSQL | `localhost:5432` | Development only; not published by staging/production overlays |
 | Redis | `localhost:6379` | Development only; not published by staging/production overlays |
 
-New public API endpoints belong under `/api/v1/`. At present, the checked OpenAPI contract exposes the health endpoint; domain APIs are added as their backend modules are implemented.
+New public API endpoints belong under `/api/v1/`. At present, the checked OpenAPI contract exposes the health endpoint; the merged customer screens use mock fixtures until their domain APIs are added to Django and published in the checked OpenAPI schema.
 
 ### Customer application development
 

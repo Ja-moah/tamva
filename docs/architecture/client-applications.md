@@ -38,7 +38,16 @@ Copy `mobile/.env.example` to `mobile/.env` and set `EXPO_PUBLIC_API_BASE_URL` f
 - local web browser: `http://localhost:8000`
 - physical device: the development machine's reachable LAN address
 
+
 Run `make mobile-start` for Expo or `make mobile-web` for the web target. `make mobile-build` validates production exports for all three targets. Session material belongs in Expo SecureStore; AsyncStorage must not hold tokens.
+
+The current customer UI provides Home, Activity, Profile, Passport, Protection,
+Confidence, Consent, Notifications, and Passport creation flows. Those flows
+currently use local mock fixtures and Zustand state for presentation and
+interaction testing. They must not be treated as authoritative financial,
+consent, risk, or passport decisions. Replace each fixture with a versioned
+Django endpoint and shared runtime contract as the corresponding backend module
+is implemented. The mobile API client currently wires the shared health check.
 
 ## Contracts
 
