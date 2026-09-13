@@ -6,7 +6,9 @@ TAMVA is financial identity and trust infrastructure. This repository provides a
 
 TAMVA starts as a modular monolith: all domain modules deploy as one Django application, but each domain has explicit ownership, a documented responsibility, and narrow public interfaces. PostgreSQL is the source of truth. Redis supports caching and Celery. A transactional outbox provides the foundation for reliable asynchronous events, and institutions provide the shared-database tenancy boundary.
 
-The Django backend is the authoritative application layer. It owns authentication, authorization, tenancy, consent validity, connector orchestration, normalisation, ledger classification, profile calculations, feature generation, rules, risk decisions, case transitions, passport permissions, auditing, and notifications. Client applications may validate basic form input and manage presentation state, but they must display and enforce decisions returned by the backend rather than duplicate authoritative business rules.
+TAMVA has three primary application layers: the Django backend, the admin web application, and one cross-platform customer application. The customer application is a single Expo/React Native codebase targeting Android, iOS, and web. There is no separate customer React/Vite web application.
+
+The Django backend is the authoritative application layer. It owns authentication, authorization, tenancy, consent validity, connector orchestration, normalisation, ledger classification, profile calculations, feature generation, rules, risk decisions, case transitions, passport permissions, auditing, and notifications. Admin web and mobile may validate basic form input and manage presentation state, but they must display and enforce decisions returned by the backend rather than duplicate authoritative business rules.
 
 ```text
                     PostgreSQL
@@ -17,17 +19,17 @@ The Django backend is the authoritative application layer. It owns authenticatio
              SOURCE OF BUSINESS LOGIC
                         │
                  REST / OpenAPI
-          ┌─────────────┼─────────────┐
-          │             │             │
-          ↓             ↓             ↓
- Admin/Operations  Customer Web   Customer Mobile
-      React           React        React Native
+                 ┌──────┴──────┐
+                 │             │
+                 ↓             ↓
+        Admin/Operations   Customer App
+             React         React Native
+                         Android/iOS/Web
 ```
 
 | Application surface | Current location | Status | Responsibility |
 | --- | --- | --- | --- |
-| Customer mobile app | `mobile/` | Scaffolded | Native customer journeys and device capabilities |
-| Customer web app | `frontend/customer/` | Scaffolded | Responsive browser access to customer capabilities |
+| Customer application | `mobile/` | Scaffolded | Shared customer journeys for Android, iOS, and web |
 | Admin/institution/operations web | `frontend/admin/` | Scaffolded | Internal operations and external institutional workflows |
 | Django backend | `apps/`, `packages/`, and `config/` | Scaffolded | APIs, tenancy, security, persistence, and all authoritative business logic |
 
@@ -45,23 +47,13 @@ This application lives at `frontend/admin/` and serves TAMVA staff, institution 
 - Tailwind CSS and owned shadcn-style components
 - Lucide icons
 
-### Customer web
+### Customer application
 
-The responsive React and TypeScript customer web application lives at `frontend/customer/`. It exposes customer capabilities on phone, tablet, laptop, and desktop browsers while relying on the same backend decisions and shared API contracts as the mobile application.
-
-- React 19 and TypeScript
-- Vite
-- TanStack Router and Query
-- Tailwind CSS
-- React Hook Form and Zod
-- Lucide icons
-
-### Customer mobile
-
-The native customer experience lives directly at `mobile/` and is the primary surface for device-specific capabilities such as secure storage, biometrics, push notifications, app lifecycle handling, and future camera or QR workflows.
+The customer experience lives directly at `mobile/` and uses one shared codebase for Android, iOS, and web. Navigation adapts from bottom tabs on phones to a wider sidebar layout on tablets and desktop browsers. Platform-specific files are used only when a capability genuinely differs. Device targets can support secure storage, biometrics, push notifications, app lifecycle handling, and future camera or QR workflows.
 
 - React Native and Expo
 - TypeScript and Expo Router
+- Android, iOS, and web targets
 - TanStack Query
 - NativeWind
 - React Hook Form and Zod
@@ -95,6 +87,7 @@ The native customer experience lives directly at `mobile/` and is the primary su
 - mypy with Django type support
 - coverage
 - pre-commit
+- ESLint for admin and customer clients
 
 ### CI/CD
 
@@ -117,8 +110,7 @@ packages/   Shared contracts, common primitives, events, auth, and observability
 contracts/  Shared TypeScript runtime schemas and checked OpenAPI output
 frontend/
   admin/    Admin, institution, and operations web application
-  customer/ Responsive customer web application
-mobile/     Native customer application (React Native + Expo)
+mobile/     Cross-platform customer application (Expo: Android, iOS, and web)
 tests/      Unit, integration, contract, end-to-end, and security suites
 docs/       Architecture, ADRs, API, events, database, security, and runbooks
 scripts/    Container entry points and operational helpers
@@ -148,7 +140,7 @@ cp .env.example .env
 make bootstrap
 ```
 
-`make bootstrap` does not overwrite an existing `.env`. It installs locked client dependencies, builds the images, starts PostgreSQL and Redis, applies migrations, runs Django checks, and starts Django, Celery, the admin portal, and the customer web app. `.env` is ignored by Git and must never contain committed secrets.
+`make bootstrap` does not overwrite an existing `.env`. It installs locked client dependencies, builds the images, starts PostgreSQL and Redis, applies migrations, runs Django checks, and starts Django, Celery, and the admin portal. `.env` is ignored by Git and must never contain committed secrets.
 
 For subsequent work, the common lifecycle is:
 
@@ -173,7 +165,6 @@ The development Compose stack contains:
 - `redis` — Redis 7 on port `6379`
 - `celery-worker` — Celery using the same application image and environment
 - `admin` — production-built admin/institution/operations React portal behind Nginx on port `3000`
-- `customer` — production-built responsive customer React app behind Nginx on port `3001`
 
 Create and apply migrations with:
 
@@ -196,10 +187,7 @@ With `make up` or `make bootstrap` running:
 | Admin portal health proxy | <http://localhost:3000/health/> | Nginx forwards the request to Django |
 | Admin portal API documentation proxy | <http://localhost:3000/api/docs/> | Same Swagger UI through the client origin |
 | Admin portal OpenAPI proxy | <http://localhost:3000/api/schema/> | Same OpenAPI document through the client origin |
-| Customer web | <http://localhost:3001/> | Compose service `customer`; source in `frontend/customer/` |
-| Customer web health proxy | <http://localhost:3001/health/> | Nginx forwards the request to Django |
-| Customer web API documentation proxy | <http://localhost:3001/api/docs/> | Same Swagger UI through the customer origin |
-| Customer web OpenAPI proxy | <http://localhost:3001/api/schema/> | Same OpenAPI document through the customer origin |
+| Customer app web target | <http://localhost:8081/> | Started with `make mobile-web`; served from the shared Expo app, not Compose |
 | Django backend | <http://localhost:8000/> | No public landing view is currently registered at `/` |
 | Django Admin | <http://localhost:8000/admin/> | Internal Django administration, separate from the React portal |
 | Health check | <http://localhost:8000/health/> | Reports application and database health |
@@ -210,7 +198,7 @@ With `make up` or `make bootstrap` running:
 
 New public API endpoints belong under `/api/v1/`. At present, the checked OpenAPI contract exposes the health endpoint; domain APIs are added as their backend modules are implemented.
 
-### Customer mobile development
+### Customer application development
 
 Copy the mobile environment example before starting Expo:
 
@@ -219,19 +207,20 @@ cp mobile/.env.example mobile/.env
 make mobile-start
 ```
 
-Expo prints the Metro development URL and QR code at runtime; the repository does not assign a fixed browser URL. Configure `EXPO_PUBLIC_API_BASE_URL` according to the device running the app:
+Expo prints the Metro development URL and QR code at runtime; the repository does not hard-code that URL. Use `make mobile-web` for the browser target. Configure `EXPO_PUBLIC_API_BASE_URL` according to the target running the app:
 
 | Runtime | Django API base URL |
 | --- | --- |
 | iOS simulator | `http://localhost:8000` |
 | Android emulator | `http://10.0.2.2:8000` |
+| Local web browser | `http://localhost:8000` |
 | Physical device | `http://<development-machine-LAN-address>:8000` |
 
 The development machine and device must be able to reach one another for physical-device testing. Do not commit the generated mobile `.env` file.
 
 ### Staging and production
 
-Staging and production hostnames are intentionally not hard-coded in this repository. They are supplied through deployment DNS, TLS termination, `DJANGO_ALLOWED_HOSTS`, CORS/CSRF configuration, and environment-specific secrets. For each deployed environment, the externally configured backend origin provides:
+Staging and production hostnames are intentionally not hard-coded in this repository. They are supplied through deployment DNS, TLS termination, `DJANGO_ALLOWED_HOSTS`, CORS/CSRF configuration, and environment-specific secrets. The customer web target is produced by `make mobile-build-web` and deployed as the web output of the Expo application; it is not a second source workspace or a Docker Compose service. For each deployed environment, the externally configured backend origin provides:
 
 | Endpoint | Path |
 | --- | --- |
@@ -265,22 +254,24 @@ Production access to Django Admin, Swagger, and the schema should be restricted 
 | `make lint` | Run Ruff lint checks |
 | `make format` | Format Python files with Ruff |
 | `make typecheck` | Run mypy |
-| `make check` | Run lint, format, type, and Django checks |
+| `make check` | Run backend and client lint, formatting, type, build, and Django checks |
 | `make frontend-install` | Install locked web and mobile dependencies |
 | `make frontend-dev` | Run the admin portal with Vite HMR |
-| `make frontend-build` | Build both web applications for production |
-| `make frontend-test` | Run both web application test suites |
-| `make frontend-typecheck` | Type-check both web applications and mobile |
+| `make frontend-build` | Build the admin web application for production |
+| `make frontend-test` | Run the admin web application test suite |
+| `make frontend-typecheck` | Type-check the admin web application and mobile |
 | `make admin-dev` | Run the admin portal with Vite HMR on port `3000` |
 | `make admin-build` | Build the admin portal for production |
 | `make admin-test` | Run admin portal tests |
-| `make customer-dev` | Run the customer web app with Vite HMR on port `3001` |
-| `make customer-build` | Build the customer web app for production |
-| `make customer-test` | Run customer web tests |
 | `make mobile-start` | Start the Expo customer app |
+| `make mobile-web` | Start the Expo customer app for web |
 | `make mobile-android` | Open the Expo Android workflow |
 | `make mobile-ios` | Open the Expo iOS workflow |
-| `make mobile-build` | Export the Android application bundle |
+| `make mobile-lint` | Lint shared Android, iOS, and web customer code |
+| `make mobile-build` | Export Android, iOS, and web customer bundles |
+| `make mobile-build-android` | Export the Android customer bundle |
+| `make mobile-build-ios` | Export the iOS customer bundle |
+| `make mobile-build-web` | Export the customer web build |
 | `make schema` | Refresh the checked OpenAPI schema |
 | `make clients-check` | Verify both client applications |
 

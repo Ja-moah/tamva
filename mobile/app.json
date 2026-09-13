@@ -4,6 +4,7 @@
     "slug": "tamva-customer",
     "scheme": "tamva",
     "version": "0.1.0",
+    "platforms": ["ios", "android", "web"],
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "plugins": ["expo-router", "expo-secure-store"],
@@ -14,6 +15,10 @@
     "android": {
       "package": "com.tamva.customer",
       "predictiveBackGestureEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
     },
     "experiments": {
       "typedRoutes": true
