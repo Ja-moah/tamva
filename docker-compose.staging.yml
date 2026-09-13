@@ -19,8 +19,6 @@ services:
     restart: unless-stopped
   admin:
     restart: unless-stopped
-  customer:
-    restart: unless-stopped
   postgres:
     ports: !reset []
   redis:

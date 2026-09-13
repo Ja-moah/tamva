@@ -4,15 +4,14 @@
   "workspaces": [
     "contracts/client",
     "frontend/admin",
-    "frontend/customer",
     "mobile"
   ],
   "scripts": {
-    "build": "npm run build --workspace @tamva/admin --workspace @tamva/customer",
+    "build": "npm run build --workspace @tamva/admin",
     "dev:admin": "npm run dev --workspace @tamva/admin",
-    "dev:customer": "npm run dev --workspace @tamva/customer",
     "dev:mobile": "npm run start --workspace @tamva/mobile",
-    "test": "npm run test --workspace @tamva/admin --workspace @tamva/customer",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspace @tamva/admin",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "engines": {

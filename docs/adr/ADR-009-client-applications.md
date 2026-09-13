@@ -1,6 +1,6 @@
 # ADR-009: Separate admin web, customer web, and customer mobile clients
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-010](ADR-010-universal-customer-application.md)
 
 ## Context
 
