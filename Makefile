@@ -5,7 +5,7 @@ LOCAL_GID ?= 1000
 RUN := $(COMPOSE) run --rm --user $(LOCAL_UID):$(LOCAL_GID) web
 TEST := $(COMPOSE) run --rm --user $(LOCAL_UID):$(LOCAL_GID) -e DJANGO_SETTINGS_MODULE=config.settings.test web
 
-.PHONY: help build up up-staging up-production down restart logs ps shell bash migrate migrations superuser test test-unit test-integration lint format format-check typecheck check db-shell django-shell clean bootstrap frontend-install frontend-dev frontend-build frontend-test frontend-typecheck mobile-start mobile-android mobile-ios mobile-build schema clients-check
+.PHONY: help build up up-staging up-production down restart logs ps shell bash migrate migrations superuser test test-unit test-integration lint format format-check typecheck check db-shell django-shell clean bootstrap frontend-install frontend-dev frontend-build frontend-test frontend-typecheck admin-dev admin-build admin-test customer-dev customer-build customer-test mobile-start mobile-android mobile-ios mobile-build schema clients-check
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target>\n\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -82,34 +82,51 @@ check: ## Run all static and Django checks
 frontend-install: ## Install locked web and mobile dependencies
 	npm ci
 
-frontend-dev: ## Run the institution portal with HMR on port 3000
-	npm run dev:web
+frontend-dev: admin-dev ## Run the admin web app with HMR on port 3000
 
-frontend-build: ## Build the institution portal for production
+frontend-build: ## Build both web applications for production
 	npm run build
 
-frontend-test: ## Run institution portal tests
+frontend-test: ## Run both web application test suites
 	npm test
 
-frontend-typecheck: ## Type-check both TypeScript clients
+frontend-typecheck: ## Type-check both web apps and the mobile app
 	npm run typecheck
+
+admin-dev: ## Run the admin web app with HMR on port 3000
+	npm run dev:admin
+
+admin-build: ## Build the admin web app for production
+	npm run build --workspace @tamva/admin
+
+admin-test: ## Run the admin web app test suite
+	npm run test --workspace @tamva/admin
+
+customer-dev: ## Run the customer web app with HMR on port 3001
+	npm run dev:customer
+
+customer-build: ## Build the customer web app for production
+	npm run build --workspace @tamva/customer
+
+customer-test: ## Run the customer web app test suite
+	npm run test --workspace @tamva/customer
 
 mobile-start: ## Start the Expo development server
 	npm run dev:mobile
 
 mobile-android: ## Start the Expo Android workflow
-	npm run android --workspace @tamva/customer-app
+	npm run android --workspace @tamva/mobile
 
 mobile-ios: ## Start the Expo iOS workflow (macOS required for simulator)
-	npm run ios --workspace @tamva/customer-app
+	npm run ios --workspace @tamva/mobile
 
 mobile-build: ## Export the customer Android application bundle
-	npm run export --workspace @tamva/customer-app
+	npm run export --workspace @tamva/mobile
 
 schema: ## Refresh the checked OpenAPI contract
 	$(RUN) python manage.py spectacular --file contracts/openapi/schema.yml
 
-clients-check: frontend-typecheck frontend-test frontend-build mobile-build ## Verify both clients
+clients-check: frontend-typecheck frontend-test frontend-build mobile-build ## Verify all client applications
 
 db-shell: ## Open a PostgreSQL shell
 	$(COMPOSE) exec postgres psql -U $${POSTGRES_USER:-tamva} -d $${POSTGRES_DB:-tamva}
@@ -128,4 +145,4 @@ bootstrap: ## Initialize environment, build, start, migrate, and check
 	$(COMPOSE) up -d postgres redis
 	$(RUN) python manage.py migrate
 	$(RUN) python manage.py check
-	$(COMPOSE) up -d web celery-worker institution-web
+	$(COMPOSE) up -d web celery-worker admin customer

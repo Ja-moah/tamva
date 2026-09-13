@@ -26,9 +26,9 @@ The Django backend is the authoritative application layer. It owns authenticatio
 
 | Application surface | Current location | Status | Responsibility |
 | --- | --- | --- | --- |
-| Customer mobile app | `mobile/customer-app/` | Scaffolded | Native customer journeys and device capabilities |
-| Customer web app | `frontend/customer-web/` | Planned | Responsive browser access to customer capabilities |
-| Admin/institution/operations web | `frontend/institution-web/` | Scaffolded | Internal operations and external institutional workflows |
+| Customer mobile app | `mobile/` | Scaffolded | Native customer journeys and device capabilities |
+| Customer web app | `frontend/customer/` | Scaffolded | Responsive browser access to customer capabilities |
+| Admin/institution/operations web | `frontend/admin/` | Scaffolded | Internal operations and external institutional workflows |
 | Django backend | `apps/`, `packages/`, and `config/` | Scaffolded | APIs, tenancy, security, persistence, and all authoritative business logic |
 
 Domain code lives under `apps/`; stable cross-domain primitives live under `packages/`; deployment configuration lives under `config/`. Client applications communicate with Django through versioned REST APIs and shared contracts. Modules and clients must not reach into another domain's implementation or database tables arbitrarily.
@@ -37,7 +37,7 @@ See the [system overview](docs/architecture/system-overview.md), [tenancy model]
 
 ### Admin, institutional, and operations web
 
-This application serves TAMVA staff, institution administrators, risk analysts, investigators, operations teams, API/integration users, and security/governance users. It currently lives at `frontend/institution-web/`; `frontend/admin-web/` is the intended clearer name when the workspace is renamed in a dedicated change.
+This application lives at `frontend/admin/` and serves TAMVA staff, institution administrators, risk analysts, investigators, operations teams, API/integration users, and security/governance users. It is one application with backend-controlled menus, roles, permissions, and institution scopes—not separate frontends for each operational role.
 
 - React 19 and TypeScript
 - Vite
@@ -47,11 +47,18 @@ This application serves TAMVA staff, institution administrators, risk analysts, 
 
 ### Customer web
 
-The responsive React and TypeScript customer web application is a defined application surface but has not yet been scaffolded. Its intended location is `frontend/customer-web/`. It will expose customer capabilities in phone, tablet, laptop, and desktop browsers while relying on the same backend decisions and shared API contracts as the mobile application.
+The responsive React and TypeScript customer web application lives at `frontend/customer/`. It exposes customer capabilities on phone, tablet, laptop, and desktop browsers while relying on the same backend decisions and shared API contracts as the mobile application.
+
+- React 19 and TypeScript
+- Vite
+- TanStack Router and Query
+- Tailwind CSS
+- React Hook Form and Zod
+- Lucide icons
 
 ### Customer mobile
 
-The native customer experience lives at `mobile/customer-app/` and is the primary surface for device-specific capabilities such as secure storage, biometrics, push notifications, app lifecycle handling, and future camera or QR workflows.
+The native customer experience lives directly at `mobile/` and is the primary surface for device-specific capabilities such as secure storage, biometrics, push notifications, app lifecycle handling, and future camera or QR workflows.
 
 - React Native and Expo
 - TypeScript and Expo Router
@@ -108,8 +115,10 @@ apps/       Domain-owned Django applications
 config/     Django settings, URLs, WSGI/ASGI, and Celery setup
 packages/   Shared contracts, common primitives, events, auth, and observability
 contracts/  Shared TypeScript runtime schemas and checked OpenAPI output
-frontend/   Web clients; currently the admin/institution portal, with customer web planned
-mobile/     Customer application (React Native + Expo)
+frontend/
+  admin/    Admin, institution, and operations web application
+  customer/ Responsive customer web application
+mobile/     Native customer application (React Native + Expo)
 tests/      Unit, integration, contract, end-to-end, and security suites
 docs/       Architecture, ADRs, API, events, database, security, and runbooks
 scripts/    Container entry points and operational helpers
@@ -139,7 +148,7 @@ cp .env.example .env
 make bootstrap
 ```
 
-`make bootstrap` does not overwrite an existing `.env`. It installs locked client dependencies, builds the images, starts PostgreSQL and Redis, applies migrations, runs Django checks, and starts Django, Celery, and the institution portal. `.env` is ignored by Git and must never contain committed secrets.
+`make bootstrap` does not overwrite an existing `.env`. It installs locked client dependencies, builds the images, starts PostgreSQL and Redis, applies migrations, runs Django checks, and starts Django, Celery, the admin portal, and the customer web app. `.env` is ignored by Git and must never contain committed secrets.
 
 For subsequent work, the common lifecycle is:
 
@@ -163,7 +172,8 @@ The development Compose stack contains:
 - `postgres` — PostgreSQL 17 on port `5432`, with a persistent named volume
 - `redis` — Redis 7 on port `6379`
 - `celery-worker` — Celery using the same application image and environment
-- `institution-web` — production-built admin/institution/operations React portal behind Nginx on port `3000`
+- `admin` — production-built admin/institution/operations React portal behind Nginx on port `3000`
+- `customer` — production-built responsive customer React app behind Nginx on port `3001`
 
 Create and apply migrations with:
 
@@ -182,11 +192,14 @@ With `make up` or `make bootstrap` running:
 
 | Surface | URL | Notes |
 | --- | --- | --- |
-| Admin/institution/operations web | <http://localhost:3000/> | Current Compose service and workspace name: `institution-web` |
+| Admin/institution/operations web | <http://localhost:3000/> | Compose service `admin`; source in `frontend/admin/` |
 | Admin portal health proxy | <http://localhost:3000/health/> | Nginx forwards the request to Django |
 | Admin portal API documentation proxy | <http://localhost:3000/api/docs/> | Same Swagger UI through the client origin |
 | Admin portal OpenAPI proxy | <http://localhost:3000/api/schema/> | Same OpenAPI document through the client origin |
-| Customer web | Not available yet | The `frontend/customer-web/` workspace has not been scaffolded |
+| Customer web | <http://localhost:3001/> | Compose service `customer`; source in `frontend/customer/` |
+| Customer web health proxy | <http://localhost:3001/health/> | Nginx forwards the request to Django |
+| Customer web API documentation proxy | <http://localhost:3001/api/docs/> | Same Swagger UI through the customer origin |
+| Customer web OpenAPI proxy | <http://localhost:3001/api/schema/> | Same OpenAPI document through the customer origin |
 | Django backend | <http://localhost:8000/> | No public landing view is currently registered at `/` |
 | Django Admin | <http://localhost:8000/admin/> | Internal Django administration, separate from the React portal |
 | Health check | <http://localhost:8000/health/> | Reports application and database health |
@@ -202,7 +215,7 @@ New public API endpoints belong under `/api/v1/`. At present, the checked OpenAP
 Copy the mobile environment example before starting Expo:
 
 ```bash
-cp mobile/customer-app/.env.example mobile/customer-app/.env
+cp mobile/.env.example mobile/.env
 make mobile-start
 ```
 
@@ -254,10 +267,16 @@ Production access to Django Admin, Swagger, and the schema should be restricted 
 | `make typecheck` | Run mypy |
 | `make check` | Run lint, format, type, and Django checks |
 | `make frontend-install` | Install locked web and mobile dependencies |
-| `make frontend-dev` | Run the institution portal with Vite HMR |
-| `make frontend-build` | Build the institution portal for production |
-| `make frontend-test` | Run institution portal tests |
-| `make frontend-typecheck` | Type-check both TypeScript clients |
+| `make frontend-dev` | Run the admin portal with Vite HMR |
+| `make frontend-build` | Build both web applications for production |
+| `make frontend-test` | Run both web application test suites |
+| `make frontend-typecheck` | Type-check both web applications and mobile |
+| `make admin-dev` | Run the admin portal with Vite HMR on port `3000` |
+| `make admin-build` | Build the admin portal for production |
+| `make admin-test` | Run admin portal tests |
+| `make customer-dev` | Run the customer web app with Vite HMR on port `3001` |
+| `make customer-build` | Build the customer web app for production |
+| `make customer-test` | Run customer web tests |
 | `make mobile-start` | Start the Expo customer app |
 | `make mobile-android` | Open the Expo Android workflow |
 | `make mobile-ios` | Open the Expo iOS workflow |

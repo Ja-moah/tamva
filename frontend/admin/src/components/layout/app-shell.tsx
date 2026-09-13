@@ -44,7 +44,7 @@ export function AppShell() {
             </span>
             <span>
               <span className="block text-lg font-black tracking-[0.18em]">TAMVA</span>
-              <span className="block text-xs text-slate-500">Institution workspace</span>
+              <span className="block text-xs text-slate-500">Admin &amp; operations</span>
             </span>
           </Link>
           <button
@@ -84,7 +84,7 @@ export function AppShell() {
           <div className="mt-4 rounded-xl border border-white/8 bg-white/[0.03] p-3">
             <p className="text-xs font-semibold text-slate-300">Django admin is separate</p>
             <p className="mt-1 text-xs leading-5 text-slate-500">
-              This portal is for institution teams. Platform administration remains restricted.
+              This portal is for authorized TAMVA and institution teams. Capabilities are controlled by backend roles and scopes.
             </p>
           </div>
         </div>
@@ -109,10 +109,10 @@ export function AppShell() {
           </button>
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Institution
+              Active scope
             </p>
             <button className="flex items-center gap-1.5 text-sm font-semibold text-slate-200">
-              Institution not selected <ChevronDown className="size-4" aria-hidden="true" />
+              Scope not selected <ChevronDown className="size-4" aria-hidden="true" />
             </button>
           </div>
           <div className="ml-auto flex items-center gap-2">

@@ -1,24 +1,25 @@
-# ADR-009: Separate institution web and customer mobile clients
+# ADR-009: Separate admin web, customer web, and customer mobile clients
 
 **Status:** Accepted
 
 ## Context
 
-Institution teams need a dense operational browser workspace. Customers need a mobile-native surface with secure device storage, app lifecycle support, and future biometric, push, camera, and QR capabilities. Django remains the source of business behavior.
+TAMVA and institution teams need a dense operational browser workspace. Customers need both responsive browser access and a mobile-native surface with secure device storage, app lifecycle support, and future biometric, push, camera, and QR capabilities. Django remains the source of business behavior.
 
 ## Decision
 
-Build two independent TypeScript clients:
+Build three independent TypeScript clients:
 
-- `frontend/institution-web`: React, Vite, TanStack Router, Query and Table, Tailwind, owned shadcn-style components, and Lucide.
-- `mobile/customer-app`: React Native, Expo Router, TanStack Query, NativeWind, React Hook Form, Zod, SecureStore, and Lucide.
+- `frontend/admin`: React, Vite, TanStack Router, Query and Table, Tailwind, owned shadcn-style components, and Lucide.
+- `frontend/customer`: React, Vite, TanStack Router and Query, Tailwind, React Hook Form, Zod, and Lucide.
+- `mobile`: React Native, Expo Router, TanStack Query, NativeWind, React Hook Form, Zod, SecureStore, and Lucide.
 
-Both clients consume Django REST/OpenAPI contracts through `contracts/client`. They may format and present data but never decide consent validity, tenant access, ledger classification, risk, case transitions, or passport permissions. Django Admin remains a restricted internal engineering tool and is not the institution product.
+All clients consume Django REST/OpenAPI contracts through `contracts/client`. They may format and present data but never decide consent validity, tenant access, ledger classification, risk, case transitions, or passport permissions. Django Admin remains a restricted internal engineering tool and is not the admin product.
 
 ## Consequences
 
-Web and mobile can evolve for their platforms while sharing transport schemas and API semantics. Authentication and authorization must be implemented once in Django. Client release pipelines remain separate.
+Admin web, customer web, and mobile can evolve for their users and platforms while sharing transport schemas and API semantics. Authentication is implemented once in Django, with separate customer, institution-member, and platform-staff authorization contexts. Client release pipelines remain separate.
 
 ## Alternatives considered
 
-A responsive customer React website was rejected because mobile is a primary product surface. A single universal UI package was rejected because browser and native interaction primitives differ. Redux was deferred because TanStack Query and local React state cover the current requirements.
+A single universal UI package was rejected because browser and native interaction primitives differ. Separate web applications were retained because customer and operational information architecture differ substantially. Redux was deferred because TanStack Query and local React state cover the current requirements.
