@@ -16,6 +16,7 @@ media/
 .idea/
 .vscode/
 .DS_Store
+<<<<<<< HEAD
 node_modules/
 dist/
 .expo/
