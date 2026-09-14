@@ -15,6 +15,10 @@ Maintain two client codebases:
 - `frontend/admin`: the React and TypeScript web application for TAMVA staff and authorized institutional users;
 - `mobile`: the React Native and Expo customer application targeting Android, iOS, and web.
 
+Admin web users are represented by `PARTNER_USER` or `PLATFORM_USER`; customer
+app users are represented by `CUSTOMER`. Authentication, authorization, tenant
+context, and consent remain separate backend decisions.
+
 Do not create or maintain a standalone customer web application. Expo Router, TanStack Query, customer flows, validation, and API logic remain shared across customer targets. Responsive navigation adapts to the available window size, and platform-specific files such as `*.ios.tsx`, `*.android.tsx`, or `*.web.tsx` are introduced only when platform behavior requires them.
 
 Both clients consume shared REST/OpenAPI contracts from `contracts/client`. PostgreSQL remains the source of truth, and Django remains the sole authority for authentication, authorization, tenancy, consent, ledger classification, profile calculations, risk, case transitions, passport permissions, fraud decisions, and auditing.

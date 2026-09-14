@@ -1,6 +1,11 @@
 # ADR-009: Separate admin web, customer web, and customer mobile clients
 
-**Status:** Superseded by [ADR-010](ADR-010-universal-customer-application.md)
+**Status:** Historical; superseded by [ADR-010](ADR-010-universal-customer-application.md)
+
+This document records a rejected former three-client model. Its paths and
+decisions are historical only. The active repository has no standalone customer
+web application; use `frontend/admin/` for admin web and `mobile/` for the
+Android, iOS, and Web customer app.
 
 ## Context
 

@@ -41,6 +41,12 @@ Recommended branch names include:
 
 Keep changes focused within the owning domain. Do not include unrelated refactors or bypass a domain's public interfaces. New cross-domain dependencies require an explicit contract and architecture review.
 
+The repository has one operational web client in `frontend/admin/` and one
+customer client in `mobile/`. The customer client is a single Expo/React Native
+codebase for Android, iOS, and Web; do not create a separate customer web
+workspace. Backend modules in `apps/`, shared packages, and `config/` remain the
+authority for business rules and access decisions.
+
 ## Validating and submitting work
 
 Before committing, run:

@@ -1,35 +1,55 @@
 # Client applications
+The final ownership model is:
 
 ```text
-Admin web ───────┐
-                  ├── REST / OpenAPI ── Django modular monolith ── PostgreSQL
-Customer app ────┘                         │
-Android/iOS/Web                            │
-                                           └── Redis / Celery
+              PostgreSQL
+            SOURCE OF TRUTH
+                ^
+                |
+            Django / DRF
+          BUSINESS LOGIC + APIs
+              ^         ^
+              |         |
+        frontend/admin     mobile
+         Admin Web       Customer App
+                     Android
+                     iOS
+                     Web
 ```
+
 
 The backend owns identity, authorization, consent, financial calculations, risk decisions, case transitions, passport permissions, and audit. Clients own platform-appropriate navigation, presentation, input collection, loading/error states, and secure local session handling.
 
 ## Identity and access context
 
-Both clients use one backend identity and authentication foundation. Django resolves an authenticated identity into a customer, institution-member, or platform-staff actor context and returns the applicable role, institution scope, and permissions. The admin app changes navigation and available actions from those backend permissions; it does not infer access from a locally selected role.
+Both clients use one backend identity and authentication foundation. Django resolves an authenticated identity into one of the supported actor contexts and returns the applicable role, institution scope, and permissions. Admin web supports `PARTNER_USER` and `PLATFORM_USER`; the customer app supports `CUSTOMER`. The admin app changes navigation and available actions from backend permissions; it does not infer access from a locally selected role.
 
 Keep these decisions separate:
 
 - authentication establishes who the user is;
 - authorization establishes what the user may do;
-- tenant resolution establishes the institution scope;
+- tenant context establishes which institution the actor is operating under;
 - consent establishes which customer data may be accessed and for what purpose.
 
 The Expo customer application receives the customer authorization context on Android, iOS, and web. Admin web uses the same authentication foundation but receives institution or platform authorization context. Proposed authentication routes such as `/api/v1/auth/login/`, `/api/v1/auth/refresh/`, `/api/v1/auth/logout/`, and `/api/v1/me/` remain future contracts until implemented and published by Django.
 
 ## Admin web
 
-The application at `frontend/admin/` serves authorized TAMVA staff and institution users. Run `make admin-dev` and open <http://localhost:3000>. Vite proxies `/health/` and `/api/` to Django at <http://localhost:8000> in development. The production Nginx image uses the same relative paths and proxies them to the Compose `web` service.
+The application at `frontend/admin/` is the single operational web platform for
+TAMVA platform staff, institution administrators, risk analysts, investigators,
+operations staff, security and compliance staff, auditors, API/integration
+developers, and other authorized institutional users. It is not customer-facing.
+Run `make admin-dev` and open <http://localhost:3000>. Vite proxies `/health/`
+and `/api/` to Django at <http://localhost:8000> in development. The production
+Nginx image uses the same relative paths and proxies them to the Compose `web`
+service.
 
 ## Customer application
 
-The application at `mobile/` is one Expo Router codebase for Android, iOS, and web. Phone layouts use bottom-tab navigation; wider tablet and desktop layouts use a sidebar. There is no standalone customer workspace under `frontend/`.
+The application at `mobile/` is one Expo Router codebase for Android, iOS, and
+Web. Phone layouts use bottom-tab navigation; wider tablet and desktop layouts
+use a sidebar. There is no separate customer web application or customer web
+workspace under `frontend/`.
 
 Copy `mobile/.env.example` to `mobile/.env` and set `EXPO_PUBLIC_API_BASE_URL` for the target:
 

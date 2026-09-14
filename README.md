@@ -6,7 +6,18 @@ TAMVA is financial identity and trust infrastructure. This repository provides a
 
 TAMVA starts as a modular monolith: all domain modules deploy as one Django application, but each domain has explicit ownership, a documented responsibility, and narrow public interfaces. PostgreSQL is the source of truth. Redis supports caching and Celery. A transactional outbox provides the foundation for reliable asynchronous events, and institutions provide the shared-database tenancy boundary.
 
-TAMVA has three primary application layers: the Django backend, the admin web application, and one cross-platform customer application. The customer application is a single Expo/React Native codebase targeting Android, iOS, and web. There is no separate customer React/Vite web application.
+TAMVA has three application layers:
+
+1. **Backend** - Django and Django REST Framework in `apps/`, `packages/`, and
+  `config/`. It owns all authoritative business, authorization, tenancy,
+  consent, risk, ledger, profile, passport, and case decisions.
+2. **Admin Web** - the React and TypeScript application in `frontend/admin/` for
+  TAMVA staff and authorized institutional users.
+3. **Customer App** - one shared React Native and Expo codebase in `mobile/`,
+  officially supporting Android, iOS, and Web.
+
+There is no separate customer web application. The customer web experience is
+delivered from the same Expo/React Native codebase in `mobile/`.
 
 The Django backend is the authoritative application layer. It owns authentication, authorization, tenancy, consent validity, connector orchestration, normalisation, ledger classification, profile calculations, feature generation, rules, risk decisions, case transitions, passport permissions, auditing, and notifications. Admin web and mobile may validate basic form input and manage presentation state, but they must display and enforce decisions returned by the backend rather than duplicate authoritative business rules.
 
@@ -39,7 +50,12 @@ See the [system overview](docs/architecture/system-overview.md), [tenancy model]
 
 ### Admin, institutional, and operations web
 
-This application lives at `frontend/admin/` and serves TAMVA staff, institution administrators, risk analysts, investigators, operations teams, API/integration users, and security/governance users. It is one application with backend-controlled menus, roles, permissions, and institution scopes—not separate frontends for each operational role.
+This application lives at `frontend/admin/` and serves TAMVA platform staff,
+institution administrators, risk analysts, investigators, operations staff,
+security and compliance staff, auditors, API/integration developers, and other
+authorized institutional users. It is not customer-facing. It is one application
+with backend-controlled menus, roles, permissions, and institution scopes, not
+separate frontends for each operational role.
 
 - React 19 and TypeScript
 - Vite
@@ -94,7 +110,7 @@ move to versioned backend contracts before production use.
 - mypy with Django type support
 - coverage
 - pre-commit
-- ESLint for admin and customer clients
+- ESLint for admin and mobile clients
 
 ### CI/CD
 
@@ -111,17 +127,23 @@ move to versioned backend contracts before production use.
 ## Repository structure
 
 ```text
-apps/       Domain-owned Django applications
-config/     Django settings, URLs, WSGI/ASGI, and Celery setup
-packages/   Shared contracts, common primitives, events, auth, and observability
-contracts/  Shared TypeScript runtime schemas and checked OpenAPI output
-frontend/
-  admin/    Admin, institution, and operations web application
-mobile/     Cross-platform customer application (Expo: Android, iOS, and web)
-tests/      Unit, integration, contract, end-to-end, and security suites
-docs/       Architecture, ADRs, API, events, database, security, and runbooks
-scripts/    Container entry points and operational helpers
-.github/    CI workflow, pull-request template, and CODEOWNERS example
+tamva/
+├── apps/                 Domain-owned Django applications
+├── config/               Django settings, URLs, WSGI/ASGI, and Celery
+├── packages/             Shared contracts, primitives, events, and auth
+├── contracts/            Shared TypeScript schemas and checked OpenAPI output
+├── tests/                Unit, integration, contract, and security suites
+├── docs/                 Architecture, ADRs, API, security, and runbooks
+├── scripts/              Container entry points and operational helpers
+├── frontend/
+│   └── admin/            Admin, institution, and operations web application
+├── mobile/               Expo customer app for Android, iOS, and Web
+├── .github/              CI workflow and contribution templates
+├── Makefile
+├── docker-compose.yml
+├── README.md
+├── CONTRIBUTING.md
+└── SECURITY.md
 ```
 
 Each directory under `apps/` contains a README defining that domain's responsibility and exclusions.
