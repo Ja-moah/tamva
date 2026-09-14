@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 COMPOSE := docker compose
-LOCAL_UID ?= 1000
-LOCAL_GID ?= 1000
+LOCAL_UID ?= $(shell id -u)
+LOCAL_GID ?= $(shell id -g)
 RUN := $(COMPOSE) run --rm --user $(LOCAL_UID):$(LOCAL_GID) web
 TEST := $(COMPOSE) run --rm --user $(LOCAL_UID):$(LOCAL_GID) -e DJANGO_SETTINGS_MODULE=config.settings.test web
 
@@ -43,7 +43,7 @@ bash: ## Open a shell in the web container
 migrate: ## Apply database migrations
 	$(RUN) python manage.py migrate
 
-migrations: ## Create database migrations
+migrations: ## Create host-owned database migrations
 	$(RUN) python manage.py makemigrations
 
 superuser: ## Create a Django superuser

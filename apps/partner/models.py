@@ -20,8 +20,18 @@ class InstitutionMembership(UUIDModel, TimeStampedModel):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="institution_memberships"
     )
-    role = models.CharField(max_length=100)
-    is_active = models.BooleanField(default=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[("ACTIVE", "Active"), ("SUSPENDED", "Suspended"), ("ENDED", "Ended")],
+        default="ACTIVE",
+        db_index=True,
+    )
+    role = models.CharField(max_length=100, blank=True)
+    roles = models.ManyToManyField("identity.Role", related_name="memberships", blank=True)
+
+    @property
+    def is_active(self) -> bool:
+        return self.status == "ACTIVE"
 
     class Meta:
         constraints = [
@@ -29,4 +39,4 @@ class InstitutionMembership(UUIDModel, TimeStampedModel):
                 fields=["institution", "user"], name="unique_institution_member"
             )
         ]
-        indexes = [models.Index(fields=["institution", "is_active"])]
+        indexes = [models.Index(fields=["institution", "status"])]
