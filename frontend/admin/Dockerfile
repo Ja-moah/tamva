@@ -14,5 +14,5 @@ RUN npm run build --workspace @tamva/admin
 FROM nginx:1.29-alpine
 
 COPY frontend/admin/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /workspace/frontend/admin/dist /usr/share/nginx/html
+COPY frontend/admin/dist /usr/share/nginx/html
 EXPOSE 80
