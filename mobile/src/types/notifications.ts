@@ -43,4 +43,7 @@ export interface NotificationItem {
   actionLabel?: string;
   institutionName?: string;
   icon: FeatherIconName;
+  whatThisMeans?: string;
+  relatedAccount?: string;
+  receivedDate?: string;
 }

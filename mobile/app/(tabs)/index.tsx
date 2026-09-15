@@ -70,25 +70,13 @@ export default function HomeScreen() {
   const handleQuickAction = (action: QuickActionItem) => {
     switch (action.id) {
       case 'send':
-        showToast({
-          type: 'info',
-          title: 'Send Money',
-          message: 'Direct and MoMo transfers will connect in the next phase.',
-        });
+        router.push('/send');
         break;
       case 'receive':
-        showToast({
-          type: 'info',
-          title: 'Receive Funds',
-          message: 'Account QR and receiving codes will connect in the next phase.',
-        });
+        router.push('/receive');
         break;
       case 'save':
-        showToast({
-          type: 'info',
-          title: 'Smart Savings',
-          message: 'Automated goal allocations will connect in the next phase.',
-        });
+        router.push('/save');
         break;
       case 'more':
         showToast({

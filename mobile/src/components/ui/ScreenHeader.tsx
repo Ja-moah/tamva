@@ -142,19 +142,22 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   leftSection: {
-    width: 44,
+    minWidth: 44,
     alignItems: 'flex-start',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   centerSection: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 8,
+    minWidth: 0,
   },
   rightSection: {
-    width: 44,
+    minWidth: 44,
     alignItems: 'flex-end',
     justifyContent: 'center',
+    flexShrink: 0,
   },
 });

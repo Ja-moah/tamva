@@ -13,13 +13,14 @@
  * - Purely financial-data intelligence framing — zero banking or wallet claims
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   Pressable,
+  BackHandler,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,7 +34,10 @@ import {
 import { ScreenHeader } from '../src/components/ui/ScreenHeader';
 import { Chip } from '../src/components/ui/Chip';
 import { EmptyState } from '../src/components/ui/EmptyState';
-import { NotificationRow } from '../src/components/notifications';
+import {
+  NotificationRow,
+  NotificationDetailView,
+} from '../src/components/notifications';
 
 export default function NotificationsScreen() {
   const { theme } = useTheme();
@@ -49,6 +53,23 @@ export default function NotificationsScreen() {
   } = useNotifications();
 
   const [selectedFilter, setSelectedFilter] = useState<NotificationFilter>('all');
+  const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
+
+  // Intercept Android hardware back button when viewing notification details
+  useEffect(() => {
+    if (!selectedNotification) return;
+
+    const onHardwareBack = () => {
+      setSelectedNotification(null);
+      return true; // prevent dismissing entire Notification Center
+    };
+
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onHardwareBack
+    );
+    return () => subscription.remove();
+  }, [selectedNotification]);
 
   // Filtered list computation
   const filteredNotifications = useMemo(() => {
@@ -73,10 +94,20 @@ export default function NotificationsScreen() {
       markAsRead(item.id);
     }
 
-    // 2. Dismiss modal and route to existing product experience if defined
-    if (item.actionRoute) {
-      router.dismissTo(item.actionRoute as any);
-    }
+    // 2. Open notification detail view (do not navigate directly)
+    setSelectedNotification({ ...item, isRead: true });
+  };
+
+  const handleBackToList = () => {
+    haptics.selection();
+    setSelectedNotification(null);
+  };
+
+  const handleDetailActionPress = (item: NotificationItem) => {
+    if (!item.actionRoute) return;
+
+    // Dismiss Notification Center modal and navigate cleanly to destination tab
+    router.dismissTo(item.actionRoute as any);
   };
 
   const handleMarkAllAsRead = () => {
@@ -131,6 +162,16 @@ export default function NotificationsScreen() {
     </View>
   );
 
+  if (selectedNotification) {
+    return (
+      <NotificationDetailView
+        notification={selectedNotification}
+        onBack={handleBackToList}
+        onActionPress={handleDetailActionPress}
+      />
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* 1. SCREEN HEADER */}
@@ -153,9 +194,11 @@ export default function NotificationsScreen() {
               accessibilityLabel="Mark all notifications as read"
             >
               <Text
+                numberOfLines={1}
                 style={[
-                  theme.typography.captionMedium,
-                  { color: theme.colors.primary, fontWeight: '600' },
+                  theme.typography.buttonSm,
+                  styles.markAllText,
+                  { color: theme.colors.primary },
                 ]}
               >
                 Mark all read
@@ -211,8 +254,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   markAllButton: {
+    minHeight: 36,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
     paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
+    flexShrink: 0,
+  },
+  markAllText: {
+    textAlign: 'right',
   },
   filterSection: {
     paddingVertical: 12,

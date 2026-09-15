@@ -3,3 +3,4 @@
  */
 
 export * from './NotificationRow';
+export * from './NotificationDetailView';

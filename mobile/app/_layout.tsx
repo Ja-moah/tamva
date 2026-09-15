@@ -63,6 +63,27 @@ function RootNavigation() {
           }}
         />
         <Stack.Screen
+          name="send"
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="receive"
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="save"
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
           name="+not-found"
           options={{ title: 'Not Found', headerShown: true }}
         />

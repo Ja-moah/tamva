@@ -256,3 +256,23 @@ export const mockEmptyActivityData: ActivityScreenData = {
   groups: [],
   totalTransactionCount: 0,
 };
+
+/**
+ * Register a newly completed transfer into the shared Activity mock state.
+ */
+export function addActivityTransaction(transaction: ActivityTransaction): void {
+  // Prepend to raw transactions so newly sent transfer is at the top of TODAY
+  mockTransactions.unshift(transaction);
+
+  // Update grouped cache if present
+  if (mockActivityData.groups && mockActivityData.groups.length > 0) {
+    const todayGroup = mockActivityData.groups.find((g) => g.title === 'TODAY');
+    if (todayGroup) {
+      todayGroup.data.unshift(transaction);
+    }
+    mockActivityData.totalTransactionCount = mockTransactions.length;
+    mockActivityData.summary.totalOutflow += transaction.amount;
+    mockActivityData.summary.netCashflow -= transaction.amount;
+  }
+}
+
