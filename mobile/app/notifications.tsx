@@ -1,143 +1,237 @@
-import { router } from "expo-router";
-import {
-  AlertTriangle,
-  ArrowLeft,
-  Bell,
-  Check,
-  CheckCircle2,
-  Info,
-  ShieldCheck,
-  Trash2,
-} from "lucide-react-native";
-import React, { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+/**
+ * TAMVA Customer Mobile — Notification Center
+ *
+ * Provides a clean, focused notification center for consented financial data,
+ * protection signals, account sync updates, and Financial Passport lifecycle events.
+ *
+ * Features:
+ * - ScreenHeader with back navigation, dynamic unread subtitle, and "Mark all read" action
+ * - Category filter chips: All, Unread (with live count), Consent, Protection, Passport
+ * - High-hierarchy NotificationRow with official brand logos, category badges, unread indicators
+ * - Tapping a notification marks it as read and seamlessly routes to the relevant experience
+ * - Fully accessible empty states for zero-notification and filtered scenarios
+ * - Purely financial-data intelligence framing — zero banking or wallet claims
+ */
 
-import { BouncyPressable } from "../components/animated/bouncy-pressable";
-import { useTamvaStore } from "../store/use-tamva-store";
+import React, { useState, useMemo } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Pressable,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../src/theme';
+import { useHaptics } from '../src/hooks/useHaptics';
+import { useNotifications } from '../src/context/NotificationsContext';
+import {
+  NotificationFilter,
+  NotificationItem,
+} from '../src/types/notifications';
+import { ScreenHeader } from '../src/components/ui/ScreenHeader';
+import { Chip } from '../src/components/ui/Chip';
+import { EmptyState } from '../src/components/ui/EmptyState';
+import { NotificationRow } from '../src/components/notifications';
 
 export default function NotificationsScreen() {
-  const { securityAlerts } = useTamvaStore();
-  const [filter, setFilter] = useState<"ALL" | "SECURITY" | "CONSENT">("ALL");
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const haptics = useHaptics();
 
-  const filteredAlerts = securityAlerts.filter((item) => {
-    if (filter === "ALL") return true;
-    if (filter === "SECURITY") return item.type === "WARNING" || item.type === "SUCCESS";
-    if (filter === "CONSENT") return item.type === "INFO";
-    return true;
-  });
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+  } = useNotifications();
+
+  const [selectedFilter, setSelectedFilter] = useState<NotificationFilter>('all');
+
+  // Filtered list computation
+  const filteredNotifications = useMemo(() => {
+    switch (selectedFilter) {
+      case 'unread':
+        return notifications.filter((n) => !n.isRead);
+      case 'consent':
+        return notifications.filter((n) => n.category === 'consent');
+      case 'protection':
+        return notifications.filter((n) => n.category === 'protection');
+      case 'passport':
+        return notifications.filter((n) => n.category === 'passport');
+      case 'all':
+      default:
+        return notifications;
+    }
+  }, [notifications, selectedFilter]);
+
+  const handleNotificationPress = (item: NotificationItem) => {
+    // 1. Mark as read immediately
+    if (!item.isRead) {
+      markAsRead(item.id);
+    }
+
+    // 2. Dismiss modal and route to existing product experience if defined
+    if (item.actionRoute) {
+      router.dismissTo(item.actionRoute as any);
+    }
+  };
+
+  const handleMarkAllAsRead = () => {
+    haptics.success();
+    markAllAsRead();
+  };
+
+  const handleFilterSelect = (filter: NotificationFilter) => {
+    haptics.selection();
+    setSelectedFilter(filter);
+  };
+
+  const renderFilterChips = () => (
+    <View style={styles.filterSection}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterScrollContent}
+      >
+        <Chip
+          label="All"
+          selected={selectedFilter === 'all'}
+          onPress={() => handleFilterSelect('all')}
+          style={styles.filterChip}
+        />
+        <Chip
+          label="Unread"
+          selected={selectedFilter === 'unread'}
+          count={unreadCount > 0 ? unreadCount : undefined}
+          onPress={() => handleFilterSelect('unread')}
+          style={styles.filterChip}
+        />
+        <Chip
+          label="Consent"
+          selected={selectedFilter === 'consent'}
+          onPress={() => handleFilterSelect('consent')}
+          style={styles.filterChip}
+        />
+        <Chip
+          label="Protection"
+          selected={selectedFilter === 'protection'}
+          onPress={() => handleFilterSelect('protection')}
+          style={styles.filterChip}
+        />
+        <Chip
+          label="Passport"
+          selected={selectedFilter === 'passport'}
+          onPress={() => handleFilterSelect('passport')}
+          style={styles.filterChip}
+        />
+      </ScrollView>
+    </View>
+  );
 
   return (
-    <View className="flex-1 bg-ink">
-      <SafeAreaView className="flex-1" edges={["top"]}>
-        <ScrollView contentContainerClassName="px-5 pb-24" showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View className="flex-row items-center justify-between pt-2">
-            <BouncyPressable
-              onPress={() => router.back()}
-              className="h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-surface"
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* 1. SCREEN HEADER */}
+      <ScreenHeader
+        title="Notifications"
+        subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+        showBack={true}
+        onBackPress={() => router.back()}
+        borderBottom={true}
+        rightElement={
+          unreadCount > 0 ? (
+            <Pressable
+              onPress={handleMarkAllAsRead}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={({ pressed }) => [
+                styles.markAllButton,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Mark all notifications as read"
             >
-              <ArrowLeft size={20} color="#ffffff" />
-            </BouncyPressable>
+              <Text
+                style={[
+                  theme.typography.captionMedium,
+                  { color: theme.colors.primary, fontWeight: '600' },
+                ]}
+              >
+                Mark all read
+              </Text>
+            </Pressable>
+          ) : null
+        }
+      />
 
-            <View className="items-center">
-              <Text className="text-base font-bold text-white">Notifications</Text>
-              <Text className="text-[11px] text-slate-400">Security & Trust Feed</Text>
-            </View>
+      {/* 2. CATEGORY FILTER BAR */}
+      {renderFilterChips()}
 
-            <View className="h-11 w-11 items-center justify-center rounded-2xl bg-surface border border-white/10">
-              <Bell size={18} color="#75f0bd" />
-            </View>
+      {/* 3. NOTIFICATION LIST OR EMPTY STATE */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: Math.max(insets.bottom, 24) + 16 },
+        ]}
+      >
+        {filteredNotifications.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <EmptyState
+              icon={selectedFilter === 'unread' ? 'check-circle' : 'bell'}
+              title="You're all caught up"
+              description={
+                selectedFilter === 'unread'
+                  ? 'No unread notifications right now. Your consented financial alerts are up to date.'
+                  : selectedFilter !== 'all'
+                  ? `No ${selectedFilter} notifications found.`
+                  : 'Important updates about your consented financial data will appear here.'
+              }
+              actionLabel={selectedFilter !== 'all' ? 'View All Notifications' : undefined}
+              onActionPress={selectedFilter !== 'all' ? () => setSelectedFilter('all') : undefined}
+            />
           </View>
-
-          {/* Filter Pills */}
-          <View className="mt-5 flex-row gap-2">
-            {(["ALL", "SECURITY", "CONSENT"] as const).map((cat) => {
-              const isSelected = filter === cat;
-              return (
-                <BouncyPressable
-                  key={cat}
-                  onPress={() => setFilter(cat)}
-                  className={`rounded-full px-4 py-2 ${
-                    isSelected ? "bg-mint border border-mint" : "bg-surface border border-white/5"
-                  }`}
-                >
-                  <Text
-                    className={`text-xs font-bold ${
-                      isSelected ? "text-ink" : "text-slate-300"
-                    }`}
-                  >
-                    {cat}
-                  </Text>
-                </BouncyPressable>
-              );
-            })}
-          </View>
-
-          {/* Alert List */}
-          <View className="mt-5 gap-3">
-            {filteredAlerts.length > 0 ? (
-              filteredAlerts.map((alert) => {
-                const isWarning = alert.type === "WARNING";
-                const isInfo = alert.type === "INFO";
-                return (
-                  <View
-                    key={alert.id}
-                    className="rounded-2xl border border-white/5 bg-surface p-4 flex-row items-start gap-3.5"
-                  >
-                    <View
-                      className={`h-10 w-10 items-center justify-center rounded-xl mt-0.5 ${
-                        isWarning
-                          ? "bg-amber-500/20"
-                          : isInfo
-                          ? "bg-blue-500/20"
-                          : "bg-emerald-500/20"
-                      }`}
-                    >
-                      {isWarning ? (
-                        <AlertTriangle size={20} color="#f59e0b" />
-                      ) : isInfo ? (
-                        <Info size={20} color="#3b82f6" />
-                      ) : (
-                        <CheckCircle2 size={20} color="#00d084" />
-                      )}
-                    </View>
-
-                    <View className="flex-1">
-                      <View className="flex-row items-center justify-between">
-                        <Text className="text-xs font-bold text-white flex-1 pr-2">
-                          {alert.title}
-                        </Text>
-                        <Text className="text-[10px] text-slate-500 font-medium">
-                          {alert.dateFormatted}
-                        </Text>
-                      </View>
-                      <Text className="mt-1 text-xs leading-4 text-slate-400">
-                        {alert.description}
-                      </Text>
-                      {alert.location && (
-                        <Text className="mt-1.5 text-[10px] font-mono text-emerald-400">
-                          Location: {alert.location}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                );
-              })
-            ) : (
-              <View className="items-center py-16">
-                <ShieldCheck size={48} color="#64748b" />
-                <Text className="text-sm font-bold text-slate-400 mt-3">
-                  All caught up!
-                </Text>
-                <Text className="text-xs text-slate-500 text-center max-w-xs mt-1">
-                  No new security or consent notifications at this time.
-                </Text>
-              </View>
-            )}
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+        ) : (
+          filteredNotifications.map((item) => (
+            <NotificationRow
+              key={item.id}
+              notification={item}
+              onPress={handleNotificationPress}
+            />
+          ))
+        )}
+      </ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  markAllButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  filterSection: {
+    paddingVertical: 12,
+  },
+  filterScrollContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  filterChip: {
+    marginRight: 0,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
+  },
+  emptyContainer: {
+    paddingTop: 40,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

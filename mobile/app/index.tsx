@@ -1,6 +1,40 @@
-import { Redirect } from "expo-router";
-import React from "react";
+/**
+ * TAMVA Root Route Index Gatekeeper (Phase 9A)
+ *
+ * Inspects onboarding completion state:
+ * - If first-time user: Redirects to /onboarding
+ * - If onboarding completed: Redirects to /(auth)
+ */
 
-export default function Index() {
-  return <Redirect href="/(tabs)" />;
+import React from 'react';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { Redirect } from 'expo-router';
+import { useOnboarding } from '../src/hooks/useOnboarding';
+import { useTheme } from '../src/theme';
+
+export default function RootIndex() {
+  const { theme } = useTheme();
+  const { hasCompletedOnboarding, isLoading } = useOnboarding();
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="small" color={theme.colors.primary} />
+      </View>
+    );
+  }
+
+  if (!hasCompletedOnboarding) {
+    return <Redirect href="/onboarding" />;
+  }
+
+  return <Redirect href="/(auth)" />;
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

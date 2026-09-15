@@ -1,389 +1,359 @@
-import { router } from "expo-router";
+/**
+ * TAMVA Financial Protection Screen (Phase 7B)
+ *
+ * Provides customer-facing awareness and monitoring over connected financial data:
+ * - Protection Header (Back navigation, title, monitoring status subtitle, notifications)
+ * - Hero Protection Status Card (Protected standing, shield glyph, consented data attribution)
+ * - Cohesive Protection Overview (Consent health, connections, monitoring, access rows) -> Interactive Detail Sheets
+ * - Monitoring Status Card (Active state, monitored count, freshness, alerts)
+ * - Connected Accounts Card (Summary metrics, compact interactive account rows, review accounts link)
+ * - Recent Protection Activity Card (Protection audit events, timestamps)
+ * - Recommendations Section (Compact, understated advisory)
+ * - Freshness Footer (Freshness timestamp & conservative non-guarantee footnote)
+ * - Zero-CLS Layout-Preserving Skeleton Loader
+ * - Interactive Developer QA State Switcher (Loaded, Loading, Empty, Error)
+ * - Interactive ProtectionSignalSheet (Consent Health, Connections, Monitoring, Access)
+ * - Interactive ProtectionAccountSheet (Account-level trust & consent scopes)
+ */
+
+import React, { useState } from 'react';
 import {
-  AlertTriangle,
-  Bell,
-  Check,
-  CheckCircle2,
-  ChevronRight,
-  Fingerprint,
-  Globe,
-  HelpCircle,
-  KeyRound,
-  Lightbulb,
-  Lock,
-  Radio,
-  Search,
-  ShieldAlert,
-  ShieldCheck,
-  Smartphone,
-  UserCheck,
-} from "lucide-react-native";
-import React, { useState } from "react";
-import {
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
   View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-
-import { BouncyPressable } from "../../components/animated/bouncy-pressable";
-import { useTamvaStore } from "../../store/use-tamva-store";
-
-const REALTIME_SHIELDS = [
-  { id: "fraud", label: "Transactions screened for fraud", status: "Live", badgeColor: "text-mint" },
-  { id: "unusual", label: "Unusual activity detection", status: "Live", badgeColor: "text-mint" },
-  { id: "device", label: "Identity and device checks", status: "Live", badgeColor: "text-mint" },
-  { id: "darkweb", label: "Dark web monitoring", status: "Active", badgeColor: "text-emerald-400" },
-  { id: "takeover", label: "Account takeover protection", status: "Active", badgeColor: "text-emerald-400" },
-];
+  Text,
+  ScrollView,
+  RefreshControl,
+  StyleSheet,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { useTheme } from '../../src/theme';
+import { useFinancialProtection } from '../../src/hooks/useFinancialProtection';
+import {
+  ProtectionStateMode,
+  ProtectionScenario,
+  ProtectionSignal,
+  ProtectionAccountDetail,
+} from '../../src/types/protection';
+import {
+  ProtectionHeader,
+  ProtectionStatusCard,
+  ProtectionOverview,
+  ProtectionMonitoringCard,
+  ProtectionAccountsCard,
+  ProtectionActivityCard,
+  ProtectionRecommendation,
+  ProtectionFreshnessFooter,
+  ProtectionSkeleton,
+  ProtectionSignalSheet,
+  ProtectionAccountSheet,
+} from '../../src/components/protection';
+import { EmptyState } from '../../src/components/ui/EmptyState';
+import { ErrorState } from '../../src/components/ui/ErrorState';
+import { Chip } from '../../src/components/ui/Chip';
 
 export default function ProtectionScreen() {
+  const { theme } = useTheme();
+  const router = useRouter();
+
   const {
-    accounts,
-    securityAlerts,
-    realtimeMonitoringActive,
-    toggleMonitoring,
-    reportSuspiciousActivity,
-  } = useTamvaStore();
+    data,
+    stateMode,
+    setStateMode,
+    scenario,
+    setScenario,
+    isRefreshing,
+    handleRefresh,
+  } = useFinancialProtection();
 
-  const [activeTab, setActiveTab] = useState<"Overview" | "Alerts" | "Security" | "Privacy" | "Tips">("Overview");
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [reportTitle, setReportTitle] = useState("");
-  const [reportDetails, setReportDetails] = useState("");
+  // Detail Sheet States
+  const [selectedSignal, setSelectedSignal] = useState<ProtectionSignal | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<ProtectionAccountDetail | null>(null);
 
-  const handleReportSubmit = () => {
-    if (!reportTitle.trim()) {
-      Alert.alert("Required", "Please describe what suspicious activity you noticed.");
-      return;
-    }
-    reportSuspiciousActivity(reportTitle, reportDetails || "User reported suspicious action.");
-    setShowReportModal(false);
-    setReportTitle("");
-    setReportDetails("");
-    Alert.alert(
-      "Report Submitted",
-      "Thank you. Our fraud intelligence engine and security operations team have received your alert."
-    );
+  const closeAllSheets = () => {
+    setSelectedSignal(null);
+    setSelectedAccount(null);
   };
 
-  return (
-    <View className="flex-1 bg-ink">
-      <SafeAreaView className="flex-1" edges={["top"]}>
-        <ScrollView
-          contentContainerClassName="px-5 pb-28"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header */}
-          <View className="flex-row items-center justify-between pt-2">
-            <View>
-              <Text className="text-2xl font-black text-white">Financial Protection</Text>
-              <Text className="mt-0.5 text-xs text-slate-400">
-                Your safety. Our priority.
-              </Text>
-            </View>
+  const handleSelectSignal = (signal: ProtectionSignal) => {
+    closeAllSheets();
+    setSelectedSignal(signal);
+  };
 
-            <View className="flex-row items-center gap-3">
-              <BouncyPressable
-                onPress={() => router.push("/notifications")}
-                className="relative h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-surface"
-              >
-                <Bell size={18} color="#ffffff" />
-                <View className="absolute -top-1 -right-1 h-4 w-4 items-center justify-center rounded-full bg-rose-500 border-2 border-ink">
-                  <Text className="text-[9px] font-bold text-white">2</Text>
-                </View>
-              </BouncyPressable>
+  const handleSelectAccount = (account: ProtectionAccountDetail) => {
+    closeAllSheets();
+    setSelectedAccount(account);
+  };
 
-              <View className="h-11 w-11 items-center justify-center rounded-2xl bg-forest border border-mint/30">
-                <Text className="text-sm font-bold text-mint">ED</Text>
-              </View>
-            </View>
-          </View>
+  const handleNavigateToConsent = () => {
+    closeAllSheets();
+    router.push('/(tabs)/consent');
+  };
 
-          {/* Sub Navigation Tabs */}
-          <View className="mt-5 flex-row rounded-2xl bg-surface/80 p-1 border border-white/5">
-            {(["Overview", "Alerts", "Security", "Privacy", "Tips"] as const).map((tab) => {
-              const isActive = activeTab === tab;
-              return (
-                <Pressable
-                  key={tab}
-                  onPress={() => setActiveTab(tab)}
-                  className={`flex-1 py-2 items-center rounded-xl ${
-                    isActive ? "bg-forest border border-mint/30" : ""
-                  }`}
-                >
-                  <Text
-                    className={`text-[11px] font-bold ${
-                      isActive ? "text-mint" : "text-slate-400"
-                    }`}
-                  >
-                    {tab}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {/* Main Status Hero Banner */}
-          <View className="mt-4 rounded-[28px] border border-emeraldPrimary/30 bg-surface p-5 shadow-xl">
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-3">
-                <View className="h-12 w-12 items-center justify-center rounded-2xl bg-emeraldPrimary/20">
-                  <ShieldCheck size={24} color="#00d084" />
-                </View>
-                <View>
-                  <Text className="text-base font-extrabold text-white">
-                    You're Protected
-                  </Text>
-                  <Text className="text-xs text-emerald-200/80">
-                    Your accounts and data are safe.
-                  </Text>
-                  <Text className="text-[10px] text-slate-500 mt-0.5">
-                    Last checked: Today, 10:24 AM
-                  </Text>
-                </View>
-              </View>
-
-              <View className="flex-row items-center gap-1.5 rounded-full bg-emeraldPrimary/20 px-3 py-1 border border-emeraldPrimary/30">
-                <View className="h-2 w-2 rounded-full bg-emeraldPrimary" />
-                <Text className="text-xs font-bold text-emeraldPrimary">All Clear</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* 4 Metric Stats Grid */}
-          <View className="mt-4 flex-row justify-between">
-            <View className="w-[23%] rounded-2xl border border-white/5 bg-surface p-3 items-center">
-              <Text className="text-lg font-black text-white">{accounts.length}</Text>
-              <Text className="text-[10px] text-slate-400 text-center mt-0.5">Accounts</Text>
-              <View className="mt-2 rounded-full bg-emerald-500/20 px-1.5 py-0.5">
-                <Text className="text-[9px] font-bold text-emerald-400">Secure</Text>
-              </View>
-            </View>
-
-            <View className="w-[23%] rounded-2xl border border-white/5 bg-surface p-3 items-center">
-              <Text className="text-lg font-black text-white">0</Text>
-              <Text className="text-[10px] text-slate-400 text-center mt-0.5">Suspicious</Text>
-              <View className="mt-2 rounded-full bg-emerald-500/20 px-1.5 py-0.5">
-                <Text className="text-[9px] font-bold text-emerald-400">All clear</Text>
-              </View>
-            </View>
-
-            <View className="w-[23%] rounded-2xl border border-white/5 bg-surface p-3 items-center">
-              <Text className="text-lg font-black text-white">No</Text>
-              <Text className="text-[10px] text-slate-400 text-center mt-0.5">Breaches</Text>
-              <View className="mt-2 rounded-full bg-emerald-500/20 px-1.5 py-0.5">
-                <Text className="text-[9px] font-bold text-emerald-400">Secure</Text>
-              </View>
-            </View>
-
-            <View className="w-[23%] rounded-2xl border border-white/5 bg-surface p-3 items-center">
-              <Text className="text-lg font-black text-white">100%</Text>
-              <Text className="text-[10px] text-slate-400 text-center mt-0.5">Authorized</Text>
-              <View className="mt-2 rounded-full bg-emerald-500/20 px-1.5 py-0.5">
-                <Text className="text-[9px] font-bold text-emerald-400">Protected</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Real-Time Monitoring Checklist Panel */}
-          <View className="mt-5 rounded-[26px] border border-white/10 bg-surface p-5">
-            <View className="flex-row items-center justify-between">
-              <View>
-                <Text className="text-sm font-bold text-white">Real-Time Monitoring</Text>
-                <Text className="text-[11px] text-slate-400">
-                  Continuous fraud checks across all connected accounts.
-                </Text>
-              </View>
-
-              <BouncyPressable
-                onPress={toggleMonitoring}
-                className="flex-row items-center gap-1.5 rounded-full bg-emeraldPrimary/20 px-3 py-1 border border-emeraldPrimary/30"
-              >
-                <View
-                  className={`h-2 w-2 rounded-full ${
-                    realtimeMonitoringActive ? "bg-emeraldPrimary" : "bg-slate-500"
-                  }`}
-                />
-                <Text className="text-xs font-bold text-emeraldPrimary">
-                  {realtimeMonitoringActive ? "Active" : "Paused"}
-                </Text>
-              </BouncyPressable>
-            </View>
-
-            <View className="mt-4 gap-3">
-              {REALTIME_SHIELDS.map((shield) => (
-                <View
-                  key={shield.id}
-                  className="flex-row items-center justify-between border-b border-white/5 pb-2.5 last:border-0 last:pb-0"
-                >
-                  <View className="flex-row items-center gap-2.5 flex-1 pr-2">
-                    <View className="h-6 w-6 items-center justify-center rounded-full bg-emeraldPrimary/20">
-                      <Check size={14} color="#00d084" strokeWidth={3} />
-                    </View>
-                    <Text className="text-xs font-medium text-slate-200">
-                      {shield.label}
-                    </Text>
-                  </View>
-                  <Text className={`text-xs font-bold ${shield.badgeColor}`}>
-                    {shield.status}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Recent Security Alerts */}
-          <View className="mt-6">
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-base font-bold text-white">Recent Alerts</Text>
-              <Text className="text-xs font-semibold text-mint">See all →</Text>
-            </View>
-
-            <View className="gap-2.5">
-              {securityAlerts.map((alert) => {
-                const isWarning = alert.type === "WARNING";
-                return (
-                  <BouncyPressable key={alert.id}>
-                    <View className="rounded-2xl border border-white/5 bg-surface p-4 flex-row items-center justify-between">
-                      <View className="flex-row items-center gap-3 flex-1 pr-2">
-                        <View
-                          className={`h-10 w-10 items-center justify-center rounded-xl ${
-                            isWarning ? "bg-amber-500/20" : "bg-emerald-500/20"
-                          }`}
-                        >
-                          {isWarning ? (
-                            <AlertTriangle size={20} color="#f59e0b" />
-                          ) : (
-                            <CheckCircle2 size={20} color="#00d084" />
-                          )}
-                        </View>
-                        <View className="flex-1">
-                          <Text className="text-xs font-bold text-white" numberOfLines={1}>
-                            {alert.title}
-                          </Text>
-                          <Text className="mt-0.5 text-[11px] text-slate-400" numberOfLines={1}>
-                            {alert.description}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View className="items-end">
-                        <Text className="text-[10px] text-slate-500 font-medium">
-                          {alert.dateFormatted}
-                        </Text>
-                        <ChevronRight size={14} color="#64748b" className="mt-1" />
-                      </View>
-                    </View>
-                  </BouncyPressable>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Stay One Step Ahead Tip */}
-          <BouncyPressable className="mt-5">
-            <View className="flex-row items-center justify-between rounded-2xl border border-mint/20 bg-forest/40 p-4">
-              <View className="flex-row items-center gap-3 flex-1 pr-2">
-                <View className="h-10 w-10 items-center justify-center rounded-xl bg-mint/20">
-                  <Lightbulb size={20} color="#75f0bd" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-xs font-bold text-mint">Stay One Step Ahead</Text>
-                  <Text className="mt-0.5 text-xs text-white">
-                    Enable two-factor authentication and keep your information up to date for stronger protection.
-                  </Text>
-                </View>
-              </View>
-              <ChevronRight size={16} color="#75f0bd" />
-            </View>
-          </BouncyPressable>
-
-          {/* Danger Button: Report a Suspicious Activity */}
-          <View className="mt-7">
-            <BouncyPressable
-              onPress={() => setShowReportModal(true)}
-              className="flex-row items-center justify-center gap-2 rounded-2xl bg-rose-500/90 py-4 shadow-xl active:bg-rose-600"
-            >
-              <AlertTriangle size={18} color="#ffffff" />
-              <Text className="text-sm font-bold text-white">
-                Report a Suspicious Activity →
-              </Text>
-            </BouncyPressable>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-
-      {/* Report Suspicious Activity Modal */}
-      <Modal
-        visible={showReportModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowReportModal(false)}
+  // 1. Loading State (Zero CLS Skeleton)
+  if (stateMode === 'loading') {
+    return (
+      <View
+        style={[
+          styles.screenContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
       >
-        <View className="flex-1 justify-end bg-black/80">
-          <View className="rounded-t-[32px] border-t border-rose-500/30 bg-surface p-6">
-            <View className="flex-row items-center gap-3 mb-2">
-              <View className="h-10 w-10 items-center justify-center rounded-xl bg-rose-500/20">
-                <ShieldAlert size={20} color="#f43f5e" />
-              </View>
-              <Text className="text-lg font-bold text-white">Report Suspicious Activity</Text>
-            </View>
-            <Text className="text-xs text-slate-400 mb-4">
-              Your report is prioritized by the TAMVA Case Operations and Fraud Intelligence Console.
-            </Text>
+        <ProtectionSkeleton />
+        {renderStateSwitcher(stateMode, setStateMode, scenario, setScenario, theme)}
+      </View>
+    );
+  }
 
-            <View className="gap-3 mb-6">
-              <View>
-                <Text className="text-xs font-semibold text-slate-300 mb-1.5">
-                  Subject / Summary
-                </Text>
-                <TextInput
-                  placeholder="e.g. Unrecognized transfer or login"
-                  placeholderTextColor="#64748b"
-                  value={reportTitle}
-                  onChangeText={setReportTitle}
-                  className="rounded-xl border border-white/10 bg-black/40 px-3.5 py-3 text-sm text-white"
-                />
-              </View>
-
-              <View>
-                <Text className="text-xs font-semibold text-slate-300 mb-1.5">
-                  Additional Details
-                </Text>
-                <TextInput
-                  placeholder="Provide transaction IDs, approximate time, or device..."
-                  placeholderTextColor="#64748b"
-                  value={reportDetails}
-                  onChangeText={setReportDetails}
-                  multiline
-                  numberOfLines={3}
-                  className="rounded-xl border border-white/10 bg-black/40 px-3.5 py-3 text-sm text-white h-20"
-                />
-              </View>
-            </View>
-
-            <View className="flex-row gap-3">
-              <BouncyPressable
-                onPress={() => setShowReportModal(false)}
-                className="flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/5 py-3.5"
-              >
-                <Text className="text-xs font-bold text-slate-300">Cancel</Text>
-              </BouncyPressable>
-
-              <BouncyPressable
-                onPress={handleReportSubmit}
-                className="flex-1 items-center justify-center rounded-xl bg-rose-500 py-3.5 shadow-lg"
-              >
-                <Text className="text-xs font-bold text-white">Submit Case</Text>
-              </BouncyPressable>
-            </View>
-          </View>
+  // 2. Error State
+  if (stateMode === 'error') {
+    return (
+      <View
+        style={[
+          styles.screenContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
+        <ProtectionHeader />
+        <View style={styles.centerContainer}>
+          <ErrorState
+            title="We couldn't load your protection overview"
+            message="Please try again."
+            retryLabel="Try again"
+            onRetry={() => setStateMode('loaded')}
+          />
         </View>
-      </Modal>
+        {renderStateSwitcher(stateMode, setStateMode, scenario, setScenario, theme)}
+      </View>
+    );
+  }
+
+  // 3. Empty State (No connected accounts)
+  if (stateMode === 'empty' || !data) {
+    return (
+      <View
+        style={[
+          styles.screenContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
+        <ProtectionHeader />
+        <View style={styles.centerContainer}>
+          <EmptyState
+            icon="shield"
+            title="Financial Protection isn't available yet"
+            description="Connect a financial account to start building your protection overview."
+            actionLabel="Connect an account"
+            onActionPress={handleNavigateToConsent}
+          />
+        </View>
+        {renderStateSwitcher(stateMode, setStateMode, scenario, setScenario, theme)}
+      </View>
+    );
+  }
+
+  // 4. Loaded State
+  return (
+    <View
+      style={[
+        styles.screenContainer,
+        { backgroundColor: theme.colors.background },
+      ]}
+    >
+      {/* Top Header */}
+      <ProtectionHeader />
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
+          />
+        }
+      >
+        {/* 1. Hero Status Card */}
+        <ProtectionStatusCard
+          status={data.status}
+          statusLabel={data.statusLabel}
+          statusDescription={data.statusDescription}
+        />
+
+        {/* 2. Cohesive Protection Overview (4 interactive rows) */}
+        <ProtectionOverview
+          signals={data.signals}
+          onSelectSignal={handleSelectSignal}
+        />
+
+        {/* 3. Monitoring Card */}
+        <ProtectionMonitoringCard monitoring={data.monitoring} />
+
+        {/* 4. Connected Accounts Summary Card (with compact account rows) */}
+        <ProtectionAccountsCard
+          accounts={data.accounts}
+          accountsList={data.accountDetails}
+          onSelectAccount={handleSelectAccount}
+          onReviewAccounts={handleNavigateToConsent}
+        />
+
+        {/* 5. Recent Protection Activity */}
+        <ProtectionActivityCard activity={data.recentActivity} />
+
+        {/* 6. Compact Understated Recommendations */}
+        <ProtectionRecommendation
+          recommendations={data.recommendations}
+          onActionPress={handleNavigateToConsent}
+        />
+
+        {/* 7. Freshness Footnote */}
+        <ProtectionFreshnessFooter lastUpdated={data.lastUpdated} />
+
+        {/* 8. Developer QA State Switcher Dock */}
+        {renderStateSwitcher(stateMode, setStateMode, scenario, setScenario, theme)}
+      </ScrollView>
+
+      {/* Detail Bottom Sheets */}
+      <ProtectionSignalSheet
+        visible={!!selectedSignal}
+        onClose={() => setSelectedSignal(null)}
+        signal={selectedSignal}
+        accounts={data.accountDetails}
+        onSelectAccount={handleSelectAccount}
+        onNavigateToConsent={handleNavigateToConsent}
+      />
+
+      <ProtectionAccountSheet
+        visible={!!selectedAccount}
+        onClose={() => setSelectedAccount(null)}
+        account={selectedAccount}
+        onNavigateToConsent={handleNavigateToConsent}
+      />
     </View>
   );
 }
+
+/**
+ * Developer QA State Switcher Dock
+ */
+function renderStateSwitcher(
+  currentMode: ProtectionStateMode,
+  setMode: (mode: ProtectionStateMode) => void,
+  currentScenario: ProtectionScenario,
+  setScenario: (scenario: ProtectionScenario) => void,
+  theme: any
+) {
+  const modes: ProtectionStateMode[] = ['loaded', 'loading', 'empty', 'error'];
+  const scenarios: { key: ProtectionScenario; label: string }[] = [
+    { key: 'healthy', label: 'Healthy' },
+    { key: 'attention', label: 'Attention' },
+    { key: 'disconnected', label: 'Disconnected' },
+    { key: 'limited', label: 'Limited Data' },
+    { key: 'unavailable', label: 'Unavailable' },
+  ];
+
+  return (
+    <View style={styles.switcherContainer}>
+      <Text
+        style={[
+          theme.typography.captionMedium,
+          {
+            color: theme.colors.textTertiary,
+            fontSize: 10,
+            textTransform: 'uppercase',
+            letterSpacing: 0.8,
+            marginBottom: 6,
+          },
+        ]}
+      >
+        Protection Screen QA State Preview
+      </Text>
+      <View style={styles.switcherRow}>
+        {modes.map((mode) => {
+          const isSelected = currentMode === mode;
+          return (
+            <Chip
+              key={mode}
+              label={mode.charAt(0).toUpperCase() + mode.slice(1)}
+              selected={isSelected}
+              onPress={() => setMode(mode)}
+              style={styles.switcherChip}
+            />
+          );
+        })}
+      </View>
+
+      {currentMode === 'loaded' && (
+        <>
+          <Text
+            style={[
+              theme.typography.captionMedium,
+              {
+                color: theme.colors.textTertiary,
+                fontSize: 10,
+                textTransform: 'uppercase',
+                letterSpacing: 0.8,
+                marginTop: 12,
+                marginBottom: 6,
+              },
+            ]}
+          >
+            Scenario Test (Phase 7C)
+          </Text>
+          <View style={styles.switcherRow}>
+            {scenarios.map((s) => {
+              const isSelected = currentScenario === s.key;
+              return (
+                <Chip
+                  key={s.key}
+                  label={s.label}
+                  selected={isSelected}
+                  onPress={() => setScenario(s.key)}
+                  style={styles.switcherChip}
+                />
+              );
+            })}
+          </View>
+        </>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 48,
+  },
+  switcherContainer: {
+    marginTop: 12,
+    marginBottom: 16,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    width: '100%',
+  },
+  switcherRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  switcherChip: {
+    minHeight: 30,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+});
