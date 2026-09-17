@@ -1,221 +1,390 @@
+/**
+ * TAMVA Activity Screen (Phase 3C)
+ *
+ * Financial Activity screen featuring:
+ * - Clean screen header with privacy toggle shortcut and notification link
+ * - Monthly cashflow summary card (Inflow, Outflow, Net Cashflow via MoneyDisplay)
+ * - Quick search input with instant clear action, smooth typing, and integrated filter trigger
+ * - Filter bar (All, Income, Outflow, Transfers, Savings) with live counts
+ * - Secondary FilterSheet (Status: Completed/Pending/Failed, Accounts from mock data, staged Apply/Reset)
+ * - SectionList grouping transactions by date ("TODAY", "YESTERDAY", "EARLIER THIS MONTH")
+ * - High-polish TransactionRow integration
+ * - Dedicated TransactionDetailSheet with focal amount hierarchy, semantic status notices, and copy feedback
+ * - Layout-preserving ActivitySkeleton for zero CLS
+ * - Accessible empty and error states with comprehensive "Reset Filters" action
+ * - QA State previewer for rapid testing
+ */
+
+import React, { useState } from 'react';
 import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  ChevronDown,
-  ChevronRight,
-  Filter,
-  Search,
-  SlidersHorizontal,
-  TrendingUp,
-} from "lucide-react-native";
-import React, { useState } from "react";
-import { ScrollView, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-
-import { BouncyPressable } from "../../components/animated/bouncy-pressable";
-import { Sparkline } from "../../components/animated/sparkline";
-import { TransactionRow } from "../../components/cards/transaction-row";
-import { useTamvaStore } from "../../store/use-tamva-store";
-
-const CATEGORIES = ["All", "Income", "Transfers", "Payments", "Savings"] as const;
+  View,
+  Text,
+  SectionList,
+  RefreshControl,
+  StyleSheet,
+  ViewStyle,
+} from 'react-native';
+import { useTheme } from '../../src/theme';
+import { useActivityData } from '../../src/hooks/useActivityData';
+import { ActivityTransaction, ActivityStateMode } from '../../src/types/activity';
+import {
+  ActivityHeader,
+  ActivitySummaryCard,
+  ActivitySearchBar,
+  ActivityFilterBar,
+  ActivitySkeleton,
+  ActivityFilterSheet,
+  TransactionDetailSheet,
+} from '../../src/components/activity';
+import { TransactionRow } from '../../src/components/financial/TransactionRow';
+import { EmptyState } from '../../src/components/ui/EmptyState';
+import { ErrorState } from '../../src/components/ui/ErrorState';
+import { Chip } from '../../src/components/ui/Chip';
+import { Icon } from '../../src/components/ui/Icon';
 
 export default function ActivityScreen() {
-  const { transactions, user } = useTamvaStore();
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const { theme } = useTheme();
 
-  const filteredTransactions = transactions.filter((tx) => {
-    const matchesCategory =
-      selectedCategory === "All" ||
-      (selectedCategory === "Income" && tx.category === "INCOME") ||
-      (selectedCategory === "Transfers" && tx.category === "TRANSFER") ||
-      (selectedCategory === "Payments" && tx.category === "EXPENSE") ||
-      (selectedCategory === "Savings" && tx.category === "SAVING");
+  const {
+    stateMode,
+    setStateMode,
+    summary,
+    sections,
+    filteredCount,
+    selectedFilter,
+    setSelectedFilter,
+    secondaryFilters,
+    setSecondaryFilters,
+    activeSecondaryFilterCount,
+    hasActiveFilters,
+    filterOptions,
+    searchQuery,
+    setSearchQuery,
+    clearSearch,
+    resetAllFilters,
+    availableAccounts,
+    availableStatuses,
+    isRefreshing,
+    handleRefresh,
+  } = useActivityData();
 
-    const matchesSearch =
-      searchQuery.trim() === "" ||
-      tx.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tx.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tx.institution.toLowerCase().includes(searchQuery.toLowerCase());
+  // Selected transaction for inspection sheet
+  const [selectedTx, setSelectedTx] = useState<ActivityTransaction | null>(null);
+  // Secondary filter sheet visibility
+  const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
 
-    return matchesCategory && matchesSearch;
-  });
+  // If in loading mode, render layout-preserving skeleton
+  if (stateMode === 'loading') {
+    return (
+      <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivitySkeleton />
+        {/* Floating state switcher for testing */}
+        {renderStateSwitcher(stateMode, setStateMode, theme)}
+      </View>
+    );
+  }
 
-  const todayTxs = filteredTransactions.filter((tx) => tx.dateGroup === "Today");
-  const yesterdayTxs = filteredTransactions.filter((tx) => tx.dateGroup === "Yesterday");
-  const earlierTxs = filteredTransactions.filter((tx) => tx.dateGroup === "Earlier");
+  // If in error mode, render header + ErrorState
+  if (stateMode === 'error') {
+    return (
+      <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityHeader />
+        <View style={styles.centerContainer}>
+          <ErrorState
+            title="Unable to Load Activity"
+            message="We couldn't synchronize your recent transaction timeline. Check your network or retry."
+            errorCode="ACT-SYNC-503"
+            retryLabel="Retry Synchronization"
+            onRetry={() => setStateMode('loaded')}
+          />
+        </View>
+        {renderStateSwitcher(stateMode, setStateMode, theme)}
+      </View>
+    );
+  }
+
+  const renderSectionHeader = ({ section }: { section: { title: string; data: ActivityTransaction[] } }) => (
+    <View style={styles.sectionHeaderContainer}>
+      <Text
+        style={[
+          theme.typography.captionMedium,
+          {
+            color: theme.colors.textTertiary,
+            letterSpacing: 0.9,
+            fontSize: 11,
+            textTransform: 'uppercase',
+            fontWeight: '600',
+          },
+        ]}
+      >
+        {section.title}
+      </Text>
+      <Text
+        style={[
+          theme.typography.caption,
+          { color: theme.colors.textTertiary, fontSize: 11 },
+        ]}
+      >
+        {section.data.length} {section.data.length === 1 ? 'transaction' : 'transactions'}
+      </Text>
+    </View>
+  );
+
+  const renderItem = ({
+    item,
+    index,
+    section,
+  }: {
+    item: ActivityTransaction;
+    index: number;
+    section: { data: ActivityTransaction[] };
+  }) => {
+    const isFirst = index === 0;
+    const isLast = index === section.data.length - 1;
+
+    const rowCardStyle: ViewStyle = {
+      marginHorizontal: 20,
+      backgroundColor: theme.colors.surface,
+      borderColor: theme.colors.border,
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      borderTopWidth: isFirst ? 1 : 0,
+      borderBottomWidth: isLast ? 1 : 0,
+      borderTopLeftRadius: isFirst ? theme.radius.lg : 0,
+      borderTopRightRadius: isFirst ? theme.radius.lg : 0,
+      borderBottomLeftRadius: isLast ? theme.radius.lg : 0,
+      borderBottomRightRadius: isLast ? theme.radius.lg : 0,
+      overflow: 'hidden',
+    };
+
+    return (
+      <View style={rowCardStyle}>
+        <TransactionRow
+          id={item.id}
+          title={item.title}
+          category={item.category}
+          date={item.date}
+          amount={item.amount}
+          currency={item.currency}
+          flow={item.flow}
+          status={item.status}
+          accountLabel={item.accountLabel}
+          icon={item.icon}
+          onPress={() => setSelectedTx(item)}
+          showDivider={!isLast}
+        />
+      </View>
+    );
+  };
+
+  const renderListHeader = () => (
+    <View style={styles.headerWrapper}>
+      <ActivityHeader />
+      <ActivitySummaryCard summary={summary} />
+      <ActivitySearchBar
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        onClear={clearSearch}
+        onFilterPress={() => setIsFilterSheetVisible(true)}
+        activeFilterCount={activeSecondaryFilterCount}
+      />
+      <ActivityFilterBar
+        options={filterOptions}
+        selectedFilter={selectedFilter}
+        onSelectFilter={setSelectedFilter}
+      />
+    </View>
+  );
+
+  const renderEmptyComponent = () => {
+    if (hasActiveFilters) {
+      return (
+        <View style={styles.emptyWrapper}>
+          <EmptyState
+            icon="search"
+            title="No Transactions Found"
+            description="No transactions match your filters. Try clearing your search keyword, adjusting category chips, or resetting status and account filters."
+            actionLabel="Reset Filters"
+            onActionPress={resetAllFilters}
+          />
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyWrapper}>
+        <EmptyState
+          icon="inbox"
+          title="No Financial Activity"
+          description="Your financial activity will appear here."
+          actionLabel="Refresh Activity"
+          onActionPress={handleRefresh}
+        />
+      </View>
+    );
+  };
+
+  const renderListFooter = () => (
+    <View style={styles.footerWrapper}>
+      {filteredCount > 0 && (
+        <View style={styles.securityNote}>
+          <Icon name="shield" size={12} color={theme.colors.textTertiary} />
+          <Text
+            style={[
+              theme.typography.caption,
+              { color: theme.colors.textTertiary, marginLeft: 6 },
+            ]}
+          >
+            Encrypted end-to-end via TAMVA Consent Network
+          </Text>
+        </View>
+      )}
+
+      {/* State Switcher Strip for Verification */}
+      {renderStateSwitcher(stateMode, setStateMode, theme)}
+    </View>
+  );
 
   return (
-    <View className="flex-1 bg-ink">
-      <SafeAreaView className="flex-1" edges={["top"]}>
-        <ScrollView
-          contentContainerClassName="px-5 pb-28"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Screen Title & Filter Button */}
-          <View className="flex-row items-center justify-between pt-2">
-            <View>
-              <Text className="text-2xl font-black text-white">Financial Activity</Text>
-              <Text className="mt-0.5 text-xs text-slate-400">
-                Your unified financial history
-              </Text>
-            </View>
+    <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
+      <SectionList
+        sections={sections}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        renderSectionHeader={renderSectionHeader}
+        ListHeaderComponent={renderListHeader}
+        ListEmptyComponent={renderEmptyComponent}
+        ListFooterComponent={renderListFooter}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
+          />
+        }
+        stickySectionHeadersEnabled={false}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      />
 
-            <BouncyPressable className="h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-surface">
-              <SlidersHorizontal size={18} color="#75f0bd" />
-            </BouncyPressable>
-          </View>
+      {/* Secondary Filter Bottom Sheet */}
+      <ActivityFilterSheet
+        visible={isFilterSheetVisible}
+        onClose={() => setIsFilterSheetVisible(false)}
+        appliedFilters={secondaryFilters}
+        onApply={setSecondaryFilters}
+        availableAccounts={availableAccounts}
+        availableStatuses={availableStatuses}
+      />
 
-          {/* Search Bar */}
-          <View className="mt-5 flex-row items-center rounded-2xl border border-white/10 bg-surface px-4 py-3">
-            <Search size={18} color="#64748b" />
-            <TextInput
-              placeholder="Search transactions, beneficiaries..."
-              placeholderTextColor="#64748b"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              className="ml-3 flex-1 text-sm font-medium text-white"
-            />
-          </View>
-
-          {/* Category Filter Pills */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="mt-4 -mx-5 px-5"
-          >
-            <View className="flex-row gap-2">
-              {CATEGORIES.map((cat) => {
-                const isActive = selectedCategory === cat;
-                return (
-                  <BouncyPressable
-                    key={cat}
-                    onPress={() => setSelectedCategory(cat)}
-                    className={`rounded-full px-4 py-2 ${
-                      isActive
-                        ? "bg-mint border border-mint"
-                        : "bg-surface border border-white/5"
-                    }`}
-                  >
-                    <Text
-                      className={`text-xs font-bold ${
-                        isActive ? "text-ink" : "text-slate-300"
-                      }`}
-                    >
-                      {cat}
-                    </Text>
-                  </BouncyPressable>
-                );
-              })}
-            </View>
-          </ScrollView>
-
-          {/* Month Summary Selector Card */}
-          <View className="mt-5 rounded-[26px] border border-white/10 bg-surface p-5">
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-1.5">
-                <Text className="text-sm font-bold text-white">This month</Text>
-                <ChevronDown size={14} color="#75f0bd" />
-              </View>
-              <Text className="text-xs font-semibold text-slate-400">
-                1 – 30 Jun 2026
-              </Text>
-            </View>
-
-            <View className="mt-4 flex-row justify-between border-t border-white/5 pt-4">
-              <View>
-                <Text className="text-[11px] text-slate-400 font-medium">Inflow</Text>
-                <Text className="mt-0.5 text-sm font-bold text-emeraldPrimary">
-                  GH₵ {user.monthlyInflow.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                </Text>
-              </View>
-
-              <View>
-                <Text className="text-[11px] text-slate-400 font-medium">Outflow</Text>
-                <Text className="mt-0.5 text-sm font-bold text-amber-400">
-                  GH₵ {user.monthlyOutflow.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                </Text>
-              </View>
-
-              <View className="items-end">
-                <Text className="text-[11px] text-slate-400 font-medium">Net</Text>
-                <Text className="mt-0.5 text-sm font-bold text-mint">
-                  + GH₵ {user.monthlyNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Consistency Insight Card */}
-          <BouncyPressable className="mt-3.5">
-            <View className="flex-row items-center justify-between rounded-2xl border border-emeraldPrimary/20 bg-emerald-950/40 p-4">
-              <View className="flex-row items-center gap-3 flex-1 pr-2">
-                <View className="h-10 w-10 items-center justify-center rounded-xl bg-emeraldPrimary/20">
-                  <TrendingUp size={18} color="#00d084" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-xs font-bold text-white">
-                    Your financial activity is becoming more consistent.
-                  </Text>
-                  <Text className="mt-0.5 text-[11px] text-emerald-300/80">
-                    + 24% higher inflow than last month.
-                  </Text>
-                </View>
-              </View>
-              <ChevronRight size={16} color="#75f0bd" />
-            </View>
-          </BouncyPressable>
-
-          {/* Grouped Date Activity Lists */}
-          {todayTxs.length > 0 && (
-            <View className="mt-6">
-              <View className="flex-row items-center justify-between mb-2.5">
-                <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  Today
-                </Text>
-                <Text className="text-[11px] text-slate-500 font-medium">
-                  Tue, 14 Jun 2026
-                </Text>
-              </View>
-              {todayTxs.map((tx) => (
-                <TransactionRow key={tx.id} transaction={tx} />
-              ))}
-            </View>
-          )}
-
-          {yesterdayTxs.length > 0 && (
-            <View className="mt-5">
-              <View className="flex-row items-center justify-between mb-2.5">
-                <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  Yesterday
-                </Text>
-                <Text className="text-[11px] text-slate-500 font-medium">
-                  Mon, 13 Jun 2026
-                </Text>
-              </View>
-              {yesterdayTxs.map((tx) => (
-                <TransactionRow key={tx.id} transaction={tx} />
-              ))}
-            </View>
-          )}
-
-          {earlierTxs.length > 0 && (
-            <View className="mt-5">
-              <View className="flex-row items-center justify-between mb-2.5">
-                <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  Earlier
-                </Text>
-                <Text className="text-[11px] text-slate-500 font-medium">
-                  Sun, 12 Jun 2026
-                </Text>
-              </View>
-              {earlierTxs.map((tx) => (
-                <TransactionRow key={tx.id} transaction={tx} />
-              ))}
-            </View>
-          )}
-        </ScrollView>
-      </SafeAreaView>
+      {/* Polished Transaction Details Bottom Sheet */}
+      <TransactionDetailSheet
+        transaction={selectedTx}
+        visible={Boolean(selectedTx)}
+        onClose={() => setSelectedTx(null)}
+      />
     </View>
   );
 }
+
+/**
+ * State previewer widget for QA testing loaded/loading/empty/error modes
+ */
+function renderStateSwitcher(
+  currentMode: ActivityStateMode,
+  setMode: (mode: ActivityStateMode) => void,
+  theme: any
+) {
+  const modes: ActivityStateMode[] = ['loaded', 'loading', 'empty', 'error'];
+
+  return (
+    <View style={styles.switcherContainer}>
+      <Text
+        style={[
+          theme.typography.captionMedium,
+          {
+            color: theme.colors.textTertiary,
+            fontSize: 10,
+            textTransform: 'uppercase',
+            letterSpacing: 0.8,
+            marginBottom: 6,
+          },
+        ]}
+      >
+        Activity Screen QA State Preview
+      </Text>
+      <View style={styles.switcherRow}>
+        {modes.map((mode) => {
+          const isSelected = currentMode === mode;
+          return (
+            <Chip
+              key={mode}
+              label={mode.charAt(0).toUpperCase() + mode.slice(1)}
+              selected={isSelected}
+              onPress={() => setMode(mode)}
+              style={styles.switcherChip}
+            />
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  headerWrapper: {
+    paddingBottom: 4,
+  },
+  listContent: {
+    paddingBottom: 64,
+  },
+  sectionHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 22,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyWrapper: {
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+  },
+  footerWrapper: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  securityNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  switcherContainer: {
+    marginTop: 12,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    width: '100%',
+  },
+  switcherRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  switcherChip: {
+    minHeight: 30,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+});

@@ -1,32 +1,37 @@
-import { Tabs } from "expo-router";
-import {
-  Activity,
-  Home,
-  ShieldCheck,
-  User,
-  WalletCards,
-} from "lucide-react-native";
-import React from "react";
-import { Platform, Text, View } from "react-native";
+/**
+ * TAMVA Main Tabs Navigation Shell
+ *
+ * Provides the core tab bar structure for future feature modules.
+ */
 
-export default function TabLayout() {
+import React from 'react';
+import { Tabs } from 'expo-router';
+import { Platform } from 'react-native';
+import { useTheme } from '../../src/theme';
+import { Icon } from '../../src/components/ui/Icon';
+
+export default function TabsLayout() {
+  const { theme } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#75f0bd",
-        tabBarInactiveTintColor: "#64748b",
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: "#07130f",
-          borderTopColor: "rgba(117, 240, 189, 0.12)",
+          backgroundColor: theme.colors.surface,
+          borderTopColor: theme.colors.border,
           borderTopWidth: 1,
-          height: Platform.OS === "ios" ? 88 : 68,
-          paddingBottom: Platform.OS === "ios" ? 28 : 10,
+          elevation: 0,
+          shadowOpacity: 0,
+          height: Platform.OS === 'ios' ? 88 : 64,
           paddingTop: 8,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
         },
         tabBarLabelStyle: {
+          ...theme.typography.captionMedium,
           fontSize: 11,
-          fontWeight: "600",
           marginTop: 2,
         },
       }}
@@ -34,36 +39,63 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
-          tabBarIcon: ({ color, size }) => <Home color={color} size={22} />,
-        }}
-      />
-      <Tabs.Screen
-        name="activity"
-        options={{
-          title: "Activity",
-          tabBarIcon: ({ color, size }) => <Activity color={color} size={22} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color, size }) => <User color={color} size={22} />,
+          title: 'Home',
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="home" size={20} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="passport"
         options={{
-          title: "Passport",
-          tabBarIcon: ({ color, size }) => <WalletCards color={color} size={22} />,
+          title: 'Passport',
+          tabBarLabel: 'Passport',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="shield" size={20} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="activity"
+        options={{
+          title: 'Activity',
+          tabBarLabel: 'Activity',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="activity" size={20} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="consent"
+        options={{
+          title: 'Consent',
+          tabBarLabel: 'Consent',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="lock" size={20} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="user" size={20} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="protection"
         options={{
-          title: "Protection",
-          tabBarIcon: ({ color, size }) => <ShieldCheck color={color} size={22} />,
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="risk"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

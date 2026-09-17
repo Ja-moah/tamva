@@ -1,27 +1,27 @@
 {
   "expo": {
     "name": "TAMVA",
-    "slug": "tamva-customer",
+    "slug": "TAMVA",
     "scheme": "tamva",
-    "version": "0.1.0",
-    "platforms": ["ios", "android", "web"],
+    "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "plugins": ["expo-router", "expo-secure-store"],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.tamva.customer"
+      "supportsTablet": true
     },
     "android": {
-      "package": "com.tamva.customer",
-      "predictiveBackGestureEnabled": true
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static"
-    },
-    "experiments": {
-      "typedRoutes": true
-    }
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ]
   }
 }

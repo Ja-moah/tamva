@@ -1,304 +1,517 @@
-import { router } from "expo-router";
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  Bell,
-  CheckCircle2,
-  ChevronRight,
-  CircleDot,
-  Landmark,
-  Lightbulb,
-  PieChart,
-  PiggyBank,
-  ShieldCheck,
-  Smartphone,
-  TrendingDown,
-  TrendingUp,
-  Zap,
-} from "lucide-react-native";
-import React, { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+/**
+ * TAMVA Financial Profile Screen (Phase 6B)
+ *
+ * Deep customer financial-intelligence view & interaction layer:
+ * - Profile Header (Title, subtitle, privacy masking toggle, notifications)
+ * - Hero Financial Confidence Score Card (with interactive Score Info Sheet)
+ * - Cohesive Behavioural Dimensions Container (with individual Dimension Detail Sheets)
+ * - Cashflow Dynamics Card (with interactive Cashflow Overview Sheet)
+ * - Curated Behavioural Insights & Observations (with Insight Detail Sheets)
+ * - Consented Profile Data Sources (with Source Detail Sheets & Provenance pipeline)
+ * - Freshness Timestamp & Regulatory Footnote
+ * - Zero-CLS Layout-Preserving Skeleton Loader
+ * - Interactive Developer QA State Switcher (Loaded, Loading, Empty, Error)
+ */
 
-import { BouncyPressable } from "../../components/animated/bouncy-pressable";
-import { Sparkline } from "../../components/animated/sparkline";
-import { PillarScoreCard } from "../../components/cards/pillar-score-card";
-import { useTamvaStore } from "../../store/use-tamva-store";
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  RefreshControl,
+  StyleSheet,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { useTheme } from '../../src/theme';
+import { useFinancialProfile } from '../../src/hooks/useFinancialProfile';
+import { useHaptics } from '../../src/hooks/useHaptics';
+import {
+  ProfileStateMode,
+  ProfileDimension,
+  ProfileInsight,
+  ProfileSource,
+} from '../../src/types/profile';
+import {
+  ProfileHeader,
+  ProfileScoreCard,
+  ProfileDimensions,
+  ProfileCashflowCard,
+  ProfileInsights,
+  ProfileSourcesCard,
+  ProfileFreshnessFooter,
+  ProfileSkeleton,
+  ProfileScoreInfoSheet,
+  ProfileDimensionDetailSheet,
+  ProfileCashflowDetailSheet,
+  ProfileInsightDetailSheet,
+  ProfileSourceDetailSheet,
+  ProfileDataMethodSheet,
+} from '../../src/components/profile';
+import {
+  EmptyState,
+  ErrorState,
+  Chip,
+  Card,
+  Badge,
+  Icon,
+} from '../../src/components/ui';
 
 export default function ProfileScreen() {
-  const { user, behavioralPillars, accounts } = useTamvaStore();
-  const [activeSubTab, setActiveSubTab] = useState<"Overview" | "Insights" | "Trends">("Overview");
+  const { theme } = useTheme();
+  const router = useRouter();
+  const haptics = useHaptics();
 
+  const {
+    data,
+    stateMode,
+    setStateMode,
+    isRefreshing,
+    handleRefresh,
+  } = useFinancialProfile();
+
+  // Interaction sheet visibility states
+  const [isScoreInfoVisible, setIsScoreInfoVisible] = useState(false);
+  const [selectedDimension, setSelectedDimension] = useState<ProfileDimension | null>(null);
+  const [isCashflowInfoVisible, setIsCashflowInfoVisible] = useState(false);
+  const [selectedInsight, setSelectedInsight] = useState<ProfileInsight | null>(null);
+  const [selectedSource, setSelectedSource] = useState<ProfileSource | null>(null);
+  const [isDataMethodVisible, setIsDataMethodVisible] = useState(false);
+
+  // Helper to ensure single active sheet overlay
+  const closeAllSheets = () => {
+    setIsScoreInfoVisible(false);
+    setSelectedDimension(null);
+    setIsCashflowInfoVisible(false);
+    setSelectedInsight(null);
+    setSelectedSource(null);
+    setIsDataMethodVisible(false);
+  };
+
+  // Interaction triggers with haptic feedback
+  const handleScorePress = () => {
+    haptics.selection();
+    closeAllSheets();
+    setIsScoreInfoVisible(true);
+  };
+
+  const handleDimensionPress = (dimension: ProfileDimension) => {
+    haptics.selection();
+    closeAllSheets();
+    setSelectedDimension(dimension);
+  };
+
+  const handleCashflowPress = () => {
+    haptics.selection();
+    closeAllSheets();
+    setIsCashflowInfoVisible(true);
+  };
+
+  const handleInsightPress = (insight: ProfileInsight) => {
+    haptics.selection();
+    closeAllSheets();
+    setSelectedInsight(insight);
+  };
+
+  const handleSourcePress = (source: ProfileSource) => {
+    haptics.selection();
+    closeAllSheets();
+    setSelectedSource(source);
+  };
+
+  const handleOpenDataMethod = () => {
+    haptics.selection();
+    closeAllSheets();
+    setIsDataMethodVisible(true);
+  };
+
+  const handleNavigateToConsent = () => {
+    router.push('/(tabs)/consent');
+  };
+
+  const handleNavigateToRisk = () => {
+    router.push('/(tabs)/risk');
+  };
+
+  // 1. Loading State (Zero CLS Skeleton)
+  if (stateMode === 'loading') {
+    return (
+      <View
+        style={[
+          styles.screenContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
+        <ProfileSkeleton />
+        {renderStateSwitcher(stateMode, setStateMode, theme)}
+      </View>
+    );
+  }
+
+  // 2. Error State
+  if (stateMode === 'error') {
+    return (
+      <View
+        style={[
+          styles.screenContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
+        <ProfileHeader />
+        <View style={styles.centerContainer}>
+          <ErrorState
+            title="We couldn't load your financial profile"
+            message="We were unable to aggregate your consented financial data. Please check your connection and try again."
+            errorCode="PROF-AGG-503"
+            retryLabel="Try again"
+            onRetry={() => setStateMode('loaded')}
+          />
+        </View>
+        {renderStateSwitcher(stateMode, setStateMode, theme)}
+      </View>
+    );
+  }
+
+  // 3. Empty State (No connected accounts to build profile)
+  if (stateMode === 'empty' || !data) {
+    return (
+      <View
+        style={[
+          styles.screenContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
+        <ProfileHeader />
+        <View style={styles.centerContainer}>
+          <EmptyState
+            icon="user"
+            title="No Financial Profile Available"
+            description="Connect your financial institutions with active consent to build your behavioural intelligence profile and cashflow standing. A new profile requires consented transaction history to evaluate patterns."
+            actionLabel="Connect an account"
+            onActionPress={handleNavigateToConsent}
+          />
+        </View>
+        {renderStateSwitcher(stateMode, setStateMode, theme)}
+      </View>
+    );
+  }
+
+  // 4. Loaded State
   return (
-    <View className="flex-1 bg-ink">
-      <SafeAreaView className="flex-1" edges={["top"]}>
-        <ScrollView
-          contentContainerClassName="px-5 pb-28"
-          showsVerticalScrollIndicator={false}
+    <View
+      style={[
+        styles.screenContainer,
+        { backgroundColor: theme.colors.background },
+      ]}
+    >
+      {/* Top Header with Privacy Mode Toggle & Notifications */}
+      <ProfileHeader />
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
+          />
+        }
+      >
+        {/* 1. Hero Financial Confidence Score Card (Interactive) */}
+        <ProfileScoreCard
+          score={data.score}
+          onPress={handleScorePress}
+        />
+
+        {/* 2. Cohesive Behavioural Dimensions Container (Interactive Rows) */}
+        <ProfileDimensions
+          dimensions={data.dimensions}
+          onSelectDimension={handleDimensionPress}
+        />
+
+        {/* 3. Risk & Decision Assessment Entry Point */}
+        <Card
+          variant="elevated"
+          padding="none"
+          onPress={handleNavigateToRisk}
+          style={styles.riskCard}
+          accessibilityLabel="Risk and Decision Assessment: Low Risk. Understand how your financial profile contributes to your current assessment. Tap to view detailed risk assessment."
         >
-          {/* Header */}
-          <View className="flex-row items-center justify-between pt-2">
-            <View>
-              <Text className="text-2xl font-black text-white">Financial Profile</Text>
-              <Text className="mt-0.5 text-xs text-slate-400">
-                A clearer picture of your financial life.
-              </Text>
-            </View>
-
-            <BouncyPressable
-              onPress={() => router.push("/notifications")}
-              className="relative h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-surface"
-            >
-              <Bell size={18} color="#ffffff" />
-              <View className="absolute -top-1 -right-1 h-4 w-4 items-center justify-center rounded-full bg-rose-500 border-2 border-ink">
-                <Text className="text-[9px] font-bold text-white">1</Text>
-              </View>
-            </BouncyPressable>
-          </View>
-
-          {/* Sub Navigation Tabs */}
-          <View className="mt-5 flex-row rounded-2xl bg-surface/80 p-1 border border-white/5">
-            {(["Overview", "Insights", "Trends"] as const).map((tab) => {
-              const isActive = activeSubTab === tab;
-              return (
-                <Pressable
-                  key={tab}
-                  onPress={() => setActiveSubTab(tab)}
-                  className={`flex-1 py-2.5 items-center rounded-xl ${
-                    isActive ? "bg-forest border border-mint/30" : ""
-                  }`}
+          <View style={styles.riskCardContent}>
+            {/* Header: Eyebrow on left, Status Badge on right */}
+            <View style={styles.riskCardHeader}>
+              <View style={styles.riskEyebrowGroup}>
+                <Icon
+                  name="shield"
+                  size={13}
+                  color={theme.colors.primary}
+                  style={styles.riskEyebrowIcon}
+                />
+                <Text
+                  style={[
+                    theme.typography.captionMedium,
+                    {
+                      color: theme.colors.textSecondary,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.6,
+                      fontSize: 11,
+                    },
+                  ]}
                 >
-                  <Text
-                    className={`text-xs font-bold ${
-                      isActive ? "text-mint" : "text-slate-400"
-                    }`}
-                  >
-                    {tab}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {/* Profile & Financial Confidence Hero Card */}
-          <BouncyPressable
-            onPress={() => router.push("/confidence")}
-            className="mt-4"
-          >
-            <View className="rounded-[28px] border border-mint/30 bg-surface p-5 shadow-xl">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3">
-                  <View className="h-12 w-12 items-center justify-center rounded-2xl bg-emeraldPrimary/20 border border-emeraldPrimary/40">
-                    <Text className="text-base font-bold text-mint">{user.initials}</Text>
-                  </View>
-                  <View>
-                    <View className="flex-row items-center gap-1.5">
-                      <Text className="text-base font-bold text-white">{user.name}</Text>
-                    </View>
-                    <View className="flex-row items-center gap-1.5 mt-0.5">
-                      <Text className="text-xs text-slate-400">{user.type}</Text>
-                      <View className="flex-row items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5">
-                        <CheckCircle2 size={10} color="#00d084" />
-                        <Text className="text-[10px] font-bold text-emerald-400">
-                          {user.status}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
+                  DECISION INTELLIGENCE
+                </Text>
               </View>
 
-              <View className="mt-5 flex-row items-end justify-between border-t border-white/5 pt-4">
-                <View>
-                  <Text className="text-xs font-semibold text-slate-400">
-                    Financial Confidence
-                  </Text>
-                  <View className="flex-row items-baseline gap-1 mt-1">
-                    <Text className="text-3xl font-black text-white">
-                      {user.confidenceScore}
-                    </Text>
-                    <Text className="text-xs font-bold text-slate-400">/100</Text>
-                  </View>
-                  <Text className="mt-0.5 text-[11px] font-semibold text-mint">
-                    ↑ {user.scoreChange}
-                  </Text>
-                </View>
-
-                <View className="items-end">
-                  <Sparkline width={120} height={40} strokeColor="#75f0bd" fillColor="#75f0bd" />
-                  <Text className="mt-1 text-[10px] font-medium text-slate-500">
-                    Updated today
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </BouncyPressable>
-
-          {/* Behavioral Pillars 2x2 Grid */}
-          <View className="mt-5 flex-row flex-wrap gap-3 justify-between">
-            {behavioralPillars.slice(0, 4).map((pillar) => (
-              <PillarScoreCard
-                key={pillar.id}
-                pillar={pillar}
-                onPress={() => router.push("/confidence")}
+              <Badge
+                label="Low Risk"
+                tone="success"
+                size="sm"
+                showDot
               />
-            ))}
-          </View>
+            </View>
 
-          {/* Financial Resilience Full Width Card */}
-          {behavioralPillars[5] && (
-            <BouncyPressable
-              onPress={() => router.push("/confidence")}
-              className="mt-3"
+            {/* Title & Subtitle */}
+            <Text
+              style={[
+                styles.riskTitle,
+                theme.typography.bodySmMedium,
+                { color: theme.colors.textPrimary },
+              ]}
             >
-              <View className="flex-row items-center justify-between rounded-2xl border border-white/10 bg-surface p-4">
-                <View className="flex-row items-center gap-3">
-                  <View className="h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20">
-                    <ShieldCheck size={20} color="#00d084" />
-                  </View>
-                  <View>
-                    <View className="flex-row items-center gap-2">
-                      <Text className="text-xs font-medium text-slate-400">
-                        {behavioralPillars[5].name}
-                      </Text>
-                      <View className="rounded-full bg-emerald-500/20 px-2 py-0.5">
-                        <Text className="text-[10px] font-bold text-emerald-400">
-                          {behavioralPillars[5].status}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text className="text-xl font-bold text-white mt-0.5">
-                      {behavioralPillars[5].score}
-                      <Text className="text-xs font-normal text-slate-500">/100</Text>
-                    </Text>
-                    <Text className="text-[11px] text-slate-400 mt-0.5">
-                      {behavioralPillars[5].description}
-                    </Text>
-                  </View>
-                </View>
-                <ChevronRight size={16} color="#75f0bd" />
-              </View>
-            </BouncyPressable>
-          )}
+              Risk & Decision Assessment
+            </Text>
+            <Text
+              style={[
+                styles.riskSubtitle,
+                theme.typography.caption,
+                { color: theme.colors.textSecondary },
+              ]}
+            >
+              Understand how your financial profile contributes to your current assessment
+            </Text>
 
-          {/* Monthly Cash Flow Breakdown (Jun 2026) */}
-          <View className="mt-6 rounded-[26px] border border-white/10 bg-surface p-5">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-sm font-bold text-white">Monthly Cash Flow</Text>
-              <Text className="text-xs font-semibold text-mint">View details →</Text>
-            </View>
+            {/* Subtle Divider */}
+            <View
+              style={[
+                styles.riskDivider,
+                { backgroundColor: theme.colors.border },
+              ]}
+            />
 
-            <View className="mt-4 flex-row flex-wrap justify-between gap-y-3">
-              <View className="w-[47%] rounded-2xl bg-black/30 p-3">
-                <View className="flex-row items-center gap-1.5">
-                  <ArrowDownLeft size={14} color="#00d084" />
-                  <Text className="text-[11px] font-semibold text-slate-400">Inflow</Text>
-                </View>
-                <Text className="mt-1 text-sm font-bold text-white">
-                  GH₵ {user.monthlyInflow.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                </Text>
-              </View>
-
-              <View className="w-[47%] rounded-2xl bg-black/30 p-3">
-                <View className="flex-row items-center gap-1.5">
-                  <ArrowUpRight size={14} color="#f43f5e" />
-                  <Text className="text-[11px] font-semibold text-slate-400">Outflow</Text>
-                </View>
-                <Text className="mt-1 text-sm font-bold text-white">
-                  GH₵ {user.monthlyOutflow.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                </Text>
-              </View>
-
-              <View className="w-[47%] rounded-2xl bg-black/30 p-3">
-                <View className="flex-row items-center gap-1.5">
-                  <PiggyBank size={14} color="#3b82f6" />
-                  <Text className="text-[11px] font-semibold text-slate-400">Savings</Text>
-                </View>
-                <Text className="mt-1 text-sm font-bold text-white">
-                  GH₵ {user.monthlySavings.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                </Text>
-              </View>
-
-              <View className="w-[47%] rounded-2xl bg-black/30 p-3">
-                <View className="flex-row items-center gap-1.5">
-                  <TrendingDown size={14} color="#f59e0b" />
-                  <Text className="text-[11px] font-semibold text-slate-400">Debt</Text>
-                </View>
-                <Text className="mt-1 text-sm font-bold text-white">
-                  GH₵ {user.monthlyDebt.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                </Text>
-              </View>
+            {/* Action Affordance */}
+            <View style={styles.riskActionRow}>
+              <Text
+                style={[
+                  styles.riskActionText,
+                  theme.typography.captionMedium,
+                  { color: theme.colors.primary },
+                ]}
+              >
+                View Risk Assessment
+              </Text>
+              <Icon
+                name="arrow-right"
+                size={13}
+                color={theme.colors.primary}
+                style={styles.riskActionIcon}
+              />
             </View>
           </View>
+        </Card>
 
-          {/* Financial Relationships (Connected Institutions) */}
-          <BouncyPressable
-            onPress={() => router.push("/consent")}
-            className="mt-4"
-          >
-            <View className="rounded-[26px] border border-white/10 bg-surface p-5">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3">
-                  <View className="h-10 w-10 items-center justify-center rounded-xl bg-mint/10">
-                    <Landmark size={20} color="#75f0bd" />
-                  </View>
-                  <View>
-                    <Text className="text-sm font-bold text-white">
-                      Financial Relationships
-                    </Text>
-                    <Text className="text-xs text-slate-400">
-                      {accounts.length} connected institutions
-                    </Text>
-                  </View>
-                </View>
-                <ChevronRight size={18} color="#75f0bd" />
-              </View>
+        {/* 4. Cashflow Dynamics Card (Interactive & Privacy-masked via MoneyDisplay) */}
+        <ProfileCashflowCard
+          cashflow={data.cashflow}
+          onPress={handleCashflowPress}
+        />
 
-              {/* Institution Badges Row */}
-              <View className="mt-4 flex-row items-center gap-2">
-                <View className="h-8 w-8 items-center justify-center rounded-lg bg-yellow-500">
-                  <Smartphone size={16} color="#000000" />
-                </View>
-                <View className="h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-                  <Landmark size={16} color="#ffffff" />
-                </View>
-                <View className="h-8 w-8 items-center justify-center rounded-lg bg-red-600">
-                  <CircleDot size={16} color="#ffffff" />
-                </View>
-                <View className="h-8 w-8 items-center justify-center rounded-lg bg-slate-900 border border-white/10">
-                  <PieChart size={16} color="#ffffff" />
-                </View>
-                <View className="h-8 w-8 items-center justify-center rounded-lg bg-orange-600">
-                  <Zap size={16} color="#ffffff" />
-                </View>
-                <View className="h-8 px-2 items-center justify-center rounded-lg bg-white/10">
-                  <Text className="text-[11px] font-bold text-slate-300">
-                    +{accounts.length > 5 ? accounts.length - 5 : 1}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </BouncyPressable>
+        {/* 5. Curated Behavioural Insights (Interactive Cards) */}
+        <ProfileInsights
+          insights={data.insights}
+          onSelectInsight={handleInsightPress}
+        />
 
-          {/* Key Insight Card */}
-          <BouncyPressable className="mt-4">
-            <View className="flex-row items-center justify-between rounded-2xl border border-mint/20 bg-forest/30 p-4">
-              <View className="flex-row items-center gap-3 flex-1 pr-2">
-                <View className="h-10 w-10 items-center justify-center rounded-xl bg-mint/20">
-                  <Lightbulb size={20} color="#75f0bd" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-xs font-bold text-mint">Key Insight</Text>
-                  <Text className="text-xs font-medium text-white mt-0.5">
-                    Your income has remained consistent over the last 6 months.
-                  </Text>
-                </View>
-              </View>
-              <ChevronRight size={16} color="#75f0bd" />
-            </View>
-          </BouncyPressable>
-        </ScrollView>
-      </SafeAreaView>
+        {/* 6. Consented Contributing Sources Card (Interactive Rows & Provenance) */}
+        <ProfileSourcesCard
+          sources={data.sources}
+          onSelectSource={handleSourcePress}
+          onOpenDataMethod={handleOpenDataMethod}
+        />
+
+        {/* 7. Freshness Timestamp & Regulatory Footnote */}
+        <ProfileFreshnessFooter freshness={data.freshness} />
+
+        {/* 8. Developer QA State Switcher Dock */}
+        {renderStateSwitcher(stateMode, setStateMode, theme)}
+      </ScrollView>
+
+      {/* Detail BottomSheets (Phase 6B) */}
+      <ProfileScoreInfoSheet
+        visible={isScoreInfoVisible}
+        onClose={() => setIsScoreInfoVisible(false)}
+        score={data.score}
+      />
+
+      <ProfileDimensionDetailSheet
+        visible={!!selectedDimension}
+        onClose={() => setSelectedDimension(null)}
+        dimension={selectedDimension}
+      />
+
+      <ProfileCashflowDetailSheet
+        visible={isCashflowInfoVisible}
+        onClose={() => setIsCashflowInfoVisible(false)}
+        cashflow={data.cashflow}
+      />
+
+      <ProfileInsightDetailSheet
+        visible={!!selectedInsight}
+        onClose={() => setSelectedInsight(null)}
+        insight={selectedInsight}
+      />
+
+      <ProfileSourceDetailSheet
+        visible={!!selectedSource}
+        onClose={() => setSelectedSource(null)}
+        source={selectedSource}
+        onNavigateToConsent={handleNavigateToConsent}
+      />
+
+      <ProfileDataMethodSheet
+        visible={isDataMethodVisible}
+        onClose={() => setIsDataMethodVisible(false)}
+        onNavigateToConsent={handleNavigateToConsent}
+      />
     </View>
   );
 }
+
+/**
+ * Developer QA State Switcher Dock
+ */
+function renderStateSwitcher(
+  currentMode: ProfileStateMode,
+  setMode: (mode: ProfileStateMode) => void,
+  theme: any
+) {
+  const modes: ProfileStateMode[] = ['loaded', 'loading', 'empty', 'error'];
+
+  return (
+    <View style={styles.switcherContainer}>
+      <Text
+        style={[
+          theme.typography.captionMedium,
+          {
+            color: theme.colors.textTertiary,
+            fontSize: 10,
+            textTransform: 'uppercase',
+            letterSpacing: 0.8,
+            marginBottom: 6,
+          },
+        ]}
+      >
+        Profile Screen QA State Preview
+      </Text>
+      <View style={styles.switcherRow}>
+        {modes.map((mode) => {
+          const isSelected = currentMode === mode;
+          return (
+            <Chip
+              key={mode}
+              label={mode.charAt(0).toUpperCase() + mode.slice(1)}
+              selected={isSelected}
+              onPress={() => setMode(mode)}
+              style={styles.switcherChip}
+            />
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 48,
+  },
+  switcherContainer: {
+    marginTop: 12,
+    marginBottom: 16,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    width: '100%',
+  },
+  switcherRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  switcherChip: {
+    minHeight: 30,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  riskCard: {
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  riskCardContent: {
+    padding: 16,
+  },
+  riskCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  riskEyebrowGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  riskEyebrowIcon: {
+    marginRight: 6,
+  },
+  riskTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '600',
+    marginTop: 10,
+  },
+  riskSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 3,
+  },
+  riskDivider: {
+    height: StyleSheet.hairlineWidth,
+    width: '100%',
+    marginVertical: 12,
+  },
+  riskActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  riskActionText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600',
+  },
+  riskActionIcon: {
+    marginLeft: 6,
+  },
+});
