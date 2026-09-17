@@ -1,11 +1,13 @@
 .DEFAULT_GOAL := help
 COMPOSE := docker compose
+NPM := npm
 LOCAL_UID ?= $(shell id -u)
 LOCAL_GID ?= $(shell id -g)
 RUN := $(COMPOSE) run --rm --user $(LOCAL_UID):$(LOCAL_GID) web
 TEST := $(COMPOSE) run --rm --user $(LOCAL_UID):$(LOCAL_GID) -e DJANGO_SETTINGS_MODULE=config.settings.test web
+INOTIFY_WATCH_LIMIT := $(shell cat /proc/sys/fs/inotify/max_user_watches 2>/dev/null || echo 0)
 
-.PHONY: help build up up-staging up-production down restart logs ps shell bash migrate migrations superuser test test-unit test-integration lint format format-check typecheck check db-shell django-shell clean bootstrap frontend-install frontend-dev frontend-build frontend-test frontend-typecheck admin admin-dev admin-build admin-test mobile mobile-start mobile-web mobile-android mobile-ios mobile-lint mobile-build mobile-build-android mobile-build-ios mobile-build-web schema clients-check
+.PHONY: help build up up-staging up-production down restart logs ps shell bash migrate migrations superuser test test-unit test-integration lint format format-check typecheck check db-shell django-shell clean bootstrap frontend-install frontend-dev frontend-build frontend-test frontend-typecheck admin admin-dev admin-build admin-test mobile mobile-start mobile-start-tunnel mobile-watch-check mobile-web mobile-android mobile-ios mobile-lint mobile-build mobile-build-android mobile-build-ios mobile-build-web schema clients-check
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target>\n\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -76,63 +78,74 @@ check: ## Run all static and Django checks
 	$(RUN) ruff format --check .
 	$(RUN) mypy apps packages config
 	$(RUN) python manage.py check
-	npm run lint
-	npm run typecheck
-	npm run build
+	$(NPM) run lint
+	$(NPM) run typecheck
+	$(NPM) run build
 
 frontend-install: ## Install locked web and mobile dependencies
-	npm ci
+	$(NPM) ci
 
 frontend-dev: admin-dev ## Run the admin web app with HMR on port 3000
 
 frontend-build: ## Build the admin web application for production
-	npm run build
+	$(NPM) run build
 
 frontend-test: ## Run the admin web application test suite
-	npm test
+	$(NPM) test
 
 frontend-typecheck: ## Type-check the admin web app and mobile app
-	npm run typecheck
+	$(NPM) run typecheck
 
 admin-dev: ## Run the admin web app with HMR on port 3000
-	npm run dev:admin
+	$(NPM) run dev:admin
 
 admin: admin-dev ## Run the admin web app
 
 admin-build: ## Build the admin web app for production
-	npm run build --workspace @tamva/admin
+	$(NPM) run build --workspace @tamva/admin
 
 admin-test: ## Run the admin web app test suite
-	npm run test --workspace @tamva/admin
+	$(NPM) run test --workspace @tamva/admin
 
-mobile-start: ## Start the Expo development server
-	npm run dev:mobile
+mobile-watch-check:
+	@if [ "$(INOTIFY_WATCH_LIMIT)" -lt 262144 ]; then \
+		echo "Expo needs more Linux file watchers (current limit: $(INOTIFY_WATCH_LIMIT))."; \
+		echo "Run once: sudo sysctl -w fs.inotify.max_user_watches=524288"; \
+		echo "Persist: echo fs.inotify.max_user_watches=524288 | sudo tee /etc/sysctl.d/99-tamva.conf"; \
+		exit 1; \
+	fi
+
+mobile-start: mobile-watch-check ## Start the Expo development server
+	$(NPM) run dev:mobile
+
+mobile-start-tunnel: mobile-watch-check ## Start Expo with a tunnel for remote devices
+	$(NPM) run start --workspace @tamva/mobile -- --tunnel
 
 mobile: mobile-start ## Run the customer Expo app
 
-mobile-web: ## Start the customer app for web
-	npm run web --workspace @tamva/mobile
+mobile-web: mobile-watch-check ## Start the customer app for web
+	$(NPM) run web --workspace @tamva/mobile
 
-mobile-android: ## Start the Expo Android workflow
-	npm run android --workspace @tamva/mobile
+mobile-android: mobile-watch-check ## Start the Expo Android workflow
+	$(NPM) run android --workspace @tamva/mobile
 
-mobile-ios: ## Start the Expo iOS workflow (macOS required for simulator)
-	npm run ios --workspace @tamva/mobile
+mobile-ios: mobile-watch-check ## Start the Expo iOS workflow (macOS required for simulator)
+	$(NPM) run ios --workspace @tamva/mobile
 
 mobile-lint: ## Lint the cross-platform customer app
-	npm run lint --workspace @tamva/mobile
+	$(NPM) run lint --workspace @tamva/mobile
 
 mobile-build: ## Export the customer app for Android, iOS, and web
-	npm run export --workspace @tamva/mobile
+	$(NPM) run export --workspace @tamva/mobile
 
 mobile-build-android: ## Export the customer Android bundle
-	npm run export:android --workspace @tamva/mobile
+	$(NPM) run export:android --workspace @tamva/mobile
 
 mobile-build-ios: ## Export the customer iOS bundle
-	npm run export:ios --workspace @tamva/mobile
+	$(NPM) run export:ios --workspace @tamva/mobile
 
 mobile-build-web: ## Export the customer web build
-	npm run export:web --workspace @tamva/mobile
+	$(NPM) run export:web --workspace @tamva/mobile
 
 schema: ## Refresh the checked OpenAPI contract
 	$(RUN) python manage.py spectacular --file contracts/openapi/schema.yml
@@ -151,7 +164,7 @@ clean: ## Remove local caches and stopped containers (keeps database volume)
 
 bootstrap: ## Initialize environment, build, start, migrate, and check
 	@test -f .env || cp .env.example .env
-	npm ci
+	$(MAKE) frontend-install
 	$(COMPOSE) build
 	$(COMPOSE) up -d postgres redis
 	$(RUN) python manage.py migrate
