@@ -11,23 +11,24 @@ type DomainPageProps = {
 
 export function DomainPage({ title, description, icon: Icon }: DomainPageProps) {
   return (
-    <div className="space-y-7">
-      <div>
-        <StatusBadge>API pending</StatusBadge>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">{title}</h1>
-        <p className="mt-3 max-w-2xl text-base leading-7 text-slate-400">{description}</p>
+    <div className="space-y-6">
+      <div className="border-b border-[var(--border-subtle)] pb-5">
+        <StatusBadge tone="neutral" size="md">API Specification Pending</StatusBadge>
+        <h1 className="mt-3 text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl">{title}</h1>
+        <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)]">{description}</p>
       </div>
-      <Card className="grid min-h-[360px] place-items-center p-8 text-center">
+      <Card className="grid min-h-[340px] place-items-center p-8 text-center border-[var(--border-default)] bg-[var(--bg-surface)]">
         <div className="max-w-md">
-          <span className="mx-auto grid size-14 place-items-center rounded-2xl border border-white/8 bg-white/[0.04] text-slate-400">
+          <span className="mx-auto grid size-12 place-items-center rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--accent-gold)]">
             <Icon className="size-6" aria-hidden="true" />
           </span>
-          <h2 className="mt-5 text-lg font-bold text-white">Waiting for the authoritative contract</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            This client will not invent domain rules or placeholder financial records. The screen will activate when Django exposes its reviewed `/api/v1/` endpoint.
+          <h2 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">Authoritative Schema Validation</h2>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
+            This module awaits the authoritative backend schema contract. The console automatically activates when Django exposes its reviewed <code className="font-mono text-[var(--accent-gold)] text-xs font-semibold px-1.5 py-0.5 rounded bg-[var(--bg-surface-elevated)] border border-[var(--border-default)]">/api/v1/</code> spec.
           </p>
         </div>
       </Card>
     </div>
   );
 }
+

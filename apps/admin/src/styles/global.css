@@ -1,18 +1,129 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #07130f;
-  --color-emerald-300: #75f0bd;
-  --shadow-panel: 0 24px 80px rgb(0 0 0 / 0.22);
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "IBM Plex Mono", Menlo, Consolas, monospace;
 }
 
+/* ==========================================================================
+   Apple iOS Glassmorphic Design System & High-Contrast Typography
+   ========================================================================== */
+
 :root {
-  color: #e8f0ec;
-  background: #07130f;
-  font-family: var(--font-sans);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  /* Canvas & Base Layers */
+  --bg-canvas: #f2f5f9;
+  --bg-surface: rgba(255, 255, 255, 0.78);
+  --bg-surface-subtle: rgba(241, 245, 249, 0.85);
+  --bg-surface-elevated: rgba(255, 255, 255, 0.92);
+  --bg-surface-hover: rgba(235, 242, 250, 0.9);
+  --bg-surface-active: #e2e8f0;
+
+  /* Glassmorphism Borders & Highlights */
+  --border-default: rgba(203, 213, 225, 0.75);
+  --border-subtle: rgba(226, 232, 240, 0.65);
+  --border-strong: #94a3b8;
+  --glass-highlight: rgba(255, 255, 255, 0.95);
+  --glass-inner-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.8);
+
+  /* High Legibility Typography Tokens */
+  --text-primary: #090e17;
+  --text-secondary: #27364b;
+  --text-muted: #4e5d71;
+  --text-disabled: #8b99ac;
+
+  /* Pan-African Gold & Emerald Accents */
+  --accent-gold: #c68a00;
+  --accent-gold-subtle: rgba(198, 138, 0, 0.12);
+  --accent-gold-border: rgba(198, 138, 0, 0.4);
+  --accent-gold-text: #7a5200;
+
+  --accent-emerald: #059669;
+  --accent-emerald-subtle: rgba(5, 150, 105, 0.12);
+  --accent-emerald-border: rgba(5, 150, 105, 0.4);
+  --accent-emerald-text: #065f46;
+
+  /* Risk & Status Colors (High Contrast WCAG AAA) */
+  --risk-low-bg: #ecfdf5;
+  --risk-low-text: #065f46;
+  --risk-low-border: #a7f3d0;
+
+  --risk-med-bg: #fffbeb;
+  --risk-med-text: #92400e;
+  --risk-med-border: #fde68a;
+
+  --risk-high-bg: #fef2f2;
+  --risk-high-text: #991b1b;
+  --risk-high-border: #fecaca;
+
+  --risk-critical-bg: #fff1f2;
+  --risk-critical-text: #881337;
+  --risk-critical-border: #fecdd3;
+
+  /* iOS Frosted Glass Shadows */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 2px 6px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 8px 16px -2px rgba(15, 23, 42, 0.08), 0 3px 6px -3px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 16px 32px -4px rgba(15, 23, 42, 0.12), 0 6px 12px -6px rgba(15, 23, 42, 0.08);
+  --shadow-drawer: -12px 0 36px -4px rgba(15, 23, 42, 0.2);
+
+  color-scheme: light;
+}
+
+/* ==========================================================================
+   Dark Theme (iOS Dark Mode / Deep Obsidian Frosted Glass)
+   ========================================================================== */
+.dark {
+  --bg-canvas: #090d16;
+  --bg-surface: rgba(15, 23, 42, 0.72);
+  --bg-surface-subtle: rgba(22, 33, 56, 0.65);
+  --bg-surface-elevated: rgba(30, 41, 68, 0.85);
+  --bg-surface-hover: rgba(38, 52, 84, 0.85);
+  --bg-surface-active: #2b3d60;
+
+  --border-default: rgba(51, 65, 85, 0.65);
+  --border-subtle: rgba(30, 41, 59, 0.65);
+  --border-strong: rgba(71, 85, 105, 0.8);
+  --glass-highlight: rgba(255, 255, 255, 0.18);
+  --glass-inner-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
+
+  --text-primary: #ffffff;
+  --text-secondary: #d1d9e6;
+  --text-muted: #8e9cb0;
+  --text-disabled: #4b586e;
+
+  --accent-gold: #f5b716;
+  --accent-gold-subtle: rgba(245, 183, 22, 0.16);
+  --accent-gold-border: rgba(245, 183, 22, 0.45);
+  --accent-gold-text: #fcd116;
+
+  --accent-emerald: #10b981;
+  --accent-emerald-subtle: rgba(16, 185, 129, 0.16);
+  --accent-emerald-border: rgba(16, 185, 129, 0.45);
+  --accent-emerald-text: #34d399;
+
+  --risk-low-bg: rgba(16, 185, 129, 0.16);
+  --risk-low-text: #34d399;
+  --risk-low-border: rgba(16, 185, 129, 0.4);
+
+  --risk-med-bg: rgba(245, 183, 22, 0.16);
+  --risk-med-text: #fcd116;
+  --risk-med-border: rgba(245, 183, 22, 0.4);
+
+  --risk-high-bg: rgba(239, 68, 68, 0.18);
+  --risk-high-text: #f87171;
+  --risk-high-border: rgba(239, 68, 68, 0.45);
+
+  --risk-critical-bg: rgba(225, 29, 72, 0.22);
+  --risk-critical-text: #fb7185;
+  --risk-critical-border: rgba(225, 29, 72, 0.5);
+
+  --shadow-xs: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 3px 8px 0 rgba(0, 0, 0, 0.55);
+  --shadow-md: 0 10px 24px -2px rgba(0, 0, 0, 0.65);
+  --shadow-lg: 0 20px 40px -4px rgba(0, 0, 0, 0.75);
+  --shadow-drawer: -16px 0 48px 0 rgba(0, 0, 0, 0.9);
+
+  color-scheme: dark;
 }
 
 * {
@@ -21,28 +132,106 @@
 
 html {
   min-width: 320px;
-  background: #07130f;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(circle at 82% 8%, rgb(36 145 101 / 0.1), transparent 28rem),
-    #07130f;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
-button,
-a {
-  -webkit-tap-highlight-color: transparent;
+/* ==========================================================================
+   iPhone / Apple Glassmorphic Layer Utilities
+   ========================================================================== */
+
+.ios-glass {
+  background: var(--bg-surface);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-sm), var(--glass-inner-shadow);
 }
 
-button {
-  cursor: pointer;
+.ios-glass-card {
+  background: var(--bg-surface-elevated);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-sm), var(--glass-inner-shadow);
+  border-radius: 1.25rem;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-::selection {
-  color: #07130f;
-  background: #75f0bd;
+.ios-glass-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md), var(--glass-inner-shadow);
+}
+
+/* Real-World Modern African Tech Architecture Glass Hero */
+.ios-hero-banner {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  background-image: linear-gradient(
+      135deg,
+      rgba(9, 13, 22, 0.88) 0%,
+      rgba(15, 23, 42, 0.82) 50%,
+      rgba(26, 37, 60, 0.78) 100%
+    ),
+    url('https://images.unsplash.com/photo-1590846406792-0adc7f938f1d?auto=format&fit=crop&w=2000&q=85');
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--accent-gold-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-md);
+}
+
+:root:not(.dark) .ios-hero-banner {
+  background-image: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.94) 0%,
+      rgba(248, 250, 252, 0.9) 50%,
+      rgba(241, 245, 249, 0.86) 100%
+    ),
+    url('https://images.unsplash.com/photo-1590846406792-0adc7f938f1d?auto=format&fit=crop&w=2000&q=85');
+  border: 1px solid var(--border-default);
+}
+
+/* Tabular figures for financial amounts, IDs, timestamps, and metric counts */
+.font-tabular {
+  font-feature-settings: "tnum" 1, "cv05" 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* iOS Style Smooth Scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.7);
 }

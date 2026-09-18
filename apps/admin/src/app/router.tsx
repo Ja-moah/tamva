@@ -1,5 +1,4 @@
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
-import { Activity, BriefcaseBusiness, Network, Users } from "lucide-react";
 import { lazy } from "react";
 
 import { AppShell } from "../components/layout/app-shell";
@@ -7,8 +6,35 @@ import { AppShell } from "../components/layout/app-shell";
 const OverviewPage = lazy(() =>
   import("../routes/overview-page").then((module) => ({ default: module.OverviewPage })),
 );
-const DomainPage = lazy(() =>
-  import("../routes/domain-page").then((module) => ({ default: module.DomainPage })),
+const RiskPage = lazy(() =>
+  import("../routes/risk-page").then((module) => ({ default: module.RiskPage })),
+);
+const CasesPage = lazy(() =>
+  import("../routes/cases-page").then((module) => ({ default: module.CasesPage })),
+);
+const CustomersPage = lazy(() =>
+  import("../routes/customers-page").then((module) => ({ default: module.CustomersPage })),
+);
+const NetworkPage = lazy(() =>
+  import("../routes/network-page").then((module) => ({ default: module.NetworkPage })),
+);
+const AnalyticsPage = lazy(() =>
+  import("../routes/analytics-page").then((module) => ({ default: module.AnalyticsPage })),
+);
+const TeamPage = lazy(() =>
+  import("../routes/team-page").then((module) => ({ default: module.TeamPage })),
+);
+const SecurityPage = lazy(() =>
+  import("../routes/security-page").then((module) => ({ default: module.SecurityPage })),
+);
+const NotificationsPage = lazy(() =>
+  import("../routes/notifications-page").then((module) => ({ default: module.NotificationsPage })),
+);
+const SettingsPage = lazy(() =>
+  import("../routes/settings-page").then((module) => ({ default: module.SettingsPage })),
+);
+const IntegrationsPage = lazy(() =>
+  import("../routes/integrations-page").then((module) => ({ default: module.IntegrationsPage })),
 );
 
 const rootRoute = createRootRoute({ component: AppShell });
@@ -22,49 +48,61 @@ const overviewRoute = createRoute({
 const riskRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/risk-events",
-  component: () => (
-    <DomainPage
-      title="Risk events"
-      description="Review risk decisions and reason codes produced by the backend risk domain."
-      icon={Activity}
-    />
-  ),
+  component: RiskPage,
 });
 
 const caseRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/cases",
-  component: () => (
-    <DomainPage
-      title="Cases"
-      description="Investigate alerts through backend-controlled case states, assignments, and evidence."
-      icon={BriefcaseBusiness}
-    />
-  ),
+  component: CasesPage,
 });
 
 const customerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/customers",
-  component: () => (
-    <DomainPage
-      title="Customers"
-      description="Access institution-authorized customer identity and financial profile views."
-      icon={Users}
-    />
-  ),
+  component: CustomersPage,
 });
 
 const networkRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/network",
-  component: () => (
-    <DomainPage
-      title="Trust network"
-      description="Explore reviewed entity relationships when the graph domain publishes its API."
-      icon={Network}
-    />
-  ),
+  component: NetworkPage,
+});
+
+const analyticsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/analytics",
+  component: AnalyticsPage,
+});
+
+const teamRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/team",
+  component: TeamPage,
+});
+
+const securityRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/security",
+  component: SecurityPage,
+});
+
+const notificationsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/notifications",
+  component: NotificationsPage,
+});
+
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings",
+  component: SettingsPage,
+});
+
+const integrationsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/integrations",
+  component: IntegrationsPage,
 });
 
 const routeTree = rootRoute.addChildren([
@@ -73,6 +111,12 @@ const routeTree = rootRoute.addChildren([
   caseRoute,
   customerRoute,
   networkRoute,
+  analyticsRoute,
+  teamRoute,
+  securityRoute,
+  notificationsRoute,
+  settingsRoute,
+  integrationsRoute,
 ]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent" });
