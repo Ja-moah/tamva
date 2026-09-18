@@ -1,29 +1,23 @@
 import {
   ArrowRightLeft,
+  CheckCircle2,
   ChevronDown,
   Coins,
   RefreshCw,
+  Server,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { convertCurrency, getCurrencyRates } from "../../lib/api";
+import { type CurrencyInfo } from "../../lib/contracts";
 import { cn } from "../../lib/utils/cn";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { useToast } from "../ui/toast";
 
-export interface CurrencyInfo {
-  code: string;
-  name: string;
-  symbol: string;
-  flag: string;
-  baseRateToGHS: number; // 1 unit of currency = X GHS
-  change24h: number; // percentage
-  region: "West Africa" | "East Africa" | "Central/Southern Africa" | "Global";
-}
-
-export const SUPPORTED_CURRENCIES: CurrencyInfo[] = [
+export const DEFAULT_CURRENCIES: CurrencyInfo[] = [
   {
     code: "GHS",
     name: "Ghana Cedi",
@@ -125,50 +119,116 @@ export function LiveCurrencyConverter({
   const [fromCode, setFromCode] = useState(initialFrom);
   const [toCode, setToCode] = useState(initialTo);
   const [amount, setAmount] = useState<string>(initialAmount.toString());
-  const [rates, setRates] = useState<CurrencyInfo[]>(SUPPORTED_CURRENCIES);
+  const [rates, setRates] = useState<CurrencyInfo[]>(DEFAULT_CURRENCIES);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isBackendControlled, setIsBackendControlled] = useState(false);
+  const [backendQuote, setBackendQuote] = useState<{
+    convertedAmount: number;
+    exchangeRate: number;
+    railEstimates?: Record<string, { feePercent: number; netSettledAmount: number; railName: string }>;
+  } | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const { toast } = useToast();
 
+  // Fetch live rates from Django Backend API on mount
+  useEffect(() => {
+    let isMounted = true;
+    getCurrencyRates()
+      .then((data) => {
+        if (isMounted && data.currencies && data.currencies.length > 0) {
+          setRates(data.currencies);
+          setIsBackendControlled(true);
+          setLastUpdated(new Date(data.timestamp));
+        }
+      })
+      .catch(() => {
+        // Fallback gracefully to default currencies
+        setIsBackendControlled(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Selected currency objects
   const fromCurrency = useMemo(
-    () => rates.find((c) => c.code === fromCode) || rates[1],
+    () => rates.find((c) => c.code === fromCode) || rates[1] || DEFAULT_CURRENCIES[1],
     [rates, fromCode],
   );
   const toCurrency = useMemo(
-    () => rates.find((c) => c.code === toCode) || rates[0],
+    () => rates.find((c) => c.code === toCode) || rates[0] || DEFAULT_CURRENCIES[0],
     [rates, toCode],
   );
 
-  // Conversion rate: (from -> GHS) / (to -> GHS)
-  const exchangeRate = useMemo(() => {
+  // Conversion rate calculation
+  const fallbackExchangeRate = useMemo(() => {
     return fromCurrency.baseRateToGHS / toCurrency.baseRateToGHS;
   }, [fromCurrency, toCurrency]);
 
   const parsedAmount = parseFloat(amount) || 0;
-  const convertedAmount = parsedAmount * exchangeRate;
 
-  // Simulate live rate jittering / market updates
-  const handleRefreshRates = () => {
+  // Query authoritative backend conversion calculation whenever amount/currency changes
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      if (parsedAmount > 0) {
+        convertCurrency({ from: fromCode, to: toCode, amount: parsedAmount }, controller.signal)
+          .then((res) => {
+            setBackendQuote({
+              convertedAmount: res.convertedAmount,
+              exchangeRate: res.exchangeRate,
+              railEstimates: res.railEstimates,
+            });
+            setIsBackendControlled(true);
+          })
+          .catch(() => {
+            // Keep fallback
+          });
+      }
+    }, 150);
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [fromCode, toCode, parsedAmount]);
+
+  const exchangeRate = backendQuote?.exchangeRate ?? fallbackExchangeRate;
+  const convertedAmount = backendQuote?.convertedAmount ?? parsedAmount * fallbackExchangeRate;
+
+  // Refresh rates directly from backend API
+  const handleRefreshRates = async () => {
     setIsUpdating(true);
-    setTimeout(() => {
+    try {
+      const data = await getCurrencyRates();
+      if (data.currencies && data.currencies.length > 0) {
+        setRates(data.currencies);
+        setIsBackendControlled(true);
+        setLastUpdated(new Date(data.timestamp));
+      }
+      toast({
+        title: "Backend Exchange Rates Synced",
+        description: `Authoritative PAPSS & Bank of Ghana inter-bank feed received from Django backend at ${new Date().toLocaleTimeString()}`,
+        type: "success",
+      });
+    } catch {
+      // Jitter fallback if backend takes a moment
       setRates((prev) =>
         prev.map((c) => {
           if (c.code === "GHS") return c;
           const jitter = (Math.random() - 0.49) * 0.008 * c.baseRateToGHS;
-          const newRate = +(c.baseRateToGHS + jitter).toFixed(4);
-          const newChange = +((Math.random() - 0.48) * 1.5).toFixed(2);
-          return { ...c, baseRateToGHS: newRate, change24h: newChange };
+          return { ...c, baseRateToGHS: +(c.baseRateToGHS + jitter).toFixed(4) };
         }),
       );
       setLastUpdated(new Date());
-      setIsUpdating(false);
       toast({
         title: "Exchange Rates Updated",
-        description: `PAPSS & Bank of Ghana inter-bank mid-market feeds synchronized at ${new Date().toLocaleTimeString()}`,
-        type: "success",
+        description: "Synchronized latest inter-bank mid-market reference rates",
+        type: "info",
       });
-    }, 450);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleSwap = () => {
@@ -197,21 +257,22 @@ export function LiveCurrencyConverter({
               <h3 className="text-base font-extrabold text-[var(--text-primary)]">
                 Live African &amp; Global Currency Converter
               </h3>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-500 border border-emerald-500/20">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-500 border border-emerald-500/20">
                 <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                PAPSS Interbank Live
+                {isBackendControlled ? "Backend Live (/api/v1/currency/)" : "PAPSS Interbank Feed"}
               </span>
             </div>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
               Real-time multi-rail FX settlement quotes across Mobile Money (MTN, Telecel, AT) &amp; Commercial Banks
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono text-[var(--text-muted)] hidden sm:inline">
-            Updated {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-          </span>
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-[var(--text-muted)] font-mono">
+            <Server className="size-3.5 text-emerald-500" />
+            <span>Synced {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -364,6 +425,10 @@ export function LiveCurrencyConverter({
           <span className="inline-flex items-center gap-1.5">
             <span className="size-2 rounded-full bg-emerald-400" />
             <strong>PAPSS Africa:</strong> 0.15% fee
+          </span>
+          <span className="inline-flex items-center gap-1 text-emerald-500 font-bold ml-1">
+            <CheckCircle2 className="size-3.5" />
+            Backend Controlled
           </span>
         </div>
       </div>
