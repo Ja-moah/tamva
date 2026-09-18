@@ -35,7 +35,9 @@ class RiskEventSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_reason_codes(self, obj: RiskEvent) -> list[str]:
-        return list(obj.reasons.values_list("code", flat=True))
+        # obj.reasons is prefetched by the viewset's get_queryset; calling
+        # .values_list() here would bypass that cache and re-query per row.
+        return [reason.code for reason in obj.reasons.all()]
 
     def get_ruleset_version(self, obj: RiskEvent) -> str | None:
         if obj.ruleset_version is None:

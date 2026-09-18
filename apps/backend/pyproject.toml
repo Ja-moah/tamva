@@ -45,6 +45,7 @@ markers = [
   "integration: tests requiring database or infrastructure",
   "contract: API or event contract tests",
   "security: security boundary tests",
+  "e2e: full end-to-end backend pipeline tests",
 ]
 
 [tool.ruff]
