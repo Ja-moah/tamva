@@ -24,10 +24,11 @@ CAPABILITIES: dict[str, CapabilityState] = {
     "velocity_features": CapabilityState.AVAILABLE,
     "risk_explanations": CapabilityState.AVAILABLE,
     "financial_passport": CapabilityState.AVAILABLE,
-    # Service layer + Feature Engine signals exist, but no client/integration
-    # ingestion endpoint feeds them yet.
-    "device_signals": CapabilityState.PARTIAL,
-    "location_signals": CapabilityState.PARTIAL,
+    # POST /security/observations/ -> observe_* -> feature flags -> rules -> risk
+    "device_signals": CapabilityState.AVAILABLE,
+    "location_signals": CapabilityState.AVAILABLE,
+    # Only NEW_DEVICE / UNUSUAL_LOCATION have producers, and there is no read
+    # API for a Security Center yet.
     "security_events": CapabilityState.PARTIAL,
     "dark_web_monitoring": CapabilityState.NOT_AVAILABLE,
     "external_breach_monitoring": CapabilityState.NOT_AVAILABLE,

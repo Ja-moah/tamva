@@ -18,4 +18,5 @@ urlpatterns = [
     path("api/v1/", include("domains.case.api.urls")),
     path("api/v1/", include("domains.notifications.api.urls")),
     path("api/v1/", include("domains.passport.api.urls")),
+    path("api/v1/", include("domains.security.api.urls")),
 ]
