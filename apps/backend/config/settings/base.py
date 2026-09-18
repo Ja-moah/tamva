@@ -119,6 +119,7 @@ REST_FRAMEWORK = {
         "connector_sync": os.getenv("THROTTLE_RATE_CONNECTOR_SYNC", "30/min"),
         "risk_evaluation": os.getenv("THROTTLE_RATE_RISK_EVALUATION", "60/min"),
         "passport_share_access": os.getenv("THROTTLE_RATE_PASSPORT_ACCESS", "30/min"),
+        "security_observation": os.getenv("THROTTLE_RATE_SECURITY_OBSERVATION", "120/min"),
     },
 }
 SPECTACULAR_SETTINGS = {

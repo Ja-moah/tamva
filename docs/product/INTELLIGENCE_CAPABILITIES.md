@@ -24,15 +24,27 @@ with an explicit reason — never silently zero.
 | Financial Confidence | 0–100, higher = stronger verified financial confidence. Informational: **not** a credit decision, lending approval, or risk score (`domains/confidence`). Unavailable inputs lower `completeness` instead of scoring as zero. |
 | Counterparty intelligence | First-seen / repeat / aggregate relationships derived only from canonical transactions (`domains/counterparty`). No external beneficiary reputation. |
 | Velocity & behavioural features | `transactions_last_1h/24h`, `transaction_value_last_1h`, `unique_counterparties_30d`, typical amount / daily frequency baselines and deviations. Windows are measured back from the profile snapshot's `period_end`, so results are reproducible. |
+| Device signals | `POST /api/v1/security/observations/` (type `DEVICE`) → `Device`/`CustomerDevice`/`DeviceObservation` → `NEW_DEVICE` event and `new_device_flag` feature → Rules → Risk. Opaque, institution-scoped identifiers only — no fingerprinting; the caller reports what it observed and never asserts trust or a verdict. |
+| Location signals | Same endpoint (type `LOCATION`): country/region/city with an explicit confidence and source → `UNUSUAL_LOCATION` event and `new_location_flag`. No GPS coordinates, no impossible-travel logic. |
 | Explainable risk | New signals flow through versioned Rules → Risk with stable reason codes (`DEVICE_NEW`, `COUNTERPARTY_FIRST_SEEN`, …), into case notification context. |
 
 ## Foundation ready
 
 | Capability | What exists | What is missing |
 | --- | --- | --- |
-| Device signals | `Device`/`CustomerDevice`/`DeviceObservation`, trust states, `new_device_flag` feature, `NEW_DEVICE` security event. Opaque, institution-scoped identifiers only — no fingerprinting. | An authorized client/integration endpoint that reports device identifiers. |
-| Location signals | `LocationObservation` (trusted source + confidence + provenance required), `new_location_flag`, `UNUSUAL_LOCATION` security event on country change. | A trusted source (provider metadata / authenticated client) actually supplying location. No impossible-travel logic. |
-| Security events | `SecurityEvent` log with category, severity, provenance, sanitized metadata. | Producers for authentication-failure / credential / consent-security events; an API surface for the Security Center. |
+| Security events | `SecurityEvent` log with category, severity, provenance, sanitized metadata; producers for `NEW_DEVICE` and `UNUSUAL_LOCATION`. | Producers for authentication-failure / credential / consent-security / access-anomaly events, and a read API for the Security Center. |
+
+### Observation intake contract
+
+`POST /api/v1/security/observations/` requires an authenticated caller with
+`security:observe` in the institution named by `X-Institution-ID`, an
+existing relationship between the customer and that institution, and active
+customer consent for purpose `security_monitoring` / scope `security:observe`.
+Bodies are strictly typed (unknown fields are rejected), carry a
+`source` and `source_event_id` (the idempotency key — replaying it is a
+no-op returning `200`), and reject future timestamps. Denials return one
+message regardless of cause and are audited. Rate limit:
+`THROTTLE_RATE_SECURITY_OBSERVATION`.
 
 ## V2 / external
 
