@@ -1,21 +1,30 @@
-export function BrandCrest({ className = "size-8" }: { className?: string }) {
+export function BrandCrest({ className = "size-10" }: { className?: string }) {
   return (
     <span
-      className={`inline-grid place-items-center rounded-xl bg-gradient-to-br from-[var(--accent-gold)] to-[#8C6004] text-white shadow-sm border border-[var(--accent-gold-border)] select-none shrink-0 ${className}`}
+      className={`relative inline-grid place-items-center rounded-2xl bg-gradient-to-br from-[#d4a017] via-[#b8860b] to-[#785202] text-white shadow-md border border-[var(--accent-gold-border)] select-none shrink-0 overflow-hidden ${className}`}
       aria-hidden="true"
     >
+      {/* Specular glass reflection overlay */}
+      <span className="absolute inset-0 bg-gradient-to-t from-transparent via-white/10 to-white/30 pointer-events-none" />
+
       <svg
-        viewBox="0 0 24 24"
-        className="size-5 fill-none stroke-current"
+        viewBox="0 0 32 32"
+        className="size-6 fill-none stroke-white drop-shadow-sm"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        {/* Shield contour */}
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        {/* Inner Adinkra knot geometric core */}
-        <path d="M12 8v8M8 12h8" strokeWidth="1.8" />
-        <circle cx="12" cy="12" r="2.5" className="fill-current stroke-none" />
+        {/* Modern Shield Contour */}
+        <path d="M16 28s10-5 10-13V6l-10-3-10 3v9c0 8 10 13 10 13z" className="stroke-white" />
+
+        {/* Authentic West African Adinkra Gye Nyame Core Geometry */}
+        <path
+          d="M16 9v14M11 16h10"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <circle cx="16" cy="16" r="3.5" className="fill-white/20 stroke-white" strokeWidth="1.8" />
+        <circle cx="16" cy="16" r="1.5" className="fill-white stroke-none" />
       </svg>
     </span>
   );

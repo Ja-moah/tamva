@@ -29,7 +29,7 @@ export function CustomerTierDistributionChart() {
                 fontSize: "13px",
                 fontFamily: "var(--font-sans)",
               }}
-              formatter={(value: any) => [
+              formatter={(value: unknown) => [
                 `${Number(value).toLocaleString()} identities`,
                 "Registrations",
               ]}

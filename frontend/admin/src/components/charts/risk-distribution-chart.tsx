@@ -51,7 +51,7 @@ export function RiskDistributionChart() {
               color: "var(--text-primary)",
               fontSize: "13px",
             }}
-            formatter={(value: any) => [
+            formatter={(value: unknown) => [
               `${Number(value).toLocaleString()} transactions`,
               "Evaluated Load",
             ]}

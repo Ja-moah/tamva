@@ -58,8 +58,8 @@ export function CaseTriageChart() {
               fontSize: "13px",
               fontFamily: "var(--font-sans)",
             }}
-            formatter={(value: any, name: any) => [
-              value,
+            formatter={(value: unknown, name: unknown) => [
+              value as number,
               name === "newCases"
                 ? "New Incident Inflow"
                 : name === "resolved"

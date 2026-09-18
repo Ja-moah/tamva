@@ -83,7 +83,7 @@ export function RiskVelocityChart() {
               fontSize: "13px",
               fontFamily: "var(--font-sans)",
             }}
-            formatter={(value: any, name: any) => [
+            formatter={(value: unknown, name: unknown) => [
               Number(value).toLocaleString(),
               name === "volume" ? "Transaction Volume (GH₵)" : "Risk Flags & Alerts",
             ]}
