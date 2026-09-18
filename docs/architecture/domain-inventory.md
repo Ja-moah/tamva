@@ -21,6 +21,9 @@ for why "has a service layer" does not imply "has a public API."
 | notifications | yes | yes | yes | no |
 | graph | yes | yes | no | no |
 | passport | yes | yes | yes | no |
+| security | yes | yes | no | no |
+| counterparty | yes | yes | no | no |
+| confidence | yes | yes | no | no |
 | audit | yes (append-only) | n/a — write path is `AuditEvent.objects.create()` from other domains | no | no |
 
 No domain uses Celery tasks for its own domain logic; the only task is the

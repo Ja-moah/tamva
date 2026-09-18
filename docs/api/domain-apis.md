@@ -47,6 +47,12 @@ accessing institution's staff redeem a share token, authorized by active
 `HasPermission`, since a recipient may hold no other TAMVA-internal
 permission at all. Throttled under the `passport_share_access` scope.
 
+## Capabilities — authenticated
+
+`GET /capabilities/` returns `{code: AVAILABLE|PARTIAL|NOT_AVAILABLE|DISABLED}` so
+clients render what exists. See
+[INTELLIGENCE_CAPABILITIES.md](../product/INTELLIGENCE_CAPABILITIES.md).
+
 ## Shared infrastructure
 
 `packages.common.api` resolves `X-Institution-ID`; every list endpoint uses

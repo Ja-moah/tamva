@@ -7,6 +7,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from packages.common.capabilities import CAPABILITIES
+
 
 def _database_ok() -> bool:
     try:
@@ -98,3 +100,19 @@ class HealthView(APIView):
         if _database_ok():
             return Response({"status": "ok", "database": "ok"})
         return Response({"status": "unhealthy", "database": "unavailable"}, status=503)
+
+
+class CapabilitiesView(APIView):
+    """Authenticated manifest of which product capabilities are actually
+    available, so clients render accurately instead of guessing."""
+
+    @extend_schema(
+        responses=inline_serializer(
+            name="CapabilitiesResponse",
+            fields={
+                "data": serializers.DictField(child=serializers.CharField()),
+            },
+        )
+    )
+    def get(self, request: object) -> Response:
+        return Response({"data": {code: state.value for code, state in CAPABILITIES.items()}})
