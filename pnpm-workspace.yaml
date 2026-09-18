@@ -1,0 +1,6 @@
+packages:
+  - apps/admin
+  - apps/mobile
+  - packages/contracts/client
+allowBuilds:
+  unrs-resolver: set this to true or false

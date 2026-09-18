@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 COMPOSE := docker compose
-NPM := npm
+PNPM := corepack pnpm
 LOCAL_UID ?= $(shell id -u)
 LOCAL_GID ?= $(shell id -g)
 RUN := $(COMPOSE) run --rm --user $(LOCAL_UID):$(LOCAL_GID) web
@@ -37,75 +37,75 @@ ps: ## Show service state
 	$(COMPOSE) ps
 
 shell: ## Open a Django shell
-	$(COMPOSE) exec web python manage.py shell
+	$(COMPOSE) exec web python apps/backend/manage.py shell
 
 bash: ## Open a shell in the web container
 	$(COMPOSE) exec web sh
 
 migrate: ## Apply database migrations
-	$(RUN) python manage.py migrate
+	$(RUN) python apps/backend/manage.py migrate
 
 migrations: ## Create host-owned database migrations
-	$(RUN) python manage.py makemigrations
+	$(RUN) python apps/backend/manage.py makemigrations
 
 superuser: ## Create a Django superuser
-	$(COMPOSE) exec web python manage.py createsuperuser
+	$(COMPOSE) exec web python apps/backend/manage.py createsuperuser
 
 test: ## Run the complete test suite
-	$(TEST) pytest
-	npm test
+	$(TEST) sh -c 'cd apps/backend && pytest'
+	$(PNPM) test
 
 test-unit: ## Run unit tests
-	$(TEST) pytest -m unit
+	$(TEST) sh -c 'cd apps/backend && pytest -m unit'
 
 test-integration: ## Run integration tests
-	$(TEST) pytest -m integration
+	$(TEST) sh -c 'cd apps/backend && pytest -m integration'
 
 lint: ## Run Ruff lint checks
-	$(RUN) ruff check .
+	$(RUN) ruff check apps/backend
 
 format: ## Format Python code
-	$(RUN) ruff format .
+	$(RUN) ruff format apps/backend
 
 format-check: ## Check Python formatting without changes
-	$(RUN) ruff format --check .
+	$(RUN) ruff format --check apps/backend
 
 typecheck: ## Run mypy
-	$(RUN) mypy apps packages config
+	$(RUN) sh -c 'cd apps/backend && mypy config domains packages'
 
 check: ## Run all static and Django checks
-	$(RUN) ruff check .
-	$(RUN) ruff format --check .
-	$(RUN) mypy apps packages config
-	$(RUN) python manage.py check
-	$(NPM) run lint
-	$(NPM) run typecheck
-	$(NPM) run build
+	$(RUN) ruff check apps/backend
+	$(RUN) ruff format --check apps/backend
+	$(RUN) sh -c 'cd apps/backend && mypy config domains packages'
+	$(RUN) python apps/backend/manage.py check
+	$(PNPM) run lint
+	$(PNPM) run typecheck
+	$(PNPM) run build
 
 frontend-install: ## Install locked web and mobile dependencies
-	$(NPM) ci
+	$(PNPM) install --frozen-lockfile
 
 frontend-dev: admin-dev ## Run the admin web app with HMR on port 3000
 
 frontend-build: ## Build the admin web application for production
-	$(NPM) run build
+	$(PNPM) run build
 
 frontend-test: ## Run the admin web application test suite
-	$(NPM) test
+	$(PNPM) test
 
 frontend-typecheck: ## Type-check the admin web app and mobile app
-	$(NPM) run typecheck
+	$(PNPM) run typecheck
 
 admin-dev: ## Run the admin web app with HMR on port 3000
-	$(NPM) run dev:admin
+	$(PNPM) run dev:admin
 
 admin: admin-dev ## Run the admin web app
 
 admin-build: ## Build the admin web app for production
-	$(NPM) run build --workspace @tamva/admin
+	$(PNPM) --filter @tamva/admin build
 
 admin-test: ## Run the admin web app test suite
-	$(NPM) run test --workspace @tamva/admin
+	$(PNPM) --filter @tamva/admin test
 
 mobile-watch-check:
 	@if [ "$(INOTIFY_WATCH_LIMIT)" -lt 262144 ]; then \
@@ -116,39 +116,39 @@ mobile-watch-check:
 	fi
 
 mobile-start: mobile-watch-check ## Start the Expo development server
-	$(NPM) run dev:mobile
+	$(PNPM) run dev:mobile
 
 mobile-start-tunnel: mobile-watch-check ## Start Expo with a tunnel for remote devices
-	$(NPM) run start --workspace @tamva/mobile -- --tunnel
+	$(PNPM) --filter @tamva/mobile start -- --tunnel
 
 mobile: mobile-start ## Run the customer Expo app
 
 mobile-web: mobile-watch-check ## Start the customer app for web
-	$(NPM) run web --workspace @tamva/mobile
+	$(PNPM) --filter @tamva/mobile web
 
 mobile-android: mobile-watch-check ## Start the Expo Android workflow
-	$(NPM) run android --workspace @tamva/mobile
+	$(PNPM) --filter @tamva/mobile android
 
 mobile-ios: mobile-watch-check ## Start the Expo iOS workflow (macOS required for simulator)
-	$(NPM) run ios --workspace @tamva/mobile
+	$(PNPM) --filter @tamva/mobile ios
 
 mobile-lint: ## Lint the cross-platform customer app
-	$(NPM) run lint --workspace @tamva/mobile
+	$(PNPM) --filter @tamva/mobile lint
 
 mobile-build: ## Export the customer app for Android, iOS, and web
-	$(NPM) run export --workspace @tamva/mobile
+	$(PNPM) --filter @tamva/mobile export
 
 mobile-build-android: ## Export the customer Android bundle
-	$(NPM) run export:android --workspace @tamva/mobile
+	$(PNPM) --filter @tamva/mobile export:android
 
 mobile-build-ios: ## Export the customer iOS bundle
-	$(NPM) run export:ios --workspace @tamva/mobile
+	$(PNPM) --filter @tamva/mobile export:ios
 
 mobile-build-web: ## Export the customer web build
-	$(NPM) run export:web --workspace @tamva/mobile
+	$(PNPM) --filter @tamva/mobile export:web
 
 schema: ## Refresh the checked OpenAPI contract
-	$(RUN) python manage.py spectacular --file contracts/openapi/schema.yml
+	$(RUN) python apps/backend/manage.py spectacular --file packages/contracts/openapi/schema.yml
 
 clients-check: frontend-typecheck frontend-test frontend-build mobile-lint mobile-build ## Verify both clients and every customer target
 
@@ -159,7 +159,7 @@ django-shell: shell ## Alias for shell
 
 clean: ## Remove local caches and stopped containers (keeps database volume)
 	find . -type d \( -name __pycache__ -o -name .pytest_cache -o -name .mypy_cache -o -name .ruff_cache \) -prune -exec rm -rf {} +
-	find frontend mobile -type d -name dist -prune -exec rm -rf {} +
+	find apps/admin apps/mobile -type d -name dist -prune -exec rm -rf {} +
 	$(COMPOSE) down --remove-orphans
 
 bootstrap: ## Initialize environment, build, start, migrate, and check
@@ -167,6 +167,6 @@ bootstrap: ## Initialize environment, build, start, migrate, and check
 	$(MAKE) frontend-install
 	$(COMPOSE) build
 	$(COMPOSE) up -d postgres redis
-	$(RUN) python manage.py migrate
-	$(RUN) python manage.py check
+	$(RUN) python apps/backend/manage.py migrate
+	$(RUN) python apps/backend/manage.py check
 	$(COMPOSE) up -d web celery-worker admin

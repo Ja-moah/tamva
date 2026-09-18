@@ -11,7 +11,7 @@ TAMVA is a modular monolith. The boxes below are logical ownership boundaries in
                   BUSINESS LOGIC + APIs
                           ^         ^
                           |         |
-            frontend/admin     mobile
+            apps/admin     mobile
                  Admin Web       Customer App
                                      Android
                                      iOS

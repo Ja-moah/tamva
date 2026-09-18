@@ -1,18 +1,13 @@
 {
-  "name": "tamva-clients",
+  "name": "tamva-workspace",
   "private": true,
-  "workspaces": [
-    "contracts/client",
-    "frontend/admin",
-    "mobile"
-  ],
   "scripts": {
-    "build": "npm run build --workspace @tamva/admin",
-    "dev:admin": "npm run dev --workspace @tamva/admin",
-    "dev:mobile": "npm run start --workspace @tamva/mobile",
-    "lint": "npm run lint --workspaces --if-present",
-    "test": "npm run test --workspace @tamva/admin",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "build": "pnpm --filter @tamva/admin build",
+    "dev:admin": "pnpm --filter @tamva/admin dev",
+    "dev:mobile": "pnpm --filter @tamva/mobile start",
+    "lint": "pnpm -r --if-present lint",
+    "test": "pnpm --filter @tamva/admin test",
+    "typecheck": "pnpm -r --if-present typecheck"
   },
   "engines": {
     "node": ">=22"
