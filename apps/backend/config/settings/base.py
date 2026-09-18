@@ -37,6 +37,7 @@ DOMAIN_APPS = [
     "domains.profile.apps.ProfileConfig",
     "domains.feature.apps.FeatureConfig",
     "domains.rules.apps.RulesConfig",
+    "domains.modeling.apps.ModelingConfig",
     "domains.risk.apps.RiskConfig",
     "domains.case.apps.CaseConfig",
     "domains.passport.apps.PassportConfig",
