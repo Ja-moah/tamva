@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, tamva]
 
 permissions:
   contents: read
@@ -41,11 +41,20 @@ jobs:
         with:
           python-version: "3.13"
           cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
       - run: pip install -r requirements.lock
+      - run: npm ci
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy apps packages config
       - run: python manage.py migrate --noinput
       - run: python manage.py check
       - run: pytest
-
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run export --workspace @tamva/mobile

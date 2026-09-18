@@ -1,4 +1,7 @@
 .env
+.env.*
+!.env.example
+!.env.*.example
 .venv/
 __pycache__/
 *.py[cod]
@@ -13,5 +16,9 @@ media/
 .idea/
 .vscode/
 .DS_Store
-
-node_modules
+<<<<<<< HEAD
+node_modules/
+dist/
+.expo/
+expo-env.d.ts
+npm-debug.log*

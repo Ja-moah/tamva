@@ -1,0 +1,32 @@
+openapi: 3.0.3
+info:
+  title: TAMVA API
+  version: 1.0.0
+  description: Financial Identity & Trust Infrastructure
+paths:
+  /health/:
+    get:
+      operationId: health_retrieve
+      tags:
+      - health
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+          description: ''
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        database:
+          type: string
+      required:
+      - database
+      - status

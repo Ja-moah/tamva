@@ -56,6 +56,20 @@ services:
       redis:
         condition: service_healthy
 
+  admin:
+    build:
+      context: .
+      dockerfile: frontend/admin/Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
-

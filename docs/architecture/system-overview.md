@@ -3,6 +3,27 @@
 TAMVA is a modular monolith. The boxes below are logical ownership boundaries inside one Django deployment, not independent microservices.
 
 ```text
+                          PostgreSQL
+                        SOURCE OF TRUTH
+                                ^
+                                |
+                        Django / DRF
+                  BUSINESS LOGIC + APIs
+                          ^         ^
+                          |         |
+            frontend/admin     mobile
+                 Admin Web       Customer App
+                                     Android
+                                     iOS
+                                     Web
+```
+
+The backend is the authoritative application layer. Admin web and the customer
+app are clients only: they request data, display responses, validate forms, and
+manage navigation and presentation state. They do not own business, tenancy,
+authorization, consent, risk, ledger, profile, passport, or case decisions.
+
+```text
 Customer / Institution
         ↓
 Identity
