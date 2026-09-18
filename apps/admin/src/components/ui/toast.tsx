@@ -2,7 +2,7 @@ import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { cn } from "../../lib/utils/cn";
 
-export type ToastType = "success" | "error" | "info";
+export type ToastType = "success" | "error" | "warning" | "info";
 
 export interface ToastMessage {
   id: string;
@@ -49,6 +49,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 "bg-[var(--bg-surface-elevated)] border-[var(--risk-low-border)] text-[var(--text-primary)]",
               t.type === "error" &&
                 "bg-[var(--bg-surface-elevated)] border-[var(--risk-critical-border)] text-[var(--text-primary)]",
+              t.type === "warning" &&
+                "bg-[var(--bg-surface-elevated)] border-[var(--risk-med-border)] text-[var(--text-primary)]",
               t.type === "info" &&
                 "bg-[var(--bg-surface-elevated)] border-[var(--border-default)] text-[var(--text-primary)]",
             )}
@@ -58,6 +60,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             )}
             {t.type === "error" && (
               <AlertCircle className="size-4.5 text-[#ce1126] shrink-0 mt-0.5" />
+            )}
+            {t.type === "warning" && (
+              <AlertCircle className="size-4.5 text-amber-500 shrink-0 mt-0.5" />
             )}
             {t.type === "info" && (
               <Info className="size-4.5 text-[var(--accent-gold)] shrink-0 mt-0.5" />

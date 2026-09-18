@@ -23,6 +23,8 @@ const buttonVariants = cva(
           "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] active:bg-[var(--bg-surface-active)]",
         danger:
           "bg-[#e11d48] text-white font-semibold hover:bg-[#be123c] active:scale-[0.99] shadow-xs",
+        destructive:
+          "bg-[#e11d48] text-white font-semibold hover:bg-[#be123c] active:scale-[0.99] shadow-xs",
         outline:
           "border border-[var(--border-default)] hover:border-[var(--accent-gold)] bg-transparent text-[var(--text-primary)] hover:text-[var(--accent-gold)]",
       },

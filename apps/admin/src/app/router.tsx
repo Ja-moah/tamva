@@ -18,6 +18,24 @@ const CustomersPage = lazy(() =>
 const NetworkPage = lazy(() =>
   import("../routes/network-page").then((module) => ({ default: module.NetworkPage })),
 );
+const AnalyticsPage = lazy(() =>
+  import("../routes/analytics-page").then((module) => ({ default: module.AnalyticsPage })),
+);
+const TeamPage = lazy(() =>
+  import("../routes/team-page").then((module) => ({ default: module.TeamPage })),
+);
+const SecurityPage = lazy(() =>
+  import("../routes/security-page").then((module) => ({ default: module.SecurityPage })),
+);
+const NotificationsPage = lazy(() =>
+  import("../routes/notifications-page").then((module) => ({ default: module.NotificationsPage })),
+);
+const SettingsPage = lazy(() =>
+  import("../routes/settings-page").then((module) => ({ default: module.SettingsPage })),
+);
+const IntegrationsPage = lazy(() =>
+  import("../routes/integrations-page").then((module) => ({ default: module.IntegrationsPage })),
+);
 
 const rootRoute = createRootRoute({ component: AppShell });
 
@@ -51,12 +69,54 @@ const networkRoute = createRoute({
   component: NetworkPage,
 });
 
+const analyticsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/analytics",
+  component: AnalyticsPage,
+});
+
+const teamRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/team",
+  component: TeamPage,
+});
+
+const securityRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/security",
+  component: SecurityPage,
+});
+
+const notificationsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/notifications",
+  component: NotificationsPage,
+});
+
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings",
+  component: SettingsPage,
+});
+
+const integrationsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/integrations",
+  component: IntegrationsPage,
+});
+
 const routeTree = rootRoute.addChildren([
   overviewRoute,
   riskRoute,
   caseRoute,
   customerRoute,
   networkRoute,
+  analyticsRoute,
+  teamRoute,
+  securityRoute,
+  notificationsRoute,
+  settingsRoute,
+  integrationsRoute,
 ]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent" });

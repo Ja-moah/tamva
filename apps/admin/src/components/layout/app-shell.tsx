@@ -1,17 +1,21 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
+  BarChart3,
   Bell,
   BriefcaseBusiness,
   Building2,
   ChevronDown,
   CircleGauge,
   Coins,
-  ExternalLink,
+  Cpu,
   Menu,
   Network,
   Radio,
   Search,
+  Settings,
+  ShieldCheck,
+  UserCheck,
   Users,
   X,
 } from "lucide-react";
@@ -21,6 +25,7 @@ import { useSystemHealth } from "../../features/system/use-system-health";
 import { ThemeToggle } from "../../lib/theme";
 import { cn } from "../../lib/utils/cn";
 import { LiveCurrencyConverter } from "../features/currency-converter";
+import { NetworkStatusBanner } from "../feedback/network-status-banner";
 import { StatusBadge } from "../feedback/status-badge";
 import { CommandMenu } from "../navigation/command-menu";
 import { AdinkraWatermark } from "../ui/adinkra-pattern";
@@ -35,15 +40,18 @@ const operationsNav = [
   { label: "Cases", to: "/cases", icon: BriefcaseBusiness, count: "3" },
   { label: "Customers", to: "/customers", icon: Users, count: null },
   { label: "Trust Network", to: "/network", icon: Network, count: "7 Rails" },
+  { label: "Analytics & Insights", to: "/analytics", icon: BarChart3, count: null },
 ] as const;
 
-const platformLinks = [
-  {
-    label: "OpenAPI Swagger",
-    href: "/api/docs/",
-    icon: ExternalLink,
-    badge: "Django 5.2",
-  },
+const governanceNav = [
+  { label: "Team & Access", to: "/team", icon: UserCheck, count: "24" },
+  { label: "Security & Governance", to: "/security", icon: ShieldCheck, count: "98%" },
+  { label: "Alerts & Notifications", to: "/notifications", icon: Bell, count: "5" },
+  { label: "Settings", to: "/settings", icon: Settings, count: null },
+] as const;
+
+const developerNav = [
+  { label: "API & Integrations", to: "/integrations", icon: Cpu, count: "v1" },
 ] as const;
 
 export interface InstitutionScope {
@@ -70,7 +78,7 @@ export function AppShell() {
   const [converterModalOpen, setConverterModalOpen] = useState(false);
   const [tenantOpen, setTenantOpen] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<InstitutionScope>(institutions[0]);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [environment, setEnvironment] = useState<"Production" | "Sandbox">("Production");
 
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const health = useSystemHealth();
@@ -88,8 +96,21 @@ export function AppShell() {
     });
   };
 
+  const handleToggleEnvironment = () => {
+    const nextEnv = environment === "Production" ? "Sandbox" : "Production";
+    setEnvironment(nextEnv);
+    toast({
+      title: `Switched to ${nextEnv}`,
+      description: `System environment is now operating in ${nextEnv} profile.`,
+      type: nextEnv === "Production" ? "success" : "info",
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] relative selection:bg-[var(--accent-gold)] selection:text-black">
+    <div className="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] relative selection:bg-[var(--accent-gold)] selection:text-black text-sm">
+      {/* Real-time Network Status Banner with Offline Loading Indicator */}
+      <NetworkStatusBanner />
+
       {/* Precision Vector Watermark */}
       <AdinkraWatermark />
 
@@ -113,37 +134,37 @@ export function AppShell() {
         </div>
       )}
 
-      {/* iPhone Glassmorphic Sidebar Navigation */}
+      {/* Sidebar Navigation */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-76 -translate-x-full flex-col border-r border-[var(--border-default)] ios-glass p-5 transition-transform duration-300 ease-out lg:translate-x-0 shadow-lg",
+          "fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full flex-col border-r border-[var(--border-default)] ios-glass p-4.5 transition-transform duration-300 ease-out lg:translate-x-0 shadow-lg overflow-y-auto",
           menuOpen && "translate-x-0",
         )}
       >
         {/* Brand Header */}
-        <div className="flex items-center justify-between pb-5 border-b border-[var(--border-subtle)]">
+        <div className="flex items-center justify-between pb-4 border-b border-[var(--border-subtle)]">
           <Link
             to="/"
-            className="flex items-center gap-3.5 group select-none"
+            className="flex items-center gap-3 group select-none"
             onClick={() => setMenuOpen(false)}
           >
-            <BrandCrest className="size-11" />
+            <BrandCrest className="size-10" />
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl font-extrabold tracking-tight text-[var(--text-primary)]">
                   TAMVA
                 </span>
-                <span className="rounded-full border border-[var(--accent-gold-border)] bg-[var(--accent-gold-subtle)] px-2 py-0.5 font-mono text-xs font-bold text-[var(--accent-gold-text)] dark:text-[var(--accent-gold)]">
-                  ENTERPRISE
+                <span className="rounded-md border border-[var(--accent-gold-border)] bg-[var(--accent-gold-subtle)] px-1.5 py-0.2 font-mono text-[10px] font-bold text-[var(--accent-gold-text)] dark:text-[var(--accent-gold)]">
+                  {environment}
                 </span>
               </div>
-              <span className="block text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase mt-0.5">
-                African Trust &amp; Risk Rail
+              <span className="block text-[11px] font-bold text-[var(--text-muted)] tracking-wider uppercase mt-0.5">
+                People &bull; Data &bull; Trust &bull; Opportunity
               </span>
             </div>
           </Link>
           <button
-            className="rounded-xl p-2 text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)] lg:hidden cursor-pointer"
+            className="rounded-xl p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)] lg:hidden cursor-pointer"
             onClick={() => setMenuOpen(false)}
             aria-label="Close navigation"
           >
@@ -152,24 +173,24 @@ export function AppShell() {
         </div>
 
         {/* Search / Command trigger */}
-        <div className="mt-4">
+        <div className="mt-3.5">
           <button
             onClick={() => setCommandOpen(true)}
-            className="w-full flex items-center justify-between gap-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-subtle)] px-4 py-3 text-sm font-medium text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] transition-all group cursor-pointer shadow-xs"
+            className="w-full flex items-center justify-between gap-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-subtle)] px-3.5 py-2 text-xs font-medium text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] transition-all group cursor-pointer shadow-xs"
           >
-            <span className="flex items-center gap-3">
-              <Search className="size-4.5 text-[var(--accent-gold)] group-hover:scale-110 transition-transform" />
-              <span className="font-semibold text-base">Search console...</span>
+            <span className="flex items-center gap-2.5">
+              <Search className="size-3.5 text-[var(--accent-gold)] group-hover:scale-110 transition-transform" />
+              <span className="font-semibold text-xs">Search for cases, entities...</span>
             </span>
-            <kbd className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 font-mono text-xs font-bold text-[var(--text-muted)]">
+            <kbd className="rounded border border-[var(--border-default)] bg-[var(--bg-surface)] px-1.5 py-0.2 font-mono text-[10px] font-bold text-[var(--text-muted)]">
               ⌘K
             </kbd>
           </button>
         </div>
 
-        {/* Primary Operations Navigation */}
-        <nav className="mt-6 space-y-1.5 flex-1" aria-label="Primary navigation">
-          <p className="px-3.5 py-1.5 font-mono text-xs font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+        {/* Operations Navigation */}
+        <nav className="mt-4 space-y-1 flex-1" aria-label="Primary navigation">
+          <p className="px-3 py-1 font-mono text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
             Operations Center
           </p>
           {operationsNav.map(({ icon: Icon, label, to, count }) => {
@@ -180,16 +201,16 @@ export function AppShell() {
                 to={to}
                 onClick={() => setMenuOpen(false)}
                 className={cn(
-                  "relative flex min-h-12 items-center justify-between rounded-xl px-4 text-base font-bold transition-all group",
+                  "relative flex min-h-10 items-center justify-between rounded-xl px-3 py-1.5 text-xs font-bold transition-all group",
                   active
-                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md scale-[1.01]"
+                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs scale-[1.01]"
                     : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]",
                 )}
               >
-                <div className="flex items-center gap-3.5">
+                <div className="flex items-center gap-2.5">
                   <Icon
                     className={cn(
-                      "size-5.5 shrink-0 transition-transform group-hover:scale-105",
+                      "size-4 shrink-0 transition-transform group-hover:scale-105",
                       active
                         ? "text-[var(--accent-gold)]"
                         : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]",
@@ -200,7 +221,7 @@ export function AppShell() {
                 {count ? (
                   <span
                     className={cn(
-                      "rounded-lg px-2.5 py-0.5 font-mono text-xs font-bold",
+                      "rounded-md px-2 py-0.2 font-mono text-[10px] font-bold",
                       active
                         ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900"
                         : "bg-[var(--bg-surface-elevated)] text-[var(--accent-gold)] border border-[var(--border-default)]",
@@ -213,53 +234,107 @@ export function AppShell() {
             );
           })}
 
-          {/* Quick Currency Converter Navigation Item */}
-          <button
-            onClick={() => setConverterModalOpen(true)}
-            className="w-full flex min-h-12 items-center justify-between rounded-xl px-4 text-base font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)] transition-all group cursor-pointer"
-          >
-            <div className="flex items-center gap-3.5">
-              <Coins className="size-5.5 shrink-0 text-amber-500 transition-transform group-hover:scale-110" />
-              <span>Currency Converter</span>
-            </div>
-            <span className="rounded-lg px-2 py-0.5 font-mono text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
-              FX Live
-            </span>
-          </button>
-
-          <div className="pt-4 mt-4 border-t border-[var(--border-subtle)]">
-            <p className="px-3.5 py-1.5 font-mono text-xs font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
-              Developer &amp; Backend Contracts
+          {/* Governance & Administration */}
+          <div className="pt-3 mt-3 border-t border-[var(--border-subtle)]">
+            <p className="px-3 py-1 font-mono text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+              Governance &amp; Access
             </p>
-            {platformLinks.map((item) => {
-              const Icon = item.icon;
+            {governanceNav.map(({ icon: Icon, label, to, count }) => {
+              const active = pathname.startsWith(to);
               return (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex min-h-11 items-center justify-between rounded-xl px-4 text-base font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)] transition-colors group cursor-pointer"
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setMenuOpen(false)}
+                  className={cn(
+                    "relative flex min-h-10 items-center justify-between rounded-xl px-3 py-1.5 text-xs font-bold transition-all group",
+                    active
+                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs scale-[1.01]"
+                      : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]",
+                  )}
                 >
-                  <div className="flex items-center gap-3">
-                    <Icon className="size-5 text-[var(--text-muted)] group-hover:text-[var(--accent-gold)] shrink-0" />
-                    <span>{item.label}</span>
+                  <div className="flex items-center gap-2.5">
+                    <Icon
+                      className={cn(
+                        "size-4 shrink-0 transition-transform group-hover:scale-105",
+                        active
+                          ? "text-[var(--accent-gold)]"
+                          : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]",
+                      )}
+                    />
+                    <span>{label}</span>
                   </div>
-                  <span className="font-mono text-xs font-bold text-[var(--text-muted)] rounded bg-[var(--bg-surface-subtle)] px-2 py-0.5 border border-[var(--border-default)]">
-                    {item.badge}
-                  </span>
-                </a>
+                  {count ? (
+                    <span
+                      className={cn(
+                        "rounded-md px-2 py-0.2 font-mono text-[10px] font-bold",
+                        active
+                          ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900"
+                          : "bg-[var(--bg-surface-elevated)] text-[var(--accent-gold)] border border-[var(--border-default)]",
+                      )}
+                    >
+                      {count}
+                    </span>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Developer & Integration */}
+          <div className="pt-3 mt-3 border-t border-[var(--border-subtle)]">
+            <p className="px-3 py-1 font-mono text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+              Developer &amp; Contracts
+            </p>
+            {developerNav.map(({ icon: Icon, label, to, count }) => {
+              const active = pathname.startsWith(to);
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setMenuOpen(false)}
+                  className={cn(
+                    "relative flex min-h-10 items-center justify-between rounded-xl px-3 py-1.5 text-xs font-bold transition-all group",
+                    active
+                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs scale-[1.01]"
+                      : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]",
+                  )}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon
+                      className={cn(
+                        "size-4 shrink-0 transition-transform group-hover:scale-105",
+                        active
+                          ? "text-[var(--accent-gold)]"
+                          : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]",
+                      )}
+                    />
+                    <span>{label}</span>
+                  </div>
+                  {count ? (
+                    <span
+                      className={cn(
+                        "rounded-md px-2 py-0.2 font-mono text-[10px] font-bold",
+                        active
+                          ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900"
+                          : "bg-[var(--bg-surface-elevated)] text-[var(--accent-gold)] border border-[var(--border-default)]",
+                      )}
+                    >
+                      {count}
+                    </span>
+                  ) : null}
+                </Link>
               );
             })}
           </div>
         </nav>
 
         {/* Footer Area with Engine Status */}
-        <div className="mt-auto pt-4 border-t border-[var(--border-subtle)] space-y-2">
-          <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-subtle)] p-4 shadow-xs">
+        <div className="mt-auto pt-3 border-t border-[var(--border-subtle)] space-y-2">
+          <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-subtle)] p-3 shadow-xs">
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
-                <Radio className="size-4 text-[var(--accent-emerald)] animate-pulse" />
+              <span className="flex items-center gap-2 text-xs font-bold text-[var(--text-primary)]">
+                <Radio className="size-3.5 text-[var(--accent-emerald)] animate-pulse" />
                 Backend Node
               </span>
               <StatusBadge
@@ -270,8 +345,8 @@ export function AppShell() {
                 {isConnected ? "Healthy (18ms)" : "Connecting"}
               </StatusBadge>
             </div>
-            <p className="mt-1.5 text-xs text-[var(--text-muted)] font-mono font-medium">
-              Django 5.2 · PG17 · Redis Outbox
+            <p className="mt-1 text-[11px] text-[var(--text-muted)] font-mono font-medium">
+              Django 5.2 · PG17 · Redis
             </p>
           </div>
         </div>
@@ -287,35 +362,35 @@ export function AppShell() {
       ) : null}
 
       {/* Main Content Viewport */}
-      <div className="lg:pl-76 flex flex-col min-h-screen">
-        {/* Sticky Top Header with Apple Glassmorphism */}
-        <header className="sticky top-0 z-20 flex h-18 items-center justify-between border-b border-[var(--border-default)] ios-glass px-4 sm:px-7 shadow-xs">
-          <div className="flex items-center gap-3.5">
+      <div className="lg:pl-72 flex flex-col min-h-screen">
+        {/* Sticky Top Header */}
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[var(--border-default)] ios-glass px-4 sm:px-6 shadow-xs">
+          <div className="flex items-center gap-3">
             <button
-              className="rounded-xl p-2.5 text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] lg:hidden cursor-pointer"
+              className="rounded-xl p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] lg:hidden cursor-pointer"
               onClick={() => setMenuOpen(true)}
               aria-label="Open navigation"
             >
-              <Menu className="size-6" />
+              <Menu className="size-5" />
             </button>
 
             {/* Institution & MoMo Scope Switcher Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setTenantOpen(!tenantOpen)}
-                className="flex items-center gap-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-subtle)] px-4 py-2.5 text-left hover:border-[var(--border-strong)] hover:bg-[var(--bg-surface-hover)] transition-all cursor-pointer shadow-xs"
+                className="flex items-center gap-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-subtle)] px-3 py-1.5 text-left hover:border-[var(--border-strong)] hover:bg-[var(--bg-surface-hover)] transition-all cursor-pointer shadow-xs"
               >
                 {selectedTenant.id === "all" ? (
-                  <Building2 className="size-4.5 text-[var(--accent-gold)] shrink-0" />
+                  <Building2 className="size-4 text-[var(--accent-gold)] shrink-0" />
                 ) : (
                   <BrandLogo brand={selectedTenant.brand} size="sm" />
                 )}
                 <div className="min-w-0">
-                  <p className="text-base font-bold text-[var(--text-primary)] truncate max-w-[170px] sm:max-w-xs">
+                  <p className="text-xs font-bold text-[var(--text-primary)] truncate max-w-[140px] sm:max-w-xs">
                     {selectedTenant.name}
                   </p>
                 </div>
-                <ChevronDown className="size-4 text-[var(--text-muted)] ml-0.5 shrink-0" />
+                <ChevronDown className="size-3.5 text-[var(--text-muted)] ml-0.5 shrink-0" />
               </button>
 
               {tenantOpen ? (
@@ -325,8 +400,8 @@ export function AppShell() {
                     onClick={() => setTenantOpen(false)}
                     aria-hidden="true"
                   />
-                  <div className="absolute left-0 mt-2 z-30 w-88 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-2.5 shadow-xl animate-in fade-in zoom-in-98 ios-glass max-h-[80vh] overflow-y-auto">
-                    <p className="px-3.5 py-2 text-xs font-mono font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+                  <div className="absolute left-0 mt-2 z-30 w-80 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-2 shadow-xl animate-in fade-in zoom-in-98 ios-glass max-h-[80vh] overflow-y-auto">
+                    <p className="px-3 py-1.5 text-[10px] font-mono font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
                       Switch Active Tenant &amp; Rail Scope
                     </p>
                     {institutions.map((inst) => (
@@ -334,22 +409,22 @@ export function AppShell() {
                         key={inst.id}
                         onClick={() => handleSelectTenant(inst)}
                         className={cn(
-                          "w-full text-left px-3.5 py-2.5 rounded-xl text-base flex items-center gap-3 transition-colors cursor-pointer",
+                          "w-full text-left px-3 py-2 rounded-xl text-xs flex items-center gap-2.5 transition-colors cursor-pointer",
                           selectedTenant.id === inst.id
                             ? "bg-[var(--accent-gold-subtle)] text-[var(--accent-gold-text)] dark:text-[var(--accent-gold)] font-bold border border-[var(--accent-gold-border)]"
                             : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)] font-medium",
                         )}
                       >
                         {inst.id === "all" ? (
-                          <div className="size-7 rounded-lg bg-[var(--bg-canvas)] border border-[var(--border-default)] flex items-center justify-center shrink-0">
-                            <Building2 className="size-4 text-[var(--accent-gold)]" />
+                          <div className="size-6 rounded-md bg-[var(--bg-canvas)] border border-[var(--border-default)] flex items-center justify-center shrink-0">
+                            <Building2 className="size-3.5 text-[var(--accent-gold)]" />
                           </div>
                         ) : (
                           <BrandLogo brand={inst.brand} size="sm" />
                         )}
                         <div className="min-w-0 flex-1">
-                          <span className="font-bold text-sm block truncate">{inst.name}</span>
-                          <span className="text-[11px] text-[var(--text-muted)] font-mono block">
+                          <span className="font-bold text-xs block truncate">{inst.name}</span>
+                          <span className="text-[10px] text-[var(--text-muted)] font-mono block">
                             {inst.type} &bull; {inst.code}
                           </span>
                         </div>
@@ -359,105 +434,69 @@ export function AppShell() {
                 </>
               ) : null}
             </div>
+
+            {/* Environment Switcher */}
+            <button
+              onClick={handleToggleEnvironment}
+              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[11px] font-mono font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+            >
+              <span
+                className={cn(
+                  "size-2 rounded-full",
+                  environment === "Production" ? "bg-emerald-500" : "bg-blue-500",
+                )}
+              />
+              <span>{environment}</span>
+            </button>
           </div>
 
           {/* Right Header Controls */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Quick Live Currency Converter Header Action */}
             <Button
               variant="secondary"
-              size="md"
+              size="sm"
               onClick={() => setConverterModalOpen(true)}
-              className="hidden md:inline-flex items-center gap-2 text-sm font-bold px-3.5 py-2 rounded-xl text-amber-500 border border-amber-500/20 hover:bg-amber-500/10 cursor-pointer"
+              className="hidden md:inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl text-amber-500 border border-amber-500/20 hover:bg-amber-500/10 cursor-pointer"
             >
-              <Coins className="size-4 text-amber-500" />
-              <span>Live FX Converter</span>
+              <Coins className="size-3.5 text-amber-500" />
+              <span>FX Converter</span>
             </Button>
 
-            {/* Theme Toggle Control */}
+            {/* Theme Toggle */}
             <ThemeToggle />
 
-            {/* Quick Search Shortcut Button */}
-            <Button
-              variant="secondary"
-              size="md"
-              onClick={() => setCommandOpen(true)}
-              className="hidden sm:inline-flex gap-2 text-base font-semibold px-4 py-2.5 rounded-xl cursor-pointer"
-            >
-              <Search className="size-4.5 text-[var(--accent-gold)]" />
-              <span>Search ⌘K</span>
-            </Button>
-
             {/* Notifications Bell */}
-            <div className="relative">
-              <Button
-                variant="secondary"
-                size="icon"
-                onClick={() => setNotificationsOpen(!notificationsOpen)}
-                aria-label="Notifications"
-                className="relative size-11 rounded-xl cursor-pointer"
-              >
-                <Bell className="size-5 text-[var(--text-secondary)]" />
-                <span className="absolute top-2.5 right-2.5 size-2.5 rounded-full bg-[var(--accent-gold)] ring-2 ring-[var(--bg-surface)] animate-ping" />
-                <span className="absolute top-2.5 right-2.5 size-2.5 rounded-full bg-[var(--accent-gold)] ring-2 ring-[var(--bg-surface)]" />
-              </Button>
+            <Link
+              to="/notifications"
+              className="relative p-2 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+              aria-label="Notifications"
+            >
+              <Bell className="size-4" />
+              <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-[var(--accent-gold)] ring-2 ring-[var(--bg-surface)]" />
+            </Link>
 
-              {notificationsOpen ? (
-                <>
-                  <div
-                    className="fixed inset-0 z-20"
-                    onClick={() => setNotificationsOpen(false)}
-                    aria-hidden="true"
-                  />
-                  <div className="absolute right-0 mt-2 z-30 w-92 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-4 shadow-xl animate-in fade-in zoom-in-98 ios-glass">
-                    <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)] px-1">
-                      <span className="text-base font-extrabold text-[var(--text-primary)]">
-                        Real-Time Alerts
-                      </span>
-                      <StatusBadge tone="warning" size="sm">
-                        3 Active
-                      </StatusBadge>
-                    </div>
-                    <div className="mt-3 space-y-2.5">
-                      <div className="p-3.5 rounded-xl bg-[var(--bg-surface-subtle)] border border-[var(--border-subtle)]">
-                        <p className="text-sm font-bold text-[var(--accent-gold)]">
-                          MTN MoMo Settlement Spike
-                        </p>
-                        <p className="text-sm text-[var(--text-secondary)] mt-1 leading-normal font-medium">
-                          High settlement velocity (2,850 TPS) cleared via GhIPSS switch without queue buildup.
-                        </p>
-                      </div>
-                      <div className="p-3.5 rounded-xl bg-[var(--bg-surface-subtle)] border border-[var(--border-subtle)]">
-                        <p className="text-sm font-bold text-[var(--accent-emerald)]">
-                          Transactional Outbox Synced
-                        </p>
-                        <p className="text-sm text-[var(--text-secondary)] mt-1 leading-normal font-medium">
-                          1,420 identity audit events committed to PostgreSQL 17.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : null}
-            </div>
-
-            <div className="hidden h-7 w-px bg-[var(--border-default)] sm:block" />
+            <div className="hidden h-6 w-px bg-[var(--border-default)] sm:block" />
 
             {/* Operator Badge */}
-            <div className="flex items-center gap-3">
-              <span className="grid size-10 place-items-center rounded-xl bg-[var(--accent-gold-subtle)] border border-[var(--accent-gold-border)] text-sm font-extrabold text-[var(--accent-gold-text)] dark:text-[var(--accent-gold)] select-none shadow-xs">
-                OP
+            <div className="flex items-center gap-2">
+              <span className="grid size-8 place-items-center rounded-xl bg-[var(--accent-gold-subtle)] border border-[var(--accent-gold-border)] text-xs font-extrabold text-[var(--accent-gold-text)] dark:text-[var(--accent-gold)] select-none shadow-xs">
+                RA
               </span>
               <div className="hidden xl:block text-left">
-                <p className="text-base font-extrabold text-[var(--text-primary)] leading-tight">Lead Officer</p>
-                <p className="text-xs text-[var(--accent-emerald)] font-mono font-bold">Session Verified</p>
+                <p className="text-xs font-extrabold text-[var(--text-primary)] leading-tight">
+                  Risk Analyst
+                </p>
+                <p className="text-[10px] text-[var(--accent-emerald)] font-mono font-bold">
+                  Partner Bank Ghana
+                </p>
               </div>
             </div>
           </div>
         </header>
 
-        {/* Main Viewport Content */}
-        <main className="flex-1 mx-auto w-full max-w-[1600px] p-6 sm:p-8 lg:p-9">
+        {/* Main Content Area */}
+        <main className="flex-1 mx-auto w-full max-w-[1600px] p-5 sm:p-7">
           <Outlet />
         </main>
       </div>

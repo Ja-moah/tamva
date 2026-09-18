@@ -14,10 +14,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-slot": "^1.2.4",
-<<<<<<< HEAD:frontend/admin/package.json
-=======
-    "@tamva/client-contracts": "workspace:*",
->>>>>>> origin/main:apps/admin/package.json
+
     "@tanstack/react-query": "^5.102.8",
     "@tanstack/react-router": "^1.170.35",
     "@tanstack/react-table": "^8.21.3",
