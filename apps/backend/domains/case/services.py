@@ -108,7 +108,11 @@ def open_case_from_risk_event(
     _publish_event(
         event_type="case.created",
         institution=institution,
-        payload={"case_id": str(case.id), "customer_id": str(case.customer_id)},
+        payload={
+            "case_id": str(case.id),
+            "customer_id": str(case.customer_id),
+            "reason_codes": ",".join(reason_codes),
+        },
     )
     return case
 

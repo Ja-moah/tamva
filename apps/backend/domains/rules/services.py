@@ -30,6 +30,9 @@ def _fingerprint(feature_run: FeatureComputationRun, rule_set: RuleSetVersion) -
 
 
 def _comparable(value: Any) -> Any:
+    if isinstance(value, bool):
+        # bool is an int subclass; Decimal("True") would raise.
+        return value
     if isinstance(value, (int, float, Decimal)):
         return Decimal(str(value))
     if isinstance(value, str):
