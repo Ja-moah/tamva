@@ -1,13 +1,17 @@
 import {
-  Building2,
+  Award,
   Copy,
-  Fingerprint,
+  Download,
+  Filter,
   KeyRound,
+  Plus,
   Search,
-  UserCheck,
+  ShieldCheck,
+  Users,
 } from "lucide-react";
 import { useState } from "react";
 
+import { CustomerTierDistributionChart } from "../components/charts/customer-risk-distribution-chart";
 import { StatusBadge, type StatusTone } from "../components/feedback/status-badge";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -17,121 +21,76 @@ import { useToast } from "../components/ui/toast";
 interface CustomerIdentity {
   id: string;
   name: string;
-  avatar: string;
   nationalId: string;
-  biometricHash: string;
   kycTier: "TIER_1" | "TIER_2" | "TIER_3_PASSPORT";
   trustScore: number;
   status: "VERIFIED" | "PENDING_CONSENT" | "RESTRICTED";
   tone: StatusTone;
-  linkedInstitutions: { name: string; code: string; verifiedSince: string }[];
+  linkedInstitutions: string[];
   activeConsents: string[];
   lastActive: string;
-  phone: string;
-  residence: string;
 }
 
 const mockCustomers: CustomerIdentity[] = [
   {
     id: "GHA-892014-A",
     name: "Kofi Mensah",
-    avatar: "/assets/avatar-kofi.jpg",
     nationalId: "GHA-78291039-2",
-    biometricHash: "0x892a...f70b (NIST 99.8% Match)",
     kycTier: "TIER_3_PASSPORT",
     trustScore: 94,
     status: "VERIFIED",
     tone: "success",
-    linkedInstitutions: [
-      { name: "Apex Bank PLC", code: "APEX-GH", verifiedSince: "2024-03" },
-      { name: "Zenith Digital Trust", code: "ZNTH-AF", verifiedSince: "2025-01" },
-    ],
-    activeConsents: [
-      "FINANCIAL_PROFILE_READ",
-      "TRANSACTION_AUTHORIZATION",
-      "CROSS_BORDER_CREDIT_SHARING",
-    ],
+    linkedInstitutions: ["Apex Bank PLC", "Zenith Digital Trust"],
+    activeConsents: ["FINANCIAL_PROFILE_READ", "TRANSACTION_AUTHORIZATION", "CREDIT_SHARING"],
     lastActive: "12m ago",
-    phone: "+233 24 892 0149",
-    residence: "Airport Residential Area, Accra, Ghana",
   },
   {
     id: "GHA-441209-B",
     name: "Abena Osei",
-    avatar: "/assets/avatar-operator.jpg",
     nationalId: "GHA-10928374-9",
-    biometricHash: "0x441b...a192 (Face & Iris match)",
     kycTier: "TIER_2",
     trustScore: 78,
     status: "PENDING_CONSENT",
     tone: "warning",
-    linkedInstitutions: [
-      { name: "Apex Bank PLC", code: "APEX-GH", verifiedSince: "2025-08" },
-    ],
+    linkedInstitutions: ["Apex Bank PLC"],
     activeConsents: ["IDENTITY_VERIFICATION_ONLY"],
     lastActive: "1h ago",
-    phone: "+233 50 109 2837",
-    residence: "Ahodwo, Kumasi, Ghana",
   },
   {
     id: "GHA-782011-C",
     name: "Kwame Asante",
-    avatar: "/assets/avatar-kofi.jpg",
     nationalId: "GHA-66718290-3",
-    biometricHash: "0x782c...3319 (Full Biometric Chip)",
     kycTier: "TIER_3_PASSPORT",
     trustScore: 98,
     status: "VERIFIED",
     tone: "success",
-    linkedInstitutions: [
-      { name: "Ecobank Regional Hub", code: "ECO-REG", verifiedSince: "2023-11" },
-      { name: "Apex Bank PLC", code: "APEX-GH", verifiedSince: "2024-06" },
-      { name: "Zenith Digital Trust", code: "ZNTH-AF", verifiedSince: "2025-02" },
-    ],
-    activeConsents: [
-      "PAPSS_CROSS_BORDER_PASSPORT",
-      "FINANCIAL_PROFILE_READ",
-      "BENEFICIARY_DATA_SHARE",
-    ],
+    linkedInstitutions: ["Ecobank Regional Hub", "Apex Bank PLC", "Zenith Digital Trust"],
+    activeConsents: ["CROSS_BORDER_PASSPORT", "FINANCIAL_PROFILE_READ", "BENEFICIARY_DATA"],
     lastActive: "3m ago",
-    phone: "+233 20 667 1829",
-    residence: "East Legon Hills, Accra, Ghana",
   },
   {
     id: "GHA-109382-D",
     name: "Esi Badu",
-    avatar: "/assets/avatar-operator.jpg",
     nationalId: "GHA-99201847-1",
-    biometricHash: "0x109d...ee84 (Ghana Card OCR)",
     kycTier: "TIER_1",
     trustScore: 62,
     status: "VERIFIED",
     tone: "success",
-    linkedInstitutions: [
-      { name: "Zenith Digital Trust", code: "ZNTH-AF", verifiedSince: "2026-01" },
-    ],
+    linkedInstitutions: ["Zenith Digital Trust"],
     activeConsents: ["BASIC_KYC_LOOKUP"],
     lastActive: "Yesterday",
-    phone: "+233 27 992 0184",
-    residence: "Market Circle, Takoradi, Ghana",
   },
   {
     id: "GHA-667190-E",
     name: "Musa Ibrahim",
-    avatar: "/assets/avatar-kofi.jpg",
     nationalId: "GHA-33491827-0",
-    biometricHash: "0x667e...0021 (Pending Review)",
     kycTier: "TIER_2",
     trustScore: 45,
     status: "RESTRICTED",
     tone: "danger",
-    linkedInstitutions: [
-      { name: "Apex Bank PLC", code: "APEX-GH", verifiedSince: "2026-04" },
-    ],
+    linkedInstitutions: ["Apex Bank PLC"],
     activeConsents: ["BLOCKED_BY_COMPLIANCE"],
     lastActive: "3 days ago",
-    phone: "+233 54 334 9182",
-    residence: "Tamale Central, Northern Region, Ghana",
   },
 ];
 
@@ -151,102 +110,151 @@ export function CustomersPage() {
     return matchesTier && matchesSearch;
   });
 
-  const handleCopy = (text: string, label: string) => {
+  const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({
       title: "Copied to Clipboard",
-      description: `${label}: ${text}`,
+      description: text,
+      type: "info",
+    });
+  };
+
+  const handleExport = () => {
+    toast({
+      title: "Passport Directory Exported",
+      description: "Encrypted KYC registry summary downloaded (.csv)",
       type: "info",
     });
   };
 
   return (
     <div className="space-y-7">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header & Page Title */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[var(--border-subtle)] pb-5">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold text-[#D4A017] uppercase tracking-widest">
-              Financial Identity Directory
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="font-mono text-xs font-bold text-[var(--accent-gold)] uppercase tracking-wider">
+              Identity &amp; Financial Passports
             </span>
-            <span className="text-white/30">·</span>
-            <StatusBadge tone="success" size="sm">
-              Ghana Card &amp; Biometric Bound
-            </StatusBadge>
           </div>
-          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+          <h1 className="text-3xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-4xl">
             Customer Financial Passports
           </h1>
-          <p className="mt-2 text-sm text-white/60 max-w-2xl leading-relaxed">
-            Cryptographic identity directory, trust ratings, verified biometric credentials, and
-            active inter-bank consent scopes.
+          <p className="mt-1.5 text-base text-[var(--text-secondary)] max-w-3xl leading-relaxed">
+            Authorized customer identity registry, trust score ratings, verified Ghana Card biometric credentials, and active cross-institution data sharing consent scopes.
           </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" size="md" onClick={handleExport} className="gap-2">
+            <Download className="size-4 text-[var(--text-muted)]" />
+            <span>Export Registry</span>
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() =>
+              toast({
+                title: "Passport Provisioning",
+                description: "Manual customer onboarding wizard triggered",
+                type: "info",
+              })
+            }
+            className="gap-2"
+          >
+            <Plus className="size-4" />
+            <span>Issue Passport</span>
+          </Button>
         </div>
       </div>
 
       {/* Directory KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card glow="gold" className="p-4">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">
-            Total Passports
-          </p>
-          <p className="mt-1 text-2xl font-black text-white font-tabular">148,920</p>
-          <p className="text-[11px] text-[#00C97A] mt-1 font-semibold">+840 verified today</p>
+        <Card className="p-5">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Active Passports</p>
+            <Users className="size-4.5 text-[var(--accent-gold)]" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-[var(--text-primary)] font-tabular">148,920</p>
+          <p className="text-sm text-[var(--accent-emerald)] mt-1.5 font-semibold">+840 issued today</p>
         </Card>
-        <Card glow="emerald" className="p-4">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">
-            Tier 3 Full Passport
-          </p>
-          <p className="mt-1 text-2xl font-black text-[#FCD116] font-tabular">64.2%</p>
-          <p className="text-[11px] text-white/50 mt-1">NIST Biometric verified</p>
+
+        <Card className="p-5">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Tier 3 Verified</p>
+            <Award className="size-4.5 text-[var(--accent-emerald)]" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-[var(--accent-emerald)] font-tabular">64.2%</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1.5">Biometric Ghana Card verified</p>
         </Card>
-        <Card glow="emerald" className="p-4">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">
-            Avg Trust Rating
-          </p>
-          <p className="mt-1 text-2xl font-black text-[#00C97A] font-tabular">88 / 100</p>
-          <p className="text-[11px] text-white/50 mt-1">High financial integrity</p>
+
+        <Card className="p-5">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Avg Trust Score</p>
+            <ShieldCheck className="size-4.5 text-[var(--accent-gold)]" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-[var(--text-primary)] font-tabular">88 / 100</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1.5">High network integrity</p>
         </Card>
-        <Card glow="gold" className="p-4">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">
-            Active Consents
-          </p>
-          <p className="mt-1 text-2xl font-black text-white font-tabular">412,800</p>
-          <p className="text-[11px] text-white/50 mt-1">Inter-bank authorization grants</p>
+
+        <Card className="p-5">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Consent Grants</p>
+            <KeyRound className="size-4.5 text-[var(--text-muted)]" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-[var(--text-primary)] font-tabular">412,800</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1.5">Active data authorizations</p>
         </Card>
       </div>
 
-      {/* Filter & Search Bar (HCI Principle: immediate filter feedback) */}
+      {/* Visual Analytics Chart: Tier Distribution */}
+      <Card className="p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 pb-3 border-b border-[var(--border-subtle)]">
+          <div>
+            <h2 className="text-lg font-bold text-[var(--text-primary)]">
+              Customer KYC Tier &amp; Compliance Distribution
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">
+              Breakdown of registered financial passports by identity validation depth and due diligence scope.
+            </p>
+          </div>
+          <span className="font-mono text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">
+            National ID Engine
+          </span>
+        </div>
+        <CustomerTierDistributionChart />
+      </Card>
+
+      {/* Filter and Search Bar */}
       <Card className="p-4">
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#D4A017]" />
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4.5 text-[var(--text-muted)]" />
             <input
               type="text"
-              placeholder="Search by customer name, Passport ID, or Ghana Card National ID..."
+              placeholder="Search verified customers by Passport ID, name, or Ghana Card National ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/[0.03] pl-10 pr-4 py-2 text-xs text-white placeholder-white/30 focus:border-[#D4A017]/60 focus:outline-none"
+              className="w-full rounded-md border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] pl-10 pr-3.5 py-2.5 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-gold)] focus:outline-none transition-colors"
             />
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
-            {[
-              { label: "All Tiers", value: "ALL" },
-              { label: "Tier 3 Passport", value: "TIER_3_PASSPORT" },
-              { label: "Tier 2", value: "TIER_2" },
-              { label: "Tier 1", value: "TIER_1" },
-            ].map((tab) => (
+          <div className="flex items-center gap-2">
+            <Filter className="size-4 text-[var(--text-muted)]" />
+            <span className="font-mono text-xs uppercase tracking-wider text-[var(--text-muted)] font-bold mr-1">
+              KYC Level:
+            </span>
+            {["ALL", "TIER_1", "TIER_2", "TIER_3_PASSPORT"].map((tier) => (
               <button
-                key={tab.value}
-                onClick={() => setTierFilter(tab.value)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-mono transition-all shrink-0 ${
-                  tierFilter === tab.value
-                    ? "bg-[#D4A017]/20 text-[#FCD116] border border-[#D4A017]/40 font-bold"
-                    : "text-white/50 hover:bg-white/[0.05] hover:text-white"
+                key={tier}
+                onClick={() => setTierFilter(tier)}
+                className={`rounded-md px-3.5 py-2 text-xs font-mono font-bold transition-colors cursor-pointer ${
+                  tierFilter === tier
+                    ? "bg-[var(--accent-gold)] text-black shadow-xs"
+                    : "border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 }`}
               >
-                {tab.label}
+                {tier === "TIER_3_PASSPORT" ? "Tier 3 Passport" : tier.replace("_", " ")}
               </button>
             ))}
           </div>
@@ -256,81 +264,74 @@ export function CustomersPage() {
       {/* Customer Directory Table */}
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-white/[0.08] bg-white/[0.02] font-mono uppercase tracking-wider text-white/40">
+          <table className="w-full text-left text-base">
+            <thead className="border-b border-[var(--border-default)] bg-[var(--bg-surface-elevated)] font-mono uppercase tracking-wider text-[var(--text-muted)] text-xs">
               <tr>
-                <th className="px-5 py-3.5">Customer &amp; Verified Passport</th>
-                <th className="px-4 py-3.5">Ghana Card Number</th>
-                <th className="px-4 py-3.5">KYC Level</th>
+                <th className="px-5 py-3.5">Customer &amp; Passport ID</th>
+                <th className="px-4 py-3.5">National ID Hash</th>
+                <th className="px-4 py-3.5">KYC Tier</th>
                 <th className="px-4 py-3.5">Trust Score</th>
                 <th className="px-4 py-3.5">Status</th>
-                <th className="px-4 py-3.5">Linked Rail Nodes</th>
-                <th className="px-4 py-3.5 text-right">Inspect</th>
+                <th className="px-4 py-3.5">Linked Banks</th>
+                <th className="px-5 py-3.5 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.04]">
+            <tbody className="divide-y divide-[var(--border-subtle)]">
               {filtered.map((c) => (
                 <tr
                   key={c.id}
                   onClick={() => setSelectedCustomer(c)}
-                  className="hover:bg-white/[0.03] transition-colors cursor-pointer group"
+                  className="hover:bg-[var(--bg-surface-elevated)] transition-colors cursor-pointer group"
                 >
                   <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={c.avatar}
-                        alt={c.name}
-                        className="size-10 rounded-xl object-cover border border-white/10 shrink-0"
-                      />
-                      <div>
-                        <p className="font-bold text-white group-hover:text-[#FCD116] transition-colors">
-                          {c.name}
-                        </p>
-                        <span className="text-[11px] font-mono text-white/40 block mt-0.5">
-                          {c.id}
-                        </span>
-                      </div>
-                    </div>
+                    <p className="font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-gold)] transition-colors text-base">
+                      {c.name}
+                    </p>
+                    <span className="text-xs font-mono text-[var(--text-muted)] mt-0.5 block">{c.id}</span>
                   </td>
-                  <td className="px-4 py-4 font-mono text-white/80">{c.nationalId}</td>
+                  <td className="px-4 py-4 font-mono text-sm text-[var(--text-secondary)]">{c.nationalId}</td>
                   <td className="px-4 py-4">
-                    <span className="font-mono text-[10px] font-bold px-2.5 py-1 rounded-lg border border-[#D4A017]/30 bg-[#D4A017]/10 text-[#FCD116]">
+                    <span className="font-mono text-xs font-bold px-3 py-1.5 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-primary)]">
                       {c.kycTier.replace("_", " ")}
                     </span>
                   </td>
                   <td className="px-4 py-4">
                     <span
-                      className={`font-mono font-bold font-tabular text-sm ${
+                      className={`font-mono font-bold font-tabular text-base ${
                         c.trustScore > 80
-                          ? "text-[#00C97A]"
+                          ? "text-[var(--accent-emerald)]"
                           : c.trustScore > 60
-                            ? "text-[#FCD116]"
-                            : "text-[#F26D6D]"
+                          ? "text-[var(--accent-gold)]"
+                          : "text-[var(--risk-critical)]"
                       }`}
                     >
-                      {c.trustScore} / 100
+                      {c.trustScore}/100
                     </span>
                   </td>
                   <td className="px-4 py-4">
-                    <StatusBadge tone={c.tone} size="sm">
+                    <StatusBadge tone={c.tone} size="md">
                       {c.status.replace("_", " ")}
                     </StatusBadge>
                   </td>
                   <td className="px-4 py-4">
-                    <div className="flex items-center gap-1.5">
-                      <Building2 className="size-3.5 text-[#D4A017]" />
-                      <span className="font-mono text-white/70">
-                        {c.linkedInstitutions.length} Banks
-                      </span>
-                    </div>
+                    <span className="rounded-md bg-[var(--bg-surface-elevated)] px-3 py-1 font-mono text-xs text-[var(--text-secondary)] border border-[var(--border-default)] font-medium">
+                      {c.linkedInstitutions.length} Institutions
+                    </span>
                   </td>
-                  <td className="px-4 py-4 text-right">
-                    <button className="font-semibold text-xs text-[#D4A017] group-hover:underline">
+                  <td className="px-5 py-4 text-right">
+                    <span className="font-mono text-sm text-[var(--accent-gold)] font-bold group-hover:underline">
                       Passport →
-                    </button>
+                    </span>
                   </td>
                 </tr>
               ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-base text-[var(--text-muted)]">
+                    No verified customer passports match the criteria.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -341,143 +342,79 @@ export function CustomersPage() {
         open={Boolean(selectedCustomer)}
         onClose={() => setSelectedCustomer(null)}
         title={selectedCustomer?.name || "Customer Passport"}
-        subtitle={`Passport Ref: ${selectedCustomer?.id}`}
+        subtitle={`Passport: ${selectedCustomer?.id}`}
         badge={
           selectedCustomer ? (
-            <StatusBadge tone={selectedCustomer.tone}>
+            <StatusBadge tone={selectedCustomer.tone} size="md">
               {selectedCustomer.status.replace("_", " ")}
             </StatusBadge>
           ) : null
         }
         footer={
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between w-full">
             <Button
               variant="outline"
-              size="sm"
-              onClick={() => handleCopy(selectedCustomer?.id || "", "Passport Ref")}
+              size="md"
+              onClick={() => handleCopy(selectedCustomer?.id || "")}
+              className="gap-2"
             >
-              <Copy className="size-3.5 mr-1" /> Copy Ref
+              <Copy className="size-4" />
+              <span>Copy Passport Ref</span>
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => setSelectedCustomer(null)}>
-              Close
+            <Button variant="secondary" size="md" onClick={() => setSelectedCustomer(null)}>
+              Dismiss
             </Button>
           </div>
         }
       >
         {selectedCustomer && (
           <div className="space-y-6">
-            {/* Customer Profile Card */}
-            <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <img
-                src={selectedCustomer.avatar}
-                alt={selectedCustomer.name}
-                className="size-16 rounded-2xl object-cover border border-[#D4A017]/40 shadow-lg"
-              />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-white truncate">
-                    {selectedCustomer.name}
-                  </h3>
-                  <UserCheck className="size-4 text-[#00C97A]" />
-                </div>
-                <p className="text-xs text-white/50 mt-0.5">{selectedCustomer.residence}</p>
-                <p className="text-[11px] font-mono text-[#D4A017] mt-1">
-                  {selectedCustomer.phone}
-                </p>
-              </div>
-            </div>
-
-            {/* Trust Score & Biometric Verification Card */}
-            <div className="rounded-2xl border border-white/10 bg-black/40 p-4 space-y-3">
+            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-mono text-[10px] uppercase text-white/40">
-                    Financial Trust Score
-                  </p>
-                  <p className="text-2xl font-black text-white font-tabular mt-0.5">
+                  <p className="font-mono text-xs uppercase tracking-wider text-[var(--text-muted)] font-bold">Financial Trust Score</p>
+                  <p className="text-4xl font-extrabold text-[var(--text-primary)] font-tabular mt-1.5">
                     {selectedCustomer.trustScore} / 100
                   </p>
                 </div>
-                <span className="grid size-12 place-items-center rounded-2xl bg-[#00C97A]/15 text-[#00C97A] border border-[#00C97A]/30">
-                  <Fingerprint className="size-6" />
+                <span className="grid size-12 place-items-center rounded-xl bg-[var(--accent-emerald)]/15 text-[var(--accent-emerald)] border border-[var(--accent-emerald)]/30">
+                  <ShieldCheck className="size-7" />
                 </span>
               </div>
-              <div className="border-t border-white/[0.06] pt-3">
-                <p className="text-[10px] font-mono text-white/40 uppercase">
-                  Biometric Cryptographic Proof
-                </p>
-                <p className="text-xs font-mono text-[#00C97A] mt-0.5">
-                  {selectedCustomer.biometricHash}
-                </p>
-              </div>
             </div>
 
-            {/* Identity Credentials */}
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-[#D4A017]">
+              <p className="font-mono text-xs uppercase tracking-wider text-[var(--text-muted)] mb-2.5 font-bold">
                 Identity Credentials &amp; Verification
               </p>
-              <div className="mt-2 space-y-2 text-xs">
-                <div className="flex justify-between py-2 border-b border-white/[0.05]">
-                  <span className="text-white/40">Ghana Card National ID</span>
-                  <span className="font-mono font-bold text-white">
-                    {selectedCustomer.nationalId}
-                  </span>
+              <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] divide-y divide-[var(--border-subtle)] text-base">
+                <div className="flex justify-between px-4 py-3.5">
+                  <span className="text-[var(--text-muted)] text-sm">National ID (Ghana Card)</span>
+                  <span className="font-mono font-bold text-[var(--text-primary)]">{selectedCustomer.nationalId}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-white/[0.05]">
-                  <span className="text-white/40">KYC Verification Tier</span>
-                  <span className="font-mono text-[#FCD116]">
-                    {selectedCustomer.kycTier.replace("_", " ")}
-                  </span>
+                <div className="flex justify-between px-4 py-3.5">
+                  <span className="text-[var(--text-muted)] text-sm">KYC Tier Level</span>
+                  <span className="font-mono text-[var(--accent-gold)] font-bold">{selectedCustomer.kycTier}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-white/[0.05]">
-                  <span className="text-white/40">Last Financial Operation</span>
-                  <span className="text-white/80">{selectedCustomer.lastActive}</span>
+                <div className="flex justify-between px-4 py-3.5">
+                  <span className="text-[var(--text-muted)] text-sm">Last Financial Event</span>
+                  <span className="text-[var(--text-secondary)] font-medium">{selectedCustomer.lastActive}</span>
                 </div>
               </div>
             </div>
 
-            {/* Linked Institutions */}
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-[#D4A017]">
-                Linked Participating Bank Rails
+              <p className="font-mono text-xs uppercase tracking-wider text-[var(--text-muted)] mb-2.5 font-bold">
+                Active Cross-Institution Consent Authorizations
               </p>
-              <div className="mt-2 space-y-2">
-                {selectedCustomer.linkedInstitutions.map((inst) => (
-                  <div
-                    key={inst.code}
-                    className="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/[0.06] p-3 text-xs"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Building2 className="size-4 text-[#D4A017]" />
-                      <div>
-                        <p className="font-bold text-white">{inst.name}</p>
-                        <p className="text-[10px] font-mono text-white/40">
-                          Rail ID: {inst.code}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="font-mono text-[10px] text-[#00C97A]">
-                      Since {inst.verifiedSince}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Active Consents */}
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-[#D4A017]">
-                Authorized Consent Scopes
-              </p>
-              <div className="mt-2 space-y-1.5">
+              <div className="space-y-2.5">
                 {selectedCustomer.activeConsents.map((consent) => (
                   <div
                     key={consent}
-                    className="flex items-center gap-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] p-2.5 text-xs font-mono text-white/80"
+                    className="flex items-center gap-3 rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-default)] p-3.5 text-sm font-mono text-[var(--text-secondary)]"
                   >
-                    <KeyRound className="size-3.5 text-[#D4A017]" />
-                    <span>{consent}</span>
+                    <KeyRound className="size-4.5 text-[var(--accent-gold)] shrink-0" />
+                    <span className="font-semibold">{consent}</span>
                   </div>
                 ))}
               </div>

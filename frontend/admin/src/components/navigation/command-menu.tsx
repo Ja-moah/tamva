@@ -6,7 +6,6 @@ import {
   ExternalLink,
   Network,
   Search,
-  Sparkles,
   Users,
   X,
 } from "lucide-react";
@@ -25,8 +24,7 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        if (open) onClose();
-        else onClose(); // parent handles toggle
+        onClose();
       }
       if (e.key === "Escape" && open) {
         onClose();
@@ -41,7 +39,7 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
   const quickNav = [
     {
       title: "System Overview",
-      desc: "Live health, telemetry & domain readiness",
+      desc: "Live operational telemetry, risk volume & domain contracts",
       icon: CircleGauge,
       action: () => {
         navigate({ to: "/" });
@@ -50,7 +48,7 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
     },
     {
       title: "Risk Events & Rules Engine",
-      desc: "Inspect live fraud decisions & reason codes",
+      desc: "Real-time fraud decisions, anomaly alerts & reason codes",
       icon: Activity,
       action: () => {
         navigate({ to: "/risk-events" });
@@ -58,8 +56,8 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
       },
     },
     {
-      title: "Case Management & Investigations",
-      desc: "Review flagged alerts and AML workflows",
+      title: "Case Management & Alerts",
+      desc: "Investigator queue, evidence review & SAR filing workflows",
       icon: BriefcaseBusiness,
       action: () => {
         navigate({ to: "/cases" });
@@ -67,8 +65,8 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
       },
     },
     {
-      title: "Customer & Identity Profiles",
-      desc: "Verified financial passports & consent scopes",
+      title: "Customer Financial Passports",
+      desc: "Ghana Card biometric hashes, KYC tier boundaries & consent",
       icon: Users,
       action: () => {
         navigate({ to: "/customers" });
@@ -77,7 +75,7 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
     },
     {
       title: "Trust Network Rails",
-      desc: "Inter-institution nodes & settlement gateways",
+      desc: "Inter-institution nodes, PAPSS routing & settlement health",
       icon: Network,
       action: () => {
         navigate({ to: "/network" });
@@ -86,7 +84,7 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
     },
     {
       title: "OpenAPI / Swagger Explorer",
-      desc: "Authoritative Django backend API schema",
+      desc: "Authoritative Django backend endpoint contracts",
       icon: ExternalLink,
       action: () => {
         window.open("/api/docs/", "_blank");
@@ -104,43 +102,44 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-20">
       <div
-        className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
+        className="fixed inset-0 bg-black/50 dark:bg-black/75 backdrop-blur-xs transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="relative mx-auto max-w-2xl transform overflow-hidden rounded-3xl border border-white/10 bg-[#121217] shadow-[0_32px_80px_rgba(0,0,0,0.8)] transition-all animate-in fade-in zoom-in-95">
-        <div className="relative flex items-center border-b border-white/[0.08] px-4">
-          <Search className="size-5 text-[#D4A017] shrink-0" />
+      <div className="relative mx-auto max-w-xl transform overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] shadow-[var(--shadow-lg)] transition-all animate-in fade-in zoom-in-98">
+        <div className="relative flex items-center border-b border-[var(--border-default)] px-4">
+          <Search className="size-4.5 text-[var(--accent-gold)] shrink-0" />
           <input
             type="text"
-            className="w-full bg-transparent px-4 py-4 text-sm text-white placeholder-white/30 focus:outline-none"
-            placeholder="Type a command, route, or search entities (e.g. Risk, AML, Cases)..."
+            className="w-full bg-transparent px-3.5 py-4 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none"
+            placeholder="Type a command or search operations (e.g. Risk, AML, Cases)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
           />
-          <span className="hidden sm:inline-block rounded-md border border-white/10 px-2 py-0.5 font-mono text-[10px] text-white/40 uppercase">
+          <span className="hidden sm:inline-block rounded-md border border-[var(--border-default)] bg-[var(--bg-surface-subtle)] px-2 py-0.5 font-mono text-xs text-[var(--text-muted)] uppercase">
             ESC
           </span>
           <button
             onClick={onClose}
-            className="p-2 text-white/40 hover:text-white sm:hidden"
+            className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] sm:hidden"
             aria-label="Close"
           >
             <X className="size-4" />
           </button>
         </div>
 
-        <div className="max-h-96 overflow-y-auto p-3 space-y-1">
-          <p className="px-3 py-1.5 text-[10px] font-mono font-semibold uppercase tracking-widest text-white/40">
-            Navigation &amp; Operations
+        <div className="max-h-80 overflow-y-auto p-2.5 space-y-1">
+          <p className="px-3 py-1.5 text-xs font-mono font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+            Operations &amp; Navigation
           </p>
           {filtered.length === 0 ? (
-            <div className="p-8 text-center">
-              <Sparkles className="size-8 text-[#D4A017]/40 mx-auto mb-2" />
-              <p className="text-sm font-semibold text-white/70">No matching operations</p>
-              <p className="text-xs text-white/40 mt-1">
-                Try searching for "Risk", "Case", "Identity", or "API"
+            <div className="p-6 text-center">
+              <p className="text-sm font-semibold text-[var(--text-secondary)]">
+                No matching operations found
+              </p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                Try searching for "Risk", "Case", "Passport", or "API"
               </p>
             </div>
           ) : (
@@ -150,16 +149,18 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
                 <button
                   key={item.title}
                   onClick={item.action}
-                  className="w-full flex items-center gap-3.5 rounded-2xl px-3.5 py-3 text-left transition-all duration-150 hover:bg-white/[0.06] hover:border-white/10 group"
+                  className="w-full flex items-center gap-3 rounded-lg px-3.5 py-3 text-left transition-colors hover:bg-[var(--bg-surface-hover)] group cursor-pointer"
                 >
-                  <span className="grid size-10 place-items-center rounded-xl bg-white/[0.04] border border-white/8 text-[#D4A017] group-hover:border-[#D4A017]/40 group-hover:bg-[#D4A017]/10 transition-colors">
-                    <Icon className="size-5" />
+                  <span className="grid size-9 place-items-center rounded-md bg-[var(--bg-surface-subtle)] border border-[var(--border-default)] text-[var(--text-secondary)] group-hover:text-[var(--accent-gold)] transition-colors shrink-0">
+                    <Icon className="size-4.5" />
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white group-hover:text-[#FCD116] transition-colors truncate">
+                    <p className="text-sm font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-gold)] transition-colors truncate">
                       {item.title}
                     </p>
-                    <p className="text-xs text-white/50 truncate mt-0.5">{item.desc}</p>
+                    <p className="text-xs text-[var(--text-secondary)] truncate mt-0.5">
+                      {item.desc}
+                    </p>
                   </div>
                 </button>
               );
@@ -167,14 +168,15 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-white/[0.08] px-4 py-3 bg-white/[0.02] text-[11px] text-white/40">
+        <div className="flex items-center justify-between border-t border-[var(--border-default)] px-4 py-3 bg-[var(--bg-surface-subtle)] text-xs text-[var(--text-secondary)] font-mono">
           <span className="flex items-center gap-2">
-            <span className="size-2 rounded-full bg-[#00C97A]" />
-            TAMVA Operational Console v2.0
+            <span className="size-2 rounded-full bg-[var(--accent-emerald)]" />
+            TAMVA Operations
           </span>
-          <span className="font-mono">Use ↑↓ to navigate, ↵ to select</span>
+          <span>Press ESC to exit</span>
         </div>
       </div>
     </div>
   );
 }
+

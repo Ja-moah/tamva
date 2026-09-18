@@ -20,44 +20,33 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border font-mono font-semibold tracking-wider uppercase whitespace-nowrap select-none",
-        size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-[11px]",
+        "inline-flex items-center gap-2 rounded-lg border font-semibold whitespace-nowrap select-none",
+        size === "sm" ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm",
         tone === "success" &&
-          "border-[#00C97A]/30 bg-[#00C97A]/10 text-[#00C97A] shadow-[0_0_12px_rgba(0,201,122,0.15)]",
+          "border-[var(--risk-low-border)] bg-[var(--risk-low-bg)] text-[var(--risk-low-text)]",
         tone === "warning" &&
-          "border-[#D4A017]/35 bg-[#D4A017]/10 text-[#FCD116] shadow-[0_0_12px_rgba(212,160,23,0.15)]",
+          "border-[var(--risk-med-border)] bg-[var(--risk-med-bg)] text-[var(--risk-med-text)]",
         tone === "danger" &&
-          "border-[#F26D6D]/35 bg-[#F26D6D]/10 text-[#F26D6D] shadow-[0_0_12px_rgba(242,109,109,0.15)]",
+          "border-[var(--risk-high-border)] bg-[var(--risk-high-bg)] text-[var(--risk-high-text)]",
         tone === "info" &&
-          "border-[#06B6D4]/35 bg-[#06B6D4]/10 text-[#22D3EE] shadow-[0_0_12px_rgba(6,182,212,0.15)]",
-        tone === "neutral" && "border-white/10 bg-white/[0.04] text-white/70",
+          "border-[var(--border-default)] bg-[var(--bg-surface-hover)] text-[var(--text-primary)]",
+        tone === "neutral" &&
+          "border-[var(--border-default)] bg-[var(--bg-surface-subtle)] text-[var(--text-secondary)]",
         className,
       )}
     >
-      <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden="true">
-        {pulse ? (
-          <span
-            className={cn(
-              "absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping",
-              tone === "success" && "bg-[#00C97A]",
-              tone === "warning" && "bg-[#D4A017]",
-              tone === "danger" && "bg-[#F26D6D]",
-              tone === "info" && "bg-[#06B6D4]",
-              tone === "neutral" && "bg-white/60",
-            )}
-          />
-        ) : null}
-        <span
-          className={cn(
-            "relative inline-flex h-1.5 w-1.5 rounded-full",
-            tone === "success" && "bg-[#00C97A]",
-            tone === "warning" && "bg-[#D4A017]",
-            tone === "danger" && "bg-[#F26D6D]",
-            tone === "info" && "bg-[#06B6D4]",
-            tone === "neutral" && "bg-white/60",
-          )}
-        />
-      </span>
+      <span
+        className={cn(
+          "inline-block size-2 rounded-full shrink-0",
+          tone === "success" && "bg-[var(--risk-low-text)]",
+          tone === "warning" && "bg-[var(--risk-med-text)]",
+          tone === "danger" && "bg-[var(--risk-high-text)]",
+          tone === "info" && "bg-[var(--accent-gold)]",
+          tone === "neutral" && "bg-[var(--text-muted)]",
+          pulse && "animate-pulse",
+        )}
+        aria-hidden="true"
+      />
       {children}
     </span>
   );

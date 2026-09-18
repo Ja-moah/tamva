@@ -5,28 +5,31 @@ import type { ButtonHTMLAttributes } from "react";
 
 import { cn } from "../../lib/utils/cn";
 
+
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A017]/60 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40 cursor-pointer select-none",
+  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-40 cursor-pointer select-none",
   {
     variants: {
       variant: {
         primary:
-          "bg-gradient-to-r from-[#D4A017] to-[#FCD116] text-[#120F08] shadow-[0_12px_24px_-6px_rgba(212,160,23,0.4)] hover:shadow-[0_16px_32px_-6px_rgba(212,160,23,0.6)] hover:brightness-105 active:brightness-95",
+          "bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 shadow-xs active:scale-[0.99]",
+        gold:
+          "bg-[var(--accent-gold)] text-black font-semibold hover:brightness-105 active:scale-[0.99] shadow-xs",
         emerald:
-          "bg-gradient-to-r from-[#006B3F] to-[#00C97A] text-white shadow-[0_12px_24px_-6px_rgba(0,201,122,0.4)] hover:shadow-[0_16px_32px_-6px_rgba(0,201,122,0.6)] hover:brightness-105 active:brightness-95",
+          "bg-[#10b981] text-white font-semibold hover:bg-[#059669] active:scale-[0.99] shadow-xs",
         secondary:
-          "border border-white/10 bg-white/[0.04] text-white backdrop-blur-md hover:bg-white/[0.08] hover:border-white/20 active:bg-white/[0.03]",
+          "border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] active:bg-[var(--bg-surface-active)] shadow-xs",
         ghost:
-          "text-white/60 hover:text-white hover:bg-white/[0.06] active:bg-white/[0.03]",
+          "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] active:bg-[var(--bg-surface-active)]",
         danger:
-          "bg-gradient-to-r from-[#CE1126] to-[#F26D6D] text-white shadow-[0_12px_24px_-6px_rgba(242,109,109,0.35)] hover:brightness-105 active:brightness-95",
+          "bg-[#e11d48] text-white font-semibold hover:bg-[#be123c] active:scale-[0.99] shadow-xs",
         outline:
-          "border border-[#D4A017]/40 bg-[#D4A017]/5 text-[#D4A017] hover:bg-[#D4A017]/15 hover:border-[#D4A017]/70",
+          "border border-[var(--border-default)] hover:border-[var(--accent-gold)] bg-transparent text-[var(--text-primary)] hover:text-[var(--accent-gold)]",
       },
       size: {
-        sm: "h-8 px-3 text-[10px]",
-        md: "h-10 px-4 py-2",
-        lg: "h-12 px-6 text-sm tracking-[0.16em]",
+        sm: "h-8 px-3 text-xs",
+        md: "h-9 px-4 text-sm",
+        lg: "h-10 px-5 text-sm",
         icon: "size-9 p-0",
       },
     },
@@ -36,6 +39,7 @@ const buttonVariants = cva(
     },
   },
 );
+
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
   VariantProps<typeof buttonVariants> & {
@@ -75,4 +79,3 @@ export function Button({
     </button>
   );
 }
-

@@ -1,16 +1,18 @@
 import {
+  AlertTriangle,
   CheckCircle2,
   Clock,
   Download,
-  FileCheck2,
   FileText,
-  Lock,
+  Filter,
+  Plus,
   Search,
   ShieldAlert,
-  User,
+  UserCheck,
 } from "lucide-react";
 import { useState } from "react";
 
+import { CaseTriageChart } from "../components/charts/case-triage-chart";
 import { StatusBadge, type StatusTone } from "../components/feedback/status-badge";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -30,7 +32,6 @@ interface CaseItem {
   openedAt: string;
   evidenceCount: number;
   notes: string;
-  evidenceFiles: { name: string; size: string; type: string }[];
 }
 
 const mockCases: CaseItem[] = [
@@ -46,12 +47,7 @@ const mockCases: CaseItem[] = [
     assignedTo: "Ama Boateng (AML Lead)",
     openedAt: "2026-09-17 01:15",
     evidenceCount: 4,
-    notes: "Sudden GH₵ 240,000 inflow dispersed in 18 micro-payments within 12 minutes.",
-    evidenceFiles: [
-      { name: "outward_transfer_batch_manifest.json", size: "48 KB", type: "JSON Ledger" },
-      { name: "device_fingerprint_mismatch_report.pdf", size: "1.2 MB", type: "PDF Audit" },
-      { name: "telecom_cell_tower_logs.csv", size: "320 KB", type: "CSV Telemetry" },
-    ],
+    notes: "Sudden GH₵ 240,000 inflow dispersed in 18 micro-payments within 12 minutes via MoMo switch.",
   },
   {
     id: "CAS-4028",
@@ -65,11 +61,7 @@ const mockCases: CaseItem[] = [
     assignedTo: "Kwesi Appiah",
     openedAt: "2026-09-16 22:40",
     evidenceCount: 2,
-    notes: "Deepfake spoof detection triggered during Level 3 KYC passport upgrade.",
-    evidenceFiles: [
-      { name: "iris_scan_depth_map.png", size: "840 KB", type: "PNG Biometric" },
-      { name: "nist_compliance_delta.json", size: "12 KB", type: "JSON Spec" },
-    ],
+    notes: "Deepfake spoof detection triggered during Level 3 KYC passport upgrade verification.",
   },
   {
     id: "CAS-4027",
@@ -83,10 +75,7 @@ const mockCases: CaseItem[] = [
     assignedTo: "Unassigned",
     openedAt: "2026-09-16 18:20",
     evidenceCount: 1,
-    notes: "Simultaneous logins initiated from London and Accra within 4 minutes.",
-    evidenceFiles: [
-      { name: "ip_asn_hop_routing_trace.txt", size: "14 KB", type: "Log Trace" },
-    ],
+    notes: "Simultaneous logins initiated from London IP (AS2856) and Accra cell tower within 4 minutes.",
   },
   {
     id: "CAS-4026",
@@ -100,40 +89,38 @@ const mockCases: CaseItem[] = [
     assignedTo: "Yaw Darko (Compliance)",
     openedAt: "2026-09-15 14:00",
     evidenceCount: 3,
-    notes: "Verified secondary national ID; confirmed false positive against UN list.",
-    evidenceFiles: [
-      { name: "ghana_card_secondary_verification.pdf", size: "2.4 MB", type: "PDF Identity" },
-      { name: "un_sanctions_fuzzy_match_score.json", size: "8 KB", type: "JSON Report" },
-    ],
+    notes: "Verified secondary national ID; confirmed false positive against UN / OFAC SDN list.",
   },
 ];
 
 export function CasesPage() {
   const [cases, setCases] = useState<CaseItem[]>(mockCases);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCase, setSelectedCase] = useState<CaseItem | null>(null);
   const { toast } = useToast();
 
   const filtered = cases.filter((c) => {
     const matchesStatus = statusFilter === "ALL" || c.status === statusFilter;
+    const matchesPriority = priorityFilter === "ALL" || c.priority === priorityFilter;
     const matchesSearch =
       c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.institution.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
+    return matchesStatus && matchesPriority && matchesSearch;
   });
 
   const handleResolveCase = () => {
     if (!selectedCase) return;
     setCases((prev) =>
       prev.map((c) =>
-        c.id === selectedCase.id ? { ...c, status: "RESOLVED", tone: "success", slaHoursRemaining: 0 } : c,
+        c.id === selectedCase.id ? { ...c, status: "RESOLVED", tone: "success" } : c,
       ),
     );
     toast({
-      title: "Case Resolved & Signed Off",
+      title: "Case Resolved & Archived",
       description: `Investigation ${selectedCase.id} closed with compliance audit record.`,
       type: "success",
     });
@@ -142,187 +129,268 @@ export function CasesPage() {
 
   const handleEscalateSAR = () => {
     if (!selectedCase) return;
-    setCases((prev) =>
-      prev.map((c) =>
-        c.id === selectedCase.id ? { ...c, status: "ESCALATED", tone: "danger" } : c,
-      ),
-    );
     toast({
-      title: "Escalated to Financial Intelligence Centre",
-      description: `Suspicious Activity Report (SAR) docket compiled and queued for ${selectedCase.id}.`,
+      title: "Escalated to FIC Ghana",
+      description: `Suspicious Activity Report (SAR) draft generated for ${selectedCase.id}.`,
       type: "error",
     });
-    setSelectedCase(null);
   };
 
-  const handleFreezeAccount = () => {
-    if (!selectedCase) return;
+  const handleExport = () => {
     toast({
-      title: "Account Freeze Lock Dispatched",
-      description: `Cryptographic freeze hold applied to ${selectedCase.customer} across partner rails.`,
-      type: "warning",
+      title: "Audit Dossier Exported",
+      description: "Downloaded ISO 20022 compliant investigation archive (.json)",
+      type: "info",
     });
   };
 
   return (
     <div className="space-y-7">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header & Page Identification */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[var(--border-subtle)] pb-5">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold text-[#D4A017] uppercase tracking-widest">
-              AML &amp; Fraud Desk
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="font-mono text-xs font-bold text-[var(--accent-gold)] uppercase tracking-wider">
+              AML &amp; Fraud Investigation Desk
             </span>
-            <span className="text-white/30">·</span>
-            <StatusBadge tone="warning" size="sm">
-              Triage &amp; Investigations Queue
-            </StatusBadge>
           </div>
-          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            Investigation Cases &amp; AML Triage
+          <h1 className="text-3xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-4xl">
+            Case Management &amp; Triage
           </h1>
-          <p className="mt-2 text-sm text-white/60 max-w-2xl leading-relaxed">
-            Review alerts generated by the Risk Domain, gather evidence documents, manage
-            investigator assignments, and record compliance decisions with full auditability.
+          <p className="mt-1.5 text-base text-[var(--text-secondary)] max-w-3xl leading-relaxed">
+            Review anomaly alerts dispatched by TAMVA risk policies, assemble evidentiary dossiers, manage officer assignments, and record binding compliance outcomes.
           </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" size="md" onClick={handleExport} className="gap-2">
+            <Download className="size-4 text-[var(--text-muted)]" />
+            <span>Export Dossier</span>
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() =>
+              toast({
+                title: "Manual Case Creation",
+                description: "New investigation intake form opened",
+                type: "info",
+              })
+            }
+            className="gap-2"
+          >
+            <Plus className="size-4" />
+            <span>New Case</span>
+          </Button>
         </div>
       </div>
 
-      {/* Case KPI Strips */}
+      {/* KPI & Metrics Bar */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card glow="gold" className="p-4">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">Open Cases</p>
-          <p className="mt-1 text-2xl font-black text-white font-tabular">3 Active</p>
-          <p className="text-[11px] text-[#00C97A] mt-1 font-semibold">1 Assigned today</p>
-        </Card>
-        <Card glow="crimson" className="p-4">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">
-            Critical SLA
+        <Card className="p-5">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Active Inquiries</p>
+            <Clock className="size-4.5 text-[var(--accent-gold)]" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-[var(--text-primary)] font-tabular">3 Active</p>
+          <p className="text-sm text-[var(--accent-emerald)] mt-1.5 font-semibold flex items-center gap-1.5">
+            <UserCheck className="size-4" /> 1 assigned today
           </p>
-          <p className="mt-1 text-2xl font-black text-[#F26D6D] font-tabular">1 Imminent</p>
-          <p className="text-[11px] text-[#F26D6D] mt-1 font-mono">&lt; 2h SLA deadline</p>
         </Card>
-        <Card glow="emerald" className="p-4">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">Avg Resolution</p>
-          <p className="mt-1 text-2xl font-black text-white font-tabular">4.2 Hours</p>
-          <p className="text-[11px] text-white/50 mt-1">Investigation turnaround</p>
+
+        <Card className="p-5">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Critical SLA Breach</p>
+            <ShieldAlert className="size-4.5 text-[var(--risk-critical)]" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-[var(--risk-critical)] font-tabular">1 Imminent</p>
+          <p className="text-sm text-[var(--text-muted)] mt-1.5 font-mono font-medium">&lt; 2h remaining window</p>
         </Card>
-        <Card glow="gold" className="p-4">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">
-            Weekly Cleared
-          </p>
-          <p className="mt-1 text-2xl font-black text-[#00C97A] font-tabular">28 Cases</p>
-          <p className="text-[11px] text-[#00C97A] mt-1 font-semibold">100% compliant</p>
+
+        <Card className="p-5">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Mean Time to Resolution</p>
+            <Clock className="size-4.5 text-[var(--text-muted)]" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-[var(--text-primary)] font-tabular">4.2 Hours</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1.5 font-medium">-18% vs 30d baseline</p>
+        </Card>
+
+        <Card className="p-5">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Weekly Resolution Rate</p>
+            <CheckCircle2 className="size-4.5 text-[var(--accent-emerald)]" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-[var(--accent-emerald)] font-tabular">28 Closed</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1.5 font-semibold">96.4% on-time clearance</p>
         </Card>
       </div>
 
-      {/* Filter and Search */}
+      {/* Visual Analytics Chart: 7-Day Case Velocity & SLA Resolution */}
+      <Card className="p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 pb-3 border-b border-[var(--border-subtle)]">
+          <div>
+            <h2 className="text-lg font-bold text-[var(--text-primary)]">
+              Case Triage &amp; Resolution Throughput (7 Days)
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">
+              Daily comparative volume of new incident alerts vs resolved dossiers and regulatory SAR escalations.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">
+              FIC / AML SLA Engine
+            </span>
+          </div>
+        </div>
+        <CaseTriageChart />
+      </Card>
+
+      {/* Filter and Search Bar */}
       <Card className="p-4">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#D4A017]" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4.5 text-[var(--text-muted)]" />
             <input
               type="text"
-              placeholder="Search by Case ID, customer name, title, or assignee..."
+              placeholder="Search by Case ID, customer name, Ghana Card ID, or institution..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/[0.03] pl-10 pr-4 py-2 text-xs text-white placeholder-white/30 focus:border-[#D4A017]/60 focus:outline-none"
+              className="w-full rounded-md border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] pl-10 pr-3.5 py-2.5 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-gold)] focus:outline-none transition-colors"
             />
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto">
-            {["ALL", "NEW", "UNDER_REVIEW", "ESCALATED", "RESOLVED"].map((status) => (
-              <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                className={`rounded-xl px-3 py-1.5 text-xs font-mono font-semibold uppercase tracking-wider transition-colors shrink-0 ${
-                  statusFilter === status
-                    ? "bg-[#D4A017] text-black font-bold shadow-[0_0_12px_rgba(212,160,23,0.3)]"
-                    : "border border-white/10 bg-white/[0.03] text-white/60 hover:text-white"
-                }`}
-              >
-                {status.replace("_", " ")}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <Filter className="size-4 text-[var(--text-muted)]" />
+              <span className="font-mono text-xs uppercase tracking-wider text-[var(--text-muted)] font-bold mr-1">
+                Status:
+              </span>
+              {["ALL", "NEW", "UNDER_REVIEW", "ESCALATED", "RESOLVED"].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
+                  className={`rounded-md px-3.5 py-2 text-xs font-mono font-bold transition-colors cursor-pointer ${
+                    statusFilter === status
+                      ? "bg-[var(--accent-gold)] text-black shadow-xs"
+                      : "border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  }`}
+                >
+                  {status.replace("_", " ")}
+                </button>
+              ))}
+            </div>
+
+            <div className="h-5 w-px bg-[var(--border-subtle)] hidden sm:block" />
+
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-xs uppercase tracking-wider text-[var(--text-muted)] font-bold mr-1">
+                Priority:
+              </span>
+              {["ALL", "CRITICAL", "HIGH", "MEDIUM"].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPriorityFilter(p)}
+                  className={`rounded-md px-3 py-2 text-xs font-mono font-bold transition-colors cursor-pointer ${
+                    priorityFilter === p
+                      ? "bg-[var(--border-strong)] text-[var(--text-primary)]"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </Card>
 
-      {/* Case List */}
+      {/* Case List Table */}
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-white/[0.08] bg-white/[0.02] font-mono uppercase tracking-wider text-white/40">
+          <table className="w-full text-left text-base">
+            <thead className="border-b border-[var(--border-default)] bg-[var(--bg-surface-elevated)] font-mono uppercase tracking-wider text-[var(--text-muted)] text-xs">
               <tr>
                 <th className="px-5 py-3.5">Case Reference</th>
-                <th className="px-4 py-3.5">Investigation Subject &amp; Title</th>
-                <th className="px-4 py-3.5">Target Institution</th>
+                <th className="px-4 py-3.5">Investigation Context</th>
+                <th className="px-4 py-3.5">Subject &amp; Institution</th>
                 <th className="px-4 py-3.5">Priority</th>
                 <th className="px-4 py-3.5">Status</th>
-                <th className="px-4 py-3.5">SLA Countdown</th>
-                <th className="px-4 py-3.5 text-right">Inspect</th>
+                <th className="px-4 py-3.5">SLA Window</th>
+                <th className="px-5 py-3.5 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.04]">
+            <tbody className="divide-y divide-[var(--border-subtle)]">
               {filtered.map((c) => (
                 <tr
                   key={c.id}
                   onClick={() => setSelectedCase(c)}
-                  className="hover:bg-white/[0.03] transition-colors cursor-pointer group"
+                  className="hover:bg-[var(--bg-surface-elevated)] transition-colors cursor-pointer group"
                 >
-                  <td className="px-5 py-4 font-mono font-bold text-white group-hover:text-[#FCD116] transition-colors">
+                  <td className="px-5 py-4 font-mono font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-gold)] transition-colors text-base">
                     {c.id}
                   </td>
                   <td className="px-4 py-4">
-                    <p className="font-bold text-white/95">{c.title}</p>
-                    <p className="text-[11px] text-white/50 flex items-center gap-1.5 mt-0.5">
-                      <span className="text-white/80">{c.customer}</span> ·{" "}
-                      <FileText className="size-3 text-[#D4A017]" />
-                      {c.evidenceCount} evidence files
+                    <p className="font-bold text-[var(--text-primary)] text-base">{c.title}</p>
+                    <p className="text-sm text-[var(--text-muted)] flex items-center gap-1.5 mt-0.5">
+                      <FileText className="size-4 text-[var(--accent-gold)]" />
+                      {c.evidenceCount} evidentiary items attached
                     </p>
                   </td>
-                  <td className="px-4 py-4 font-mono text-white/70">{c.institution}</td>
+                  <td className="px-4 py-4">
+                    <p className="text-[var(--text-primary)] font-bold text-base">{c.customer}</p>
+                    <p className="text-sm text-[var(--text-muted)]">{c.institution}</p>
+                  </td>
                   <td className="px-4 py-4">
                     <span
-                      className={`font-mono text-[10px] font-bold px-2.5 py-1 rounded-lg ${
+                      className={`font-mono text-xs font-bold px-3 py-1.5 rounded-md ${
                         c.priority === "CRITICAL"
-                          ? "bg-[#F26D6D]/20 text-[#F26D6D] border border-[#F26D6D]/40 animate-pulse"
+                          ? "bg-red-500/15 text-[var(--risk-critical)] border border-red-500/30"
                           : c.priority === "HIGH"
-                            ? "bg-[#D4A017]/20 text-[#FCD116] border border-[#D4A017]/40"
-                            : "bg-white/10 text-white/70"
+                          ? "bg-amber-500/15 text-[var(--risk-high)] border border-amber-500/30"
+                          : "bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] border border-[var(--border-default)]"
                       }`}
                     >
                       {c.priority}
                     </span>
                   </td>
                   <td className="px-4 py-4">
-                    <StatusBadge tone={c.tone} size="sm">
+                    <StatusBadge tone={c.tone} size="md">
                       {c.status.replace("_", " ")}
                     </StatusBadge>
                   </td>
-                  <td className="px-4 py-4 font-mono">
+                  <td className="px-4 py-4 font-mono text-base">
                     {c.status === "RESOLVED" ? (
-                      <span className="text-[#00C97A] flex items-center gap-1">
-                        <CheckCircle2 className="size-3.5" /> Closed
+                      <span className="text-[var(--accent-emerald)] flex items-center gap-1.5 font-bold">
+                        <CheckCircle2 className="size-4.5" /> Closed
                       </span>
                     ) : (
                       <span
-                        className={`flex items-center gap-1 font-bold ${
-                          c.slaHoursRemaining <= 2 ? "text-[#F26D6D]" : "text-white/70"
+                        className={`flex items-center gap-1.5 font-tabular ${
+                          c.slaHoursRemaining <= 2
+                            ? "text-[var(--risk-critical)] font-bold"
+                            : "text-[var(--text-secondary)] font-medium"
                         }`}
                       >
-                        <Clock className="size-3.5" />
+                        <Clock className="size-4.5" />
                         {c.slaHoursRemaining}h remaining
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-4 text-right">
-                    <button className="font-semibold text-xs text-[#D4A017] group-hover:underline">
-                      Review →
-                    </button>
+                  <td className="px-5 py-4 text-right">
+                    <span className="font-mono text-sm text-[var(--accent-gold)] font-bold group-hover:underline">
+                      Inspect →
+                    </span>
                   </td>
                 </tr>
               ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-base text-[var(--text-muted)]">
+                    No cases match the selected search or filter criteria.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -336,26 +404,23 @@ export function CasesPage() {
         subtitle={`Case ID: ${selectedCase?.id} · ${selectedCase?.institution}`}
         badge={
           selectedCase ? (
-            <StatusBadge tone={selectedCase.tone}>
+            <StatusBadge tone={selectedCase.tone} size="md">
               {selectedCase.status.replace("_", " ")}
             </StatusBadge>
           ) : null
         }
         footer={
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 w-full">
+            <Button variant="danger" size="md" onClick={handleEscalateSAR} className="gap-2">
+              <AlertTriangle className="size-4" />
+              <span>Escalate to FIC</span>
+            </Button>
             <div className="flex items-center gap-2">
-              <Button variant="danger" size="sm" onClick={handleEscalateSAR}>
-                <ShieldAlert className="size-3.5 mr-1" /> Escalate SAR
+              <Button variant="emerald" size="md" onClick={handleResolveCase} className="gap-2">
+                <CheckCircle2 className="size-4" />
+                <span>Resolve &amp; Close</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={handleFreezeAccount}>
-                <Lock className="size-3.5 mr-1" /> Freeze Account
-              </Button>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="emerald" size="sm" onClick={handleResolveCase}>
-                <CheckCircle2 className="size-3.5 mr-1" /> Sign-off &amp; Resolve
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => setSelectedCase(null)}>
+              <Button variant="secondary" size="md" onClick={() => setSelectedCase(null)}>
                 Dismiss
               </Button>
             </div>
@@ -364,77 +429,40 @@ export function CasesPage() {
       >
         {selectedCase && (
           <div className="space-y-6">
-            <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-[#D4A017]">
-                Investigation Summary &amp; Forensic Reason
+            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-5">
+              <p className="font-mono text-xs uppercase tracking-wider text-[var(--accent-gold)] font-bold">
+                Investigation Trigger &amp; Case Narrative
               </p>
-              <p className="mt-2 text-sm text-white/95 leading-relaxed">{selectedCase.notes}</p>
+              <p className="mt-2 text-base text-[var(--text-primary)] leading-relaxed">{selectedCase.notes}</p>
             </div>
 
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-[#D4A017]">
-                Assignment &amp; Case Audit Metadata
+              <p className="font-mono text-xs uppercase tracking-wider text-[var(--text-muted)] mb-2.5 font-bold">
+                Operational Scope &amp; Assignee
               </p>
-              <div className="mt-2 space-y-2 text-xs">
-                <div className="flex justify-between py-2 border-b border-white/[0.05]">
-                  <span className="text-white/40">Lead Investigator</span>
-                  <span className="font-bold text-white flex items-center gap-1.5">
-                    <User className="size-3.5 text-[#D4A017]" />
-                    {selectedCase.assignedTo}
+              <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] divide-y divide-[var(--border-subtle)] text-base">
+                <div className="flex justify-between px-4 py-3.5">
+                  <span className="text-[var(--text-muted)] text-sm">Lead Investigator</span>
+                  <span className="font-bold text-[var(--text-primary)]">{selectedCase.assignedTo}</span>
+                </div>
+                <div className="flex justify-between px-4 py-3.5">
+                  <span className="text-[var(--text-muted)] text-sm">Target Subject</span>
+                  <span className="text-[var(--text-primary)] font-bold">{selectedCase.customer}</span>
+                </div>
+                <div className="flex justify-between px-4 py-3.5">
+                  <span className="text-[var(--text-muted)] text-sm">Participating Bank</span>
+                  <span className="text-[var(--text-primary)] font-medium">{selectedCase.institution}</span>
+                </div>
+                <div className="flex justify-between px-4 py-3.5">
+                  <span className="text-[var(--text-muted)] text-sm">Opened Timestamp</span>
+                  <span className="font-mono text-[var(--text-secondary)] text-sm font-medium">{selectedCase.openedAt}</span>
+                </div>
+                <div className="flex justify-between px-4 py-3.5">
+                  <span className="text-[var(--text-muted)] text-sm">Evidentiary Attachments</span>
+                  <span className="text-[var(--accent-emerald)] font-bold font-tabular text-base">
+                    {selectedCase.evidenceCount} verified documents
                   </span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-white/[0.05]">
-                  <span className="text-white/40">Target Entity</span>
-                  <span className="text-white font-mono">{selectedCase.customer}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-white/[0.05]">
-                  <span className="text-white/40">Timestamp Opened</span>
-                  <span className="font-mono text-white/70">{selectedCase.openedAt}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-white/[0.05]">
-                  <span className="text-white/40">SLA Commitment</span>
-                  <span className="text-[#FCD116] font-mono font-bold">
-                    {selectedCase.slaHoursRemaining} Hours remaining
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Evidence Attachments */}
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-[#D4A017]">
-                Evidence Dockets &amp; Forensic Logs ({selectedCase.evidenceFiles?.length || 0})
-              </p>
-              <div className="mt-2.5 space-y-2">
-                {selectedCase.evidenceFiles?.map((doc) => (
-                  <div
-                    key={doc.name}
-                    className="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/[0.06] p-3 text-xs"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <FileCheck2 className="size-4 text-[#00C97A]" />
-                      <div>
-                        <p className="font-bold text-white font-mono text-[11px]">{doc.name}</p>
-                        <p className="text-[10px] text-white/40">
-                          {doc.type} · {doc.size}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() =>
-                        toast({
-                          title: "Evidence Downloaded",
-                          description: `Saved ${doc.name} to local encrypted vault.`,
-                          type: "info",
-                        })
-                      }
-                      className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-                      aria-label="Download document"
-                    >
-                      <Download className="size-3.5" />
-                    </button>
-                  </div>
-                ))}
               </div>
             </div>
           </div>

@@ -1,10 +1,15 @@
 import {
+  Activity,
+  CheckCircle2,
+  Globe,
   Network,
   RefreshCw,
   Server,
+  Zap,
 } from "lucide-react";
 import { useState } from "react";
 
+import { NetworkTelemetryChart } from "../components/charts/network-telemetry-chart";
 import { StatusBadge, type StatusTone } from "../components/feedback/status-badge";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -14,7 +19,6 @@ import { useToast } from "../components/ui/toast";
 interface TrustNode {
   id: string;
   name: string;
-  region: string;
   type: "COMMERCIAL_BANK" | "FINTECH_RAIL" | "CENTRAL_SWITCH" | "REGIONAL_HUB";
   protocol: string;
   status: "ONLINE" | "SYNCHRONIZING" | "DEGRADED";
@@ -23,14 +27,12 @@ interface TrustNode {
   tps: number;
   dailyVolume: string;
   uptime: string;
-  handshakeHash: string;
 }
 
 const mockNodes: TrustNode[] = [
   {
     id: "NODE-APEX-01",
     name: "Apex Bank PLC Core Rail",
-    region: "Accra West, Ghana",
     type: "COMMERCIAL_BANK",
     protocol: "ISO 20022 / REST v2",
     status: "ONLINE",
@@ -39,12 +41,10 @@ const mockNodes: TrustNode[] = [
     tps: 340,
     dailyVolume: "GH₵ 142.5M",
     uptime: "99.99%",
-    handshakeHash: "0x8f2a...109e",
   },
   {
     id: "NODE-ZNTH-02",
     name: "Zenith Digital Trust Gateway",
-    region: "Accra Central, Ghana",
     type: "FINTECH_RAIL",
     protocol: "OpenBanking Africa v1.2",
     status: "ONLINE",
@@ -53,12 +53,10 @@ const mockNodes: TrustNode[] = [
     tps: 620,
     dailyVolume: "GH₵ 89.2M",
     uptime: "99.98%",
-    handshakeHash: "0x334c...bb90",
   },
   {
     id: "NODE-ECO-03",
     name: "Ecobank Regional Settlement Hub",
-    region: "Lomé Hub / West Africa",
     type: "REGIONAL_HUB",
     protocol: "PAPSS / ISO 20022",
     status: "ONLINE",
@@ -67,12 +65,10 @@ const mockNodes: TrustNode[] = [
     tps: 180,
     dailyVolume: "GH₵ 210.0M",
     uptime: "99.95%",
-    handshakeHash: "0x91da...e552",
   },
   {
     id: "NODE-GHIPSS-04",
     name: "National Instant Pay Rail (GIP)",
-    region: "GhIPSS Central Switch",
     type: "CENTRAL_SWITCH",
     protocol: "GhIPSS ISO Gateway",
     status: "ONLINE",
@@ -81,12 +77,10 @@ const mockNodes: TrustNode[] = [
     tps: 1250,
     dailyVolume: "GH₵ 540.8M",
     uptime: "100.0%",
-    handshakeHash: "0x55ca...0011",
   },
   {
     id: "NODE-MOMO-05",
     name: "Cross-Network Mobile Money Bridge",
-    region: "Ghana Interoperability Rail",
     type: "FINTECH_RAIL",
     protocol: "GSMA Mobile Money API",
     status: "SYNCHRONIZING",
@@ -95,218 +89,186 @@ const mockNodes: TrustNode[] = [
     tps: 840,
     dailyVolume: "GH₵ 315.4M",
     uptime: "99.91%",
-    handshakeHash: "0x11fa...c789",
   },
 ];
 
 export function NetworkPage() {
-  const [nodes, setNodes] = useState<TrustNode[]>(mockNodes);
+  const [nodes] = useState<TrustNode[]>(mockNodes);
   const [selectedNode, setSelectedNode] = useState<TrustNode | null>(null);
-  const [pinging, setPinging] = useState(false);
   const { toast } = useToast();
-
-  const handlePingAll = () => {
-    setPinging(true);
-    setTimeout(() => {
-      setPinging(false);
-      setNodes((prev) =>
-        prev.map((n) => ({
-          ...n,
-          latencyMs: Math.max(6, Math.floor(n.latencyMs + (Math.random() * 6 - 3))),
-        })),
-      );
-      toast({
-        title: "All 5 Rails Handshaked",
-        description: "Zero packet loss across all ISO 20022 participant switches.",
-        type: "success",
-      });
-    }, 900);
-  };
 
   const handlePingNode = (node: TrustNode) => {
     toast({
       title: "Rail Handshake Verified",
-      description: `Cryptographic challenge completed with ${node.name} (${node.latencyMs}ms latency)`,
+      description: `Cryptographic challenge signed with ${node.name} (${node.latencyMs}ms)`,
       type: "success",
+    });
+  };
+
+  const handleMeshSync = () => {
+    toast({
+      title: "Mesh Quorum Synchronized",
+      description: "Triggered state reconciliation across all 42 network participants.",
+      type: "info",
     });
   };
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header & Page Title */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[var(--border-subtle)] pb-6">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold text-[#D4A017] uppercase tracking-widest">
-              Inter-Bank Trust Rails
+            <span className="font-mono text-sm font-bold text-[var(--accent-gold)] uppercase tracking-wider">
+              Trust Rails &amp; Network Mesh
             </span>
-            <span className="text-white/30">·</span>
-            <StatusBadge tone="success" pulse size="sm">
-              PAPSS &amp; GhIPSS Connected
-            </StatusBadge>
+            <span className="text-[var(--text-muted)]">·</span>
+            <span className="font-mono text-sm font-semibold text-[var(--text-secondary)]">
+              42 Active Mesh Nodes
+            </span>
           </div>
-          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            Cross-Institution Trust Network
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-4xl">
+            Inter-Institution Trust Rails
           </h1>
-          <p className="mt-2 text-sm text-white/60 max-w-2xl leading-relaxed">
-            Real-time topology, inter-bank cryptographic handshake health, settlement throughput,
-            and cross-border payment gateway monitoring.
+          <p className="mt-2 text-base text-[var(--text-secondary)] max-w-3xl leading-relaxed font-normal">
+            Real-time topology, settlement latency, throughput telemetry, and cryptographic handshakes across participant financial institutions and national payment switches.
           </p>
         </div>
 
-        <Button
-          variant="secondary"
-          size="md"
-          onClick={handlePingAll}
-          loading={pinging}
-          className="self-start sm:self-auto"
-        >
-          <RefreshCw className="size-3.5 mr-1.5 text-[#D4A017]" /> Ping All Rails
-        </Button>
-      </div>
-
-      {/* Network Topology Visual Showcase with Real Generated Graphic */}
-      <Card className="overflow-hidden p-0 border border-white/10 bg-[#0B0B10]">
-        <div className="relative h-72 sm:h-96 w-full overflow-hidden">
-          <img
-            src="/assets/network-nodes.jpg"
-            alt="TAMVA Inter-Bank Trust Mesh"
-            className="h-full w-full object-cover object-center filter brightness-90 contrast-110"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F13] via-black/20 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0F0F13]/80 via-transparent to-transparent" />
-
-          {/* Interactive Floating Topology Badges */}
-          <div className="absolute top-6 left-6 max-w-sm rounded-2xl border border-white/10 bg-black/75 p-4 backdrop-blur-xl shadow-2xl">
-            <div className="flex items-center gap-2">
-              <span className="size-2 rounded-full bg-[#00C97A] animate-ping" />
-              <span className="font-mono text-xs font-bold text-white uppercase tracking-wider">
-                Pan-African Settlement Mesh
-              </span>
-            </div>
-            <p className="text-xs text-white/70 mt-1.5 leading-relaxed">
-              Active peer-to-peer verification tunnels connected between Accra, Lagos, Lomé, and
-              Nairobi regional settlement hubs.
-            </p>
-          </div>
-
-          <div className="absolute bottom-6 right-6 hidden sm:flex items-center gap-3 rounded-2xl border border-white/10 bg-black/75 px-4 py-3 backdrop-blur-xl">
-            <div>
-              <p className="text-[10px] font-mono uppercase text-white/40">Settlement Finality</p>
-              <p className="text-sm font-bold text-[#00C97A] font-mono">0.42s (Instant)</p>
-            </div>
-            <div className="h-6 w-px bg-white/10" />
-            <div>
-              <p className="text-[10px] font-mono uppercase text-white/40">Consensus Health</p>
-              <p className="text-sm font-bold text-[#FCD116] font-mono">100% Quorum</p>
-            </div>
-          </div>
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" size="lg" onClick={handleMeshSync} className="gap-2.5 text-base font-medium px-5 py-2.5">
+            <RefreshCw className="size-4 text-[var(--text-muted)]" />
+            <span>Sync Quorum</span>
+          </Button>
         </div>
-      </Card>
+      </div>
 
       {/* Network KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card glow="gold" className="p-4">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">
-            24h Total Settlement
-          </p>
-          <p className="mt-1 text-2xl font-black text-white font-tabular">GH₵ 1.29B</p>
-          <p className="text-[11px] text-[#00C97A] mt-1 font-semibold">+18.4% daily surge</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <Card className="p-5 border-[var(--border-default)] bg-[var(--bg-surface)]">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">24h Settlement</p>
+            <Globe className="size-5 text-[var(--accent-gold)]" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-[var(--text-primary)] font-tabular">GH₵ 1.29B</p>
+          <p className="text-sm text-[var(--accent-emerald)] mt-2 font-semibold">+18.4% 24h volume</p>
         </Card>
-        <Card glow="emerald" className="p-4">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">
-            Aggregate Throughput
-          </p>
-          <p className="mt-1 text-2xl font-black text-[#00C97A] font-tabular">3,230 TPS</p>
-          <p className="text-[11px] text-white/50 mt-1">Direct ISO 20022 parsing</p>
+
+        <Card className="p-5 border-[var(--border-default)] bg-[var(--bg-surface)]">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Peak Throughput</p>
+            <Zap className="size-5 text-[var(--accent-emerald)]" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-[var(--accent-emerald)] font-tabular">3,230 TPS</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-2 font-mono">Sub-second finality</p>
         </Card>
-        <Card glow="emerald" className="p-4">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">
-            Average Mesh Latency
-          </p>
-          <p className="mt-1 text-2xl font-black text-white font-tabular">16.8 ms</p>
-          <p className="text-[11px] text-[#00C97A] mt-1">Direct dark fiber peerings</p>
+
+        <Card className="p-5 border-[var(--border-default)] bg-[var(--bg-surface)]">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Avg Mesh Latency</p>
+            <Activity className="size-5 text-[var(--accent-gold)]" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-[var(--text-primary)] font-tabular">16.8 ms</p>
+          <p className="text-sm text-[var(--accent-emerald)] mt-2 font-semibold">Direct GhIPSS fiber peering</p>
         </Card>
-        <Card glow="gold" className="p-4">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">
-            Active Participating Banks
-          </p>
-          <p className="mt-1 text-2xl font-black text-white font-tabular">42 Rails</p>
-          <p className="text-[11px] text-white/50 mt-1">Universal KYC Passporting</p>
+
+        <Card className="p-5 border-[var(--border-default)] bg-[var(--bg-surface)]">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Consensus Health</p>
+            <CheckCircle2 className="size-5 text-[var(--accent-emerald)]" />
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-[var(--accent-emerald)] font-tabular">100.0%</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-2 font-medium">All participant quorums synced</p>
         </Card>
       </div>
 
+      {/* Visual Analytics Chart: Real-time Throughput (TPS) */}
+      <Card className="p-6 border-[var(--border-default)] bg-[var(--bg-surface)]">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 pb-4 border-b border-[var(--border-subtle)]">
+          <div>
+            <h2 className="text-xl font-bold text-[var(--text-primary)]">
+              Switch &amp; Core Rail Throughput Telemetry (TPS)
+            </h2>
+            <p className="text-base text-[var(--text-secondary)] mt-1 font-normal">
+              Live transaction load partitioned across Mobile Money Switch, GhIPSS Instant Pay, and PAPSS Regional Hub.
+            </p>
+          </div>
+          <span className="font-mono text-sm uppercase tracking-wider text-[var(--accent-gold)] font-bold">
+            PAPSS / ISO 20022 Switch
+          </span>
+        </div>
+        <NetworkTelemetryChart />
+      </Card>
+
       {/* Trust Rails Table */}
-      <Card className="overflow-hidden">
-        <div className="flex items-center justify-between border-b border-white/[0.08] p-5">
-          <div className="flex items-center gap-2">
-            <Network className="size-4 text-[#D4A017]" />
-            <h2 className="text-base font-bold text-white">
-              Participant Financial Nodes &amp; Rail Gateways
+      <Card className="overflow-hidden border-[var(--border-default)] bg-[var(--bg-surface)]">
+        <div className="flex items-center justify-between border-b border-[var(--border-default)] bg-[var(--bg-surface-elevated)] px-6 py-4">
+          <div className="flex items-center gap-2.5">
+            <Network className="size-5 text-[var(--accent-gold)]" />
+            <h2 className="text-sm font-bold uppercase tracking-wider font-mono text-[var(--text-primary)]">
+              Participant Financial Nodes &amp; Switch Gateways
             </h2>
           </div>
-          <span className="font-mono text-xs text-white/40">ISO 20022 / PAPSS Standardized</span>
+          <span className="font-mono text-sm font-medium text-[var(--text-secondary)]">ISO 20022 / PAPSS Compliant</span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-white/[0.08] bg-white/[0.02] font-mono uppercase tracking-wider text-white/40">
+          <table className="w-full text-left text-base">
+            <thead className="border-b border-[var(--border-default)] bg-[var(--bg-surface-elevated)] font-mono uppercase tracking-wider text-[var(--text-muted)] text-xs font-semibold">
               <tr>
-                <th className="px-5 py-3.5">Institution Rail &amp; Region</th>
-                <th className="px-4 py-3.5">Protocol Interface</th>
-                <th className="px-4 py-3.5">Throughput</th>
-                <th className="px-4 py-3.5">Latency</th>
-                <th className="px-4 py-3.5">Daily Volume</th>
-                <th className="px-4 py-3.5">Status</th>
-                <th className="px-4 py-3.5 text-right">Inspect</th>
+                <th className="px-6 py-4">Rail Node</th>
+                <th className="px-6 py-4">Protocol Interface</th>
+                <th className="px-6 py-4">Throughput</th>
+                <th className="px-6 py-4">Latency</th>
+                <th className="px-6 py-4">Daily Cleared</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.04]">
+            <tbody className="divide-y divide-[var(--border-subtle)]">
               {nodes.map((node) => (
                 <tr
                   key={node.id}
                   onClick={() => setSelectedNode(node)}
-                  className="hover:bg-white/[0.03] transition-colors cursor-pointer group"
+                  className="hover:bg-[var(--bg-surface-elevated)] transition-colors cursor-pointer group"
                 >
-                  <td className="px-5 py-4">
-                    <p className="font-bold text-white group-hover:text-[#FCD116] transition-colors">
+                  <td className="px-6 py-4">
+                    <p className="font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-gold)] transition-colors text-base">
                       {node.name}
                     </p>
-                    <span className="text-[11px] font-mono text-white/40 mt-0.5 block">
-                      {node.id} · {node.region}
-                    </span>
+                    <span className="text-sm font-mono text-[var(--text-muted)] mt-1 block">{node.id}</span>
                   </td>
 
-                  <td className="px-4 py-4 font-mono text-white/70">{node.protocol}</td>
+                  <td className="px-6 py-4 font-mono text-sm text-[var(--text-secondary)]">{node.protocol}</td>
 
-                  <td className="px-4 py-4 font-mono font-bold text-white font-tabular">
+                  <td className="px-6 py-4 font-mono font-bold text-[var(--text-primary)] font-tabular text-base">
                     {node.tps} TPS
                   </td>
 
-                  <td className="px-4 py-4 font-mono">
+                  <td className="px-6 py-4 font-mono text-base">
                     <span
-                      className={`font-bold ${
-                        node.latencyMs < 20 ? "text-[#00C97A]" : "text-[#FCD116]"
+                      className={`font-bold font-tabular ${
+                        node.latencyMs < 20 ? "text-[var(--accent-emerald)]" : "text-[var(--accent-gold)]"
                       }`}
                     >
                       {node.latencyMs} ms
                     </span>
                   </td>
 
-                  <td className="px-4 py-4 font-mono font-bold text-white font-tabular">
+                  <td className="px-6 py-4 font-mono font-bold text-[var(--text-primary)] font-tabular text-base">
                     {node.dailyVolume}
                   </td>
 
-                  <td className="px-4 py-4">
-                    <StatusBadge tone={node.tone} size="sm">
+                  <td className="px-6 py-4">
+                    <StatusBadge tone={node.tone} size="md">
                       {node.status}
                     </StatusBadge>
                   </td>
 
-                  <td className="px-4 py-4 text-right">
-                    <button className="font-semibold text-xs text-[#D4A017] group-hover:underline">
+                  <td className="px-6 py-4 text-right">
+                    <span className="font-mono text-sm text-[var(--accent-gold)] font-bold group-hover:underline">
                       Inspect →
-                    </button>
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -320,69 +282,65 @@ export function NetworkPage() {
         open={Boolean(selectedNode)}
         onClose={() => setSelectedNode(null)}
         title={selectedNode?.name || "Node Inspector"}
-        subtitle={`Node ID: ${selectedNode?.id} (${selectedNode?.region})`}
+        subtitle={`Node ID: ${selectedNode?.id}`}
         badge={
           selectedNode ? (
             <StatusBadge tone={selectedNode.tone}>{selectedNode.status}</StatusBadge>
           ) : null
         }
         footer={
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between w-full">
             <Button
               variant="outline"
-              size="sm"
+              size="md"
               onClick={() => selectedNode && handlePingNode(selectedNode)}
+              className="gap-2 text-base font-semibold"
             >
-              <RefreshCw className="size-3.5 mr-1" /> Ping Handshake
+              <RefreshCw className="size-4" />
+              <span>Ping Handshake</span>
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => setSelectedNode(null)}>
-              Close
+            <Button variant="secondary" size="md" onClick={() => setSelectedNode(null)} className="text-base font-semibold">
+              Dismiss
             </Button>
           </div>
         }
       >
         {selectedNode && (
           <div className="space-y-6">
-            <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-mono text-[10px] uppercase text-white/40">Verified Uptime</p>
-                  <p className="text-2xl font-black text-white font-tabular mt-0.5">
+                  <p className="font-mono text-xs uppercase tracking-wider text-[var(--text-muted)] font-semibold">Verified Uptime</p>
+                  <p className="text-4xl font-extrabold text-[var(--text-primary)] font-tabular mt-1.5">
                     {selectedNode.uptime}
                   </p>
                 </div>
-                <span className="grid size-12 place-items-center rounded-2xl bg-[#D4A017]/15 text-[#D4A017] border border-[#D4A017]/30">
+                <span className="grid size-12 place-items-center rounded-xl bg-[var(--accent-gold)]/15 text-[var(--accent-gold)] border border-[var(--accent-gold)]/30">
                   <Server className="size-6" />
                 </span>
               </div>
             </div>
 
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-[#D4A017]">
+              <p className="font-mono text-xs uppercase tracking-wider text-[var(--text-muted)] mb-3 font-semibold">
                 Rail Specifications &amp; Telemetry
               </p>
-              <div className="mt-2 space-y-2 text-xs">
-                <div className="flex justify-between py-2 border-b border-white/[0.05]">
-                  <span className="text-white/40">Participant Classification</span>
-                  <span className="font-mono font-bold text-white">{selectedNode.type}</span>
+              <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] divide-y divide-[var(--border-subtle)] text-base">
+                <div className="flex justify-between px-5 py-3.5">
+                  <span className="text-[var(--text-muted)]">Participant Classification</span>
+                  <span className="font-mono font-bold text-[var(--text-primary)]">{selectedNode.type}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-white/[0.05]">
-                  <span className="text-white/40">Protocol &amp; Payload Interface</span>
-                  <span className="font-mono text-[#FCD116]">{selectedNode.protocol}</span>
+                <div className="flex justify-between px-5 py-3.5">
+                  <span className="text-[var(--text-muted)]">Communication Interface</span>
+                  <span className="font-mono text-[var(--accent-gold)] font-medium">{selectedNode.protocol}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-white/[0.05]">
-                  <span className="text-white/40">24h Settlement Throughput</span>
-                  <span className="font-mono text-white font-bold">{selectedNode.dailyVolume}</span>
+                <div className="flex justify-between px-5 py-3.5">
+                  <span className="text-[var(--text-muted)]">24h Settlement Throughput</span>
+                  <span className="font-mono text-[var(--text-primary)] font-bold">{selectedNode.dailyVolume}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-white/[0.05]">
-                  <span className="text-white/40">Round-Trip Latency</span>
-                  <span className="text-[#00C97A] font-bold font-mono">
-                    {selectedNode.latencyMs} ms
-                  </span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-white/[0.05]">
-                  <span className="text-white/40">TLS 1.3 Cryptographic Proof</span>
-                  <span className="font-mono text-[#06B6D4]">{selectedNode.handshakeHash}</span>
+                <div className="flex justify-between px-5 py-3.5">
+                  <span className="text-[var(--text-muted)]">Latency Response</span>
+                  <span className="text-[var(--accent-emerald)] font-bold font-mono">{selectedNode.latencyMs} ms</span>
                 </div>
               </div>
             </div>
