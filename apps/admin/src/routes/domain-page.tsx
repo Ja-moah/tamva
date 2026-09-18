@@ -31,4 +31,3 @@ export function DomainPage({ title, description, icon: Icon }: DomainPageProps) 
     </div>
   );
 }
-
