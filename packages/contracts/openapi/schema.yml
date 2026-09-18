@@ -4,9 +4,887 @@ info:
   version: 1.0.0
   description: Financial Identity & Trust Infrastructure
 paths:
+  /api/v1/auth/login/:
+    post:
+      operationId: api_v1_auth_login_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorContextEnvelope'
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: api_v1_auth_logout_create
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/refresh/:
+    post:
+      operationId: api_v1_auth_refresh_create
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorContextEnvelope'
+          description: ''
+  /api/v1/capabilities/:
+    get:
+      operationId: api_v1_capabilities_retrieve
+      description: |-
+        Authenticated manifest of which product capabilities are actually
+        available, so clients render accurately instead of guessing.
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapabilitiesResponse'
+          description: ''
+  /api/v1/cases/:
+    get:
+      operationId: api_v1_cases_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCaseList'
+          description: ''
+    post:
+      operationId: api_v1_cases_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Case'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Case'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Case'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+  /api/v1/cases/{id}/:
+    get:
+      operationId: api_v1_cases_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this case.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseDetail'
+          description: ''
+  /api/v1/cases/{id}/actions/:
+    post:
+      operationId: api_v1_cases_actions_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this case.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Case'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Case'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Case'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+  /api/v1/cases/{id}/assign/:
+    post:
+      operationId: api_v1_cases_assign_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this case.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Case'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Case'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Case'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+  /api/v1/cases/{id}/notes/:
+    post:
+      operationId: api_v1_cases_notes_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this case.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Case'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Case'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Case'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+  /api/v1/cases/{id}/resolve/:
+    post:
+      operationId: api_v1_cases_resolve_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this case.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Case'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Case'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Case'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+  /api/v1/cases/{id}/transition/:
+    post:
+      operationId: api_v1_cases_transition_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this case.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Case'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Case'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Case'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+  /api/v1/consents/:
+    get:
+      operationId: api_v1_consents_list
+      description: |-
+        Customer-facing consent management: a customer only ever sees, grants,
+        and revokes their own consent records. Institution staff manage the
+        purposes/scopes they publish, not this endpoint.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConsentList'
+          description: ''
+    post:
+      operationId: api_v1_consents_create
+      description: |-
+        Customer-facing consent management: a customer only ever sees, grants,
+        and revokes their own consent records. Institution staff manage the
+        purposes/scopes they publish, not this endpoint.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Consent'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Consent'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Consent'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consent'
+          description: ''
+  /api/v1/consents/{id}/:
+    get:
+      operationId: api_v1_consents_retrieve
+      description: |-
+        Customer-facing consent management: a customer only ever sees, grants,
+        and revokes their own consent records. Institution staff manage the
+        purposes/scopes they publish, not this endpoint.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this consent.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consent'
+          description: ''
+  /api/v1/consents/{id}/revoke/:
+    post:
+      operationId: api_v1_consents_revoke_create
+      description: |-
+        Customer-facing consent management: a customer only ever sees, grants,
+        and revokes their own consent records. Institution staff manage the
+        purposes/scopes they publish, not this endpoint.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this consent.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Consent'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Consent'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Consent'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consent'
+          description: ''
+  /api/v1/me/:
+    get:
+      operationId: api_v1_me_retrieve
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorContextEnvelope'
+          description: ''
+  /api/v1/notification-preferences/:
+    get:
+      operationId: api_v1_notification_preferences_list
+      description: |-
+        Customer-facing preference management. Creating a preference for an
+        existing (customer, category, channel) triple updates it in place.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificationPreferenceList'
+          description: ''
+    post:
+      operationId: api_v1_notification_preferences_create
+      description: |-
+        Customer-facing preference management. Creating a preference for an
+        existing (customer, category, channel) triple updates it in place.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationPreference'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NotificationPreference'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NotificationPreference'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreference'
+          description: ''
+  /api/v1/notifications/:
+    get:
+      operationId: api_v1_notifications_list
+      description: 'Customer-facing: a recipient only ever sees their own notifications.'
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificationList'
+          description: ''
+  /api/v1/notifications/{id}/:
+    get:
+      operationId: api_v1_notifications_retrieve
+      description: 'Customer-facing: a recipient only ever sees their own notifications.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this notification.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/v1/notifications/{id}/read/:
+    post:
+      operationId: api_v1_notifications_read_create
+      description: 'Customer-facing: a recipient only ever sees their own notifications.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this notification.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Notification'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/v1/passport/customers/{customer_id}/:
+    get:
+      operationId: api_v1_passport_customers_retrieve
+      description: |-
+        Institution-facing: retrieve or (re)generate a customer's current
+        passport snapshot at the active institution.
+      parameters:
+      - in: path
+        name: customer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassportSnapshot'
+          description: ''
+    post:
+      operationId: api_v1_passport_customers_create
+      description: |-
+        Institution-facing: retrieve or (re)generate a customer's current
+        passport snapshot at the active institution.
+      parameters:
+      - in: path
+        name: customer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassportSnapshot'
+          description: ''
+  /api/v1/passport/shares/:
+    get:
+      operationId: api_v1_passport_shares_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPassportShareList'
+          description: ''
+    post:
+      operationId: api_v1_passport_shares_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PassportShare'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PassportShare'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PassportShare'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassportShare'
+          description: ''
+  /api/v1/passport/shares/{id}/revoke/:
+    post:
+      operationId: api_v1_passport_shares_revoke_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this passport share.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PassportShare'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PassportShare'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PassportShare'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassportShare'
+          description: ''
+  /api/v1/passport/shares/access/:
+    post:
+      operationId: api_v1_passport_shares_access_create
+      description: |-
+        Recipient-institution endpoint: redeem a share token.
+
+        Token possession plus active membership at the claimed accessor
+        institution is the authorization here — this is deliberately not
+        HasPermission/required_permission gated, since the recipient may be an
+        institution with no other TAMVA-internal permissions at all.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessPassportShare'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AccessPassportShare'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AccessPassportShare'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/risk/events/:
+    get:
+      operationId: api_v1_risk_events_list
+      description: |-
+        Institution-facing, read-only. Risk decisions are produced by the
+        pipeline (domains.risk.services.evaluate_risk); this surface only
+        retrieves already-computed, immutable results.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRiskEventList'
+          description: ''
+  /api/v1/risk/events/{id}/:
+    get:
+      operationId: api_v1_risk_events_retrieve
+      description: |-
+        Institution-facing, read-only. Risk decisions are produced by the
+        pipeline (domains.risk.services.evaluate_risk); this surface only
+        retrieves already-computed, immutable results.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this risk event.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskEventDetail'
+          description: ''
+  /api/v1/security/observations/:
+    post:
+      operationId: api_v1_security_observations_create
+      description: |-
+        Trusted institutional/client integrations submit what they observed.
+
+        The caller never asserts a verdict: whether an observation produces a
+        signal (NEW_DEVICE, UNUSUAL_LOCATION, feature flags) is decided by the
+        backend from the evidence.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Observation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Observation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Observation'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservationReused'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservationCreated'
+          description: ''
   /health/:
     get:
       operationId: health_retrieve
+      description: |-
+        Kept for backward compatibility with existing external health checks;
+        equivalent to ReadinessView. Prefer /health/live/ and /health/ready/.
       tags:
       - health
       security:
@@ -18,8 +896,506 @@ paths:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
           description: ''
+  /health/live/:
+    get:
+      operationId: health_live_retrieve
+      description: |-
+        Process is up and can serve requests. No dependency checks: a
+        dependency outage must not make the orchestrator restart healthy pods.
+      tags:
+      - health
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivenessResponse'
+          description: ''
+  /health/ready/:
+    get:
+      operationId: health_ready_retrieve
+      description: |-
+        Required dependencies (PostgreSQL, Redis) are reachable. Optional
+        external vendor APIs are deliberately not checked here — a vendor
+        outage should not take the whole service out of rotation.
+      tags:
+      - health
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+          description: ''
 components:
   schemas:
+    AccessPassportShare:
+      type: object
+      properties:
+        token:
+          type: string
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/SectionsEnum'
+      required:
+      - token
+    ActionTypeEnum:
+      enum:
+      - REQUEST_INFORMATION
+      - MARK_REVIEWED
+      - ESCALATE
+      - PLACE_HOLD
+      - RELEASE_HOLD
+      - RECOMMEND_BLOCK
+      - RECOMMEND_ALLOW
+      - OTHER
+      type: string
+      description: |-
+        * `REQUEST_INFORMATION` - Request information
+        * `MARK_REVIEWED` - Mark reviewed
+        * `ESCALATE` - Escalate
+        * `PLACE_HOLD` - Place hold
+        * `RELEASE_HOLD` - Release hold
+        * `RECOMMEND_BLOCK` - Recommend block
+        * `RECOMMEND_ALLOW` - Recommend allow
+        * `OTHER` - Other
+    ActorContext:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/ActorUser'
+        tenant:
+          $ref: '#/components/schemas/ActorTenant'
+        memberships:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActorMembership'
+        roles:
+          type: array
+          items:
+            type: string
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+      - memberships
+      - permissions
+      - roles
+      - tenant
+      - user
+    ActorContextEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ActorContext'
+      required:
+      - data
+    ActorMembership:
+      type: object
+      properties:
+        institution_id:
+          type: string
+          format: uuid
+        institution_name:
+          type: string
+      required:
+      - institution_id
+      - institution_name
+    ActorTenant:
+      type: object
+      properties:
+        institution_id:
+          type: string
+          format: uuid
+        institution_name:
+          type: string
+      required:
+      - institution_id
+      - institution_name
+    ActorUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        actor_type:
+          type: string
+        status:
+          type: string
+      required:
+      - actor_type
+      - email
+      - id
+      - status
+    CapabilitiesResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+      - data
+    Case:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          readOnly: true
+        case_type:
+          type: string
+          readOnly: true
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/PriorityEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusC7dEnum'
+          readOnly: true
+        source:
+          allOf:
+          - $ref: '#/components/schemas/Source03cEnum'
+          readOnly: true
+        current_assignee_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        opened_at:
+          type: string
+          format: date-time
+          readOnly: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - case_type
+      - closed_at
+      - current_assignee_id
+      - customer_id
+      - id
+      - opened_at
+      - priority
+      - reference
+      - source
+      - status
+    CaseAction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        action_type:
+          allOf:
+          - $ref: '#/components/schemas/ActionTypeEnum'
+          readOnly: true
+        actor_id:
+          type: string
+          format: uuid
+          readOnly: true
+        detail:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action_type
+      - actor_id
+      - created_at
+      - detail
+      - id
+    CaseAssignment:
+      type: object
+      properties:
+        assignee_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        assigned_by_id:
+          type: string
+          format: uuid
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        assigned_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - assigned_at
+      - assigned_by_id
+      - assignee_id
+      - note
+    CaseDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          readOnly: true
+        case_type:
+          type: string
+          readOnly: true
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/PriorityEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusC7dEnum'
+          readOnly: true
+        source:
+          allOf:
+          - $ref: '#/components/schemas/Source03cEnum'
+          readOnly: true
+        current_assignee_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        opened_at:
+          type: string
+          format: date-time
+          readOnly: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        status_events:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseStatusEvent'
+          readOnly: true
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseAssignment'
+          readOnly: true
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseNote'
+          readOnly: true
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseAction'
+          readOnly: true
+        resolution:
+          allOf:
+          - $ref: '#/components/schemas/CaseResolution'
+          readOnly: true
+      required:
+      - actions
+      - assignments
+      - case_type
+      - closed_at
+      - current_assignee_id
+      - customer_id
+      - id
+      - notes
+      - opened_at
+      - priority
+      - reference
+      - resolution
+      - source
+      - status
+      - status_events
+    CaseNote:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        author_id:
+          type: string
+          format: uuid
+          readOnly: true
+        body:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - author_id
+      - body
+      - created_at
+      - id
+    CaseResolution:
+      type: object
+      properties:
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/OutcomeEnum'
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        resolved_by_id:
+          type: string
+          format: uuid
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - outcome
+      - reason
+      - resolved_at
+      - resolved_by_id
+    CaseStatusEvent:
+      type: object
+      properties:
+        previous_status:
+          type: string
+          readOnly: true
+        new_status:
+          type: string
+          readOnly: true
+        actor_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - actor_id
+      - new_status
+      - note
+      - occurred_at
+      - previous_status
+    ChannelEnum:
+      enum:
+      - IN_APP
+      - EMAIL
+      - SMS
+      - PUSH
+      type: string
+      description: |-
+        * `IN_APP` - In-app
+        * `EMAIL` - Email
+        * `SMS` - SMS
+        * `PUSH` - Push
+    Consent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        institution_id:
+          type: string
+          format: uuid
+          readOnly: true
+        purpose_code:
+          type: string
+          readOnly: true
+        scope_codes:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ConsentStatusEnum'
+          readOnly: true
+        granted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+        revoked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - expires_at
+      - granted_at
+      - id
+      - institution_id
+      - purpose_code
+      - revoked_at
+      - scope_codes
+      - status
+    ConsentStatusEnum:
+      enum:
+      - GRANTED
+      - EXPIRED
+      - REVOKED
+      type: string
+      description: |-
+        * `GRANTED` - Granted
+        * `EXPIRED` - Expired
+        * `REVOKED` - Revoked
+    DecisionEnum:
+      enum:
+      - ALLOW
+      - CHALLENGE
+      - HOLD
+      - BLOCK
+      type: string
+      description: |-
+        * `ALLOW` - Allow
+        * `CHALLENGE` - Challenge
+        * `HOLD` - Hold
+        * `BLOCK` - Block
+    DevicePayload:
+      type: object
+      description: |-
+        Rejects any field the contract does not define, so a client can never
+        smuggle extra data (fingerprints, coordinates, blobs) through the API.
+      properties:
+        opaque_device_id:
+          type: string
+          pattern: ^[A-Za-z0-9._:-]{8,128}$
+      required:
+      - opaque_device_id
     HealthResponse:
       type: object
       properties:
@@ -30,3 +1406,630 @@ components:
       required:
       - database
       - status
+    LivenessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+      - status
+    LocationPayload:
+      type: object
+      description: |-
+        Rejects any field the contract does not define, so a client can never
+        smuggle extra data (fingerprints, coordinates, blobs) through the API.
+      properties:
+        country_code:
+          type: string
+          pattern: ^[A-Za-z]{2}$
+        region:
+          type: string
+          maxLength: 100
+        city:
+          type: string
+          maxLength: 100
+        confidence:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,4})?$
+      required:
+      - confidence
+      - country_code
+    Login:
+      type: object
+      properties:
+        identifier:
+          type: string
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - identifier
+      - password
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        channel:
+          allOf:
+          - $ref: '#/components/schemas/ChannelEnum'
+          readOnly: true
+        subject:
+          type: string
+          readOnly: true
+        body:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/NotificationStatusEnum'
+          readOnly: true
+        read_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - channel
+      - created_at
+      - id
+      - read_at
+      - status
+      - subject
+    NotificationPreference:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        category:
+          type: string
+          maxLength: 50
+        channel:
+          $ref: '#/components/schemas/ChannelEnum'
+        enabled:
+          type: boolean
+      required:
+      - category
+      - channel
+      - id
+    NotificationStatusEnum:
+      enum:
+      - PENDING
+      - SENDING
+      - SENT
+      - FAILED
+      - SKIPPED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `SENDING` - Sending
+        * `SENT` - Sent
+        * `FAILED` - Failed
+        * `SKIPPED` - Skipped
+    Observation:
+      type: object
+      description: |-
+        Rejects any field the contract does not define, so a client can never
+        smuggle extra data (fingerprints, coordinates, blobs) through the API.
+      properties:
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        customer_id:
+          type: string
+          format: uuid
+        source:
+          type: string
+          pattern: ^[a-z0-9_.-]{1,100}$
+        source_event_id:
+          type: string
+          pattern: ^[A-Za-z0-9._:/-]{1,255}$
+        observed_at:
+          type: string
+          format: date-time
+        device:
+          $ref: '#/components/schemas/DevicePayload'
+        location:
+          $ref: '#/components/schemas/LocationPayload'
+      required:
+      - customer_id
+      - observed_at
+      - source
+      - source_event_id
+      - type
+    ObservationCreated:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+      - data
+    ObservationReused:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+      - data
+    OutcomeEnum:
+      enum:
+      - CONFIRMED_RISK
+      - CLEARED
+      - FALSE_POSITIVE
+      - CUSTOMER_VERIFIED
+      - POLICY_EXCEPTION
+      - OTHER
+      type: string
+      description: |-
+        * `CONFIRMED_RISK` - Confirmed risk
+        * `CLEARED` - Cleared
+        * `FALSE_POSITIVE` - False positive
+        * `CUSTOMER_VERIFIED` - Customer verified
+        * `POLICY_EXCEPTION` - Policy exception
+        * `OTHER` - Other
+    PaginatedCaseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Case'
+    PaginatedConsentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Consent'
+    PaginatedNotificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+    PaginatedNotificationPreferenceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationPreference'
+    PaginatedPassportShareList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PassportShare'
+    PaginatedRiskEventList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RiskEvent'
+    PassportShare:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        recipient_institution_id:
+          type: string
+          format: uuid
+          readOnly: true
+        purpose_code:
+          type: string
+          readOnly: true
+        allowed_sections:
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PassportShareStatusEnum'
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+        revoked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - allowed_sections
+      - created_at
+      - expires_at
+      - id
+      - purpose_code
+      - recipient_institution_id
+      - revoked_at
+      - status
+    PassportShareStatusEnum:
+      enum:
+      - ACTIVE
+      - EXPIRED
+      - REVOKED
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `EXPIRED` - Expired
+        * `REVOKED` - Revoked
+    PassportSnapshot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        schema_version:
+          type: string
+          readOnly: true
+        sections:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+        is_current:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - is_current
+      - schema_version
+      - sections
+    PriorityEnum:
+      enum:
+      - LOW
+      - MEDIUM
+      - HIGH
+      - CRITICAL
+      type: string
+      description: |-
+        * `LOW` - Low
+        * `MEDIUM` - Medium
+        * `HIGH` - High
+        * `CRITICAL` - Critical
+    ReadinessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        database:
+          type: string
+        cache:
+          type: string
+      required:
+      - cache
+      - database
+      - status
+    RiskEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          readOnly: true
+        score:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,4})?$
+          readOnly: true
+        decision:
+          allOf:
+          - $ref: '#/components/schemas/DecisionEnum'
+          readOnly: true
+        confidence:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,4})?$
+          readOnly: true
+        reason_codes:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        ruleset_version:
+          type: string
+          nullable: true
+          readOnly: true
+        model_version:
+          type: string
+          nullable: true
+          readOnly: true
+        policy_version:
+          type: string
+          readOnly: true
+        evaluated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - confidence
+      - customer_id
+      - decision
+      - evaluated_at
+      - id
+      - model_version
+      - policy_version
+      - reason_codes
+      - ruleset_version
+      - score
+    RiskEventDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          readOnly: true
+        score:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,4})?$
+          readOnly: true
+        decision:
+          allOf:
+          - $ref: '#/components/schemas/DecisionEnum'
+          readOnly: true
+        confidence:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,4})?$
+          readOnly: true
+        reason_codes:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        ruleset_version:
+          type: string
+          nullable: true
+          readOnly: true
+        model_version:
+          type: string
+          nullable: true
+          readOnly: true
+        policy_version:
+          type: string
+          readOnly: true
+        evaluated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/RiskReason'
+          readOnly: true
+      required:
+      - confidence
+      - customer_id
+      - decision
+      - evaluated_at
+      - id
+      - model_version
+      - policy_version
+      - reason_codes
+      - reasons
+      - ruleset_version
+      - score
+    RiskReason:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+        source:
+          allOf:
+          - $ref: '#/components/schemas/RiskReasonSourceEnum'
+          readOnly: true
+        severity:
+          type: string
+          readOnly: true
+      required:
+      - code
+      - severity
+      - source
+    RiskReasonSourceEnum:
+      enum:
+      - RULE
+      - MODEL
+      - POLICY
+      - EVIDENCE
+      type: string
+      description: |-
+        * `RULE` - Rule
+        * `MODEL` - Model
+        * `POLICY` - Policy
+        * `EVIDENCE` - Evidence
+    SectionsEnum:
+      enum:
+      - IDENTITY
+      - FINANCIAL_SUMMARY
+      - INCOME_SUMMARY
+      - CASHFLOW_SUMMARY
+      - SAVINGS_SUMMARY
+      - ACCOUNT_COVERAGE
+      - PROFILE_COMPLETENESS
+      - SELECTED_TRUST_SIGNALS
+      - SELECTED_RISK_SUMMARY
+      - NETWORK_SUMMARY
+      type: string
+      description: |-
+        * `IDENTITY` - Identity
+        * `FINANCIAL_SUMMARY` - Financial summary
+        * `INCOME_SUMMARY` - Income summary
+        * `CASHFLOW_SUMMARY` - Cashflow summary
+        * `SAVINGS_SUMMARY` - Savings summary
+        * `ACCOUNT_COVERAGE` - Account coverage
+        * `PROFILE_COMPLETENESS` - Profile completeness
+        * `SELECTED_TRUST_SIGNALS` - Selected trust signals
+        * `SELECTED_RISK_SUMMARY` - Selected risk summary
+        * `NETWORK_SUMMARY` - Network summary
+    Source03cEnum:
+      enum:
+      - AUTOMATIC
+      - MANUAL
+      type: string
+      description: |-
+        * `AUTOMATIC` - Automatic
+        * `MANUAL` - Manual
+    StatusC7dEnum:
+      enum:
+      - OPEN
+      - TRIAGED
+      - INVESTIGATING
+      - ACTIONED
+      - RESOLVED
+      type: string
+      description: |-
+        * `OPEN` - Open
+        * `TRIAGED` - Triaged
+        * `INVESTIGATING` - Investigating
+        * `ACTIONED` - Actioned
+        * `RESOLVED` - Resolved
+    TypeEnum:
+      enum:
+      - DEVICE
+      - LOCATION
+      type: string
+      description: |-
+        * `DEVICE` - DEVICE
+        * `LOCATION` - LOCATION
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
