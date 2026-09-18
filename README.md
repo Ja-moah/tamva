@@ -8,16 +8,16 @@ TAMVA starts as a modular monolith: all domain modules deploy as one Django appl
 
 TAMVA has three application layers:
 
-1. **Backend** - Django and Django REST Framework in `apps/`, `packages/`, and
-  `config/`. It owns all authoritative business, authorization, tenancy,
+1. **Backend** - Django and Django REST Framework in `apps/backend/`. It owns
+  all authoritative business, authorization, tenancy,
   consent, risk, ledger, profile, passport, and case decisions.
-2. **Admin Web** - the React and TypeScript application in `frontend/admin/` for
+2. **Admin Web** - the React and TypeScript application in `apps/admin/` for
   TAMVA staff and authorized institutional users.
-3. **Customer App** - one shared React Native and Expo codebase in `mobile/`,
+3. **Customer App** - one shared React Native and Expo codebase in `apps/mobile/`,
   officially supporting Android, iOS, and Web.
 
 There is no separate customer web application. The customer web experience is
-delivered from the same Expo/React Native codebase in `mobile/`.
+delivered from the same Expo/React Native codebase in `apps/mobile/`.
 
 The Django backend is the authoritative application layer. It owns authentication, authorization, tenancy, consent validity, connector orchestration, normalisation, ledger classification, profile calculations, feature generation, rules, risk decisions, case transitions, passport permissions, auditing, and notifications. Admin web and mobile may validate basic form input and manage presentation state, but they must display and enforce decisions returned by the backend rather than duplicate authoritative business rules.
 
@@ -40,17 +40,21 @@ The Django backend is the authoritative application layer. It owns authenticatio
 
 | Application surface | Current location | Status | Responsibility |
 | --- | --- | --- | --- |
-| Customer application | `mobile/` | Scaffolded | Shared customer journeys for Android, iOS, and web |
-| Admin/institution/operations web | `frontend/admin/` | Scaffolded | Internal operations and external institutional workflows |
-| Django backend | `apps/`, `packages/`, and `config/` | Scaffolded | APIs, tenancy, security, persistence, and all authoritative business logic |
+| Customer application | `apps/mobile/` | Scaffolded | Shared customer journeys for Android, iOS, and web |
+| Admin/institution/operations web | `apps/admin/` | Scaffolded | Internal operations and external institutional workflows |
+| Django backend | `apps/backend/` | Core domain chain complete, hardened | APIs, tenancy, security, persistence, and all authoritative business logic |
 
-Domain code lives under `apps/`; stable cross-domain primitives live under `packages/`; deployment configuration lives under `config/`. Client applications communicate with Django through versioned REST APIs and shared contracts. Modules and clients must not reach into another domain's implementation or database tables arbitrarily.
+Domain code lives under `apps/backend/domains/`; stable Python primitives live under
+`apps/backend/packages/`; shared client contracts live under `packages/contracts/`.
+Client applications communicate with Django through versioned REST APIs and shared
+contracts. Modules and clients must not reach into another domain's implementation
+or database tables arbitrarily.
 
 See the [system overview](docs/architecture/system-overview.md), [tenancy model](docs/architecture/tenancy.md), and [architecture decisions](docs/adr/).
 
 ### Admin, institutional, and operations web
 
-This application lives at `frontend/admin/` and serves TAMVA platform staff,
+This application lives at `apps/admin/` and serves TAMVA platform staff,
 institution administrators, risk analysts, investigators, operations staff,
 security and compliance staff, auditors, API/integration developers, and other
 authorized institutional users. It is not customer-facing. It is one application
@@ -65,7 +69,7 @@ separate frontends for each operational role.
 
 ### Customer application
 
-The customer experience lives directly at `mobile/` and uses one shared codebase for Android, iOS, and web. Navigation adapts from bottom tabs on phones to a wider sidebar layout on tablets and desktop browsers. Platform-specific files are used only when a capability genuinely differs. Device targets can support secure storage, biometrics, push notifications, app lifecycle handling, and future camera or QR workflows.
+The customer experience lives directly at `apps/mobile/` and uses one shared codebase for Android, iOS, and web. Navigation adapts from bottom tabs on phones to a wider sidebar layout on tablets and desktop browsers. Platform-specific files are used only when a capability genuinely differs. Device targets can support secure storage, biometrics, push notifications, app lifecycle handling, and future camera or QR workflows.
 
 - React Native and Expo
 - TypeScript and Expo Router
@@ -79,7 +83,7 @@ The current customer release includes Home, Activity, Profile, Passport,
 Protection, Confidence, Consent, Notifications, and Passport creation flows.
 These screens use the local Zustand store and mock fixtures while the
 corresponding Django domain APIs are implemented. The shared health request is
-available through `mobile/lib/api/`; customer decisions and financial data must
+available through `apps/mobile/lib/api/`; customer decisions and financial data must
 move to versioned backend contracts before production use.
 
 ## Technology stack
@@ -128,16 +132,14 @@ move to versioned backend contracts before production use.
 
 ```text
 tamva/
-├── apps/                 Domain-owned Django applications
-├── config/               Django settings, URLs, WSGI/ASGI, and Celery
-├── packages/             Shared contracts, primitives, events, and auth
-├── contracts/            Shared TypeScript schemas and checked OpenAPI output
-├── tests/                Unit, integration, contract, and security suites
+├── apps/
+│   ├── backend/          Django modular monolith and Python dependencies
+│   ├── admin/            Institutional React/Vite application
+│   └── mobile/           Universal Expo customer application
+├── packages/contracts/   Shared TypeScript schemas and checked OpenAPI output
 ├── docs/                 Architecture, ADRs, API, security, and runbooks
 ├── scripts/              Container entry points and operational helpers
-├── frontend/
-│   └── admin/            Admin, institution, and operations web application
-├── mobile/               Expo customer app for Android, iOS, and Web
+├── pnpm-workspace.yaml   Workspace package ownership
 ├── .github/              CI workflow and contribution templates
 ├── Makefile
 ├── docker-compose.yml
@@ -146,7 +148,8 @@ tamva/
 └── SECURITY.md
 ```
 
-Each directory under `apps/` contains a README defining that domain's responsibility and exclusions.
+Each directory under `apps/backend/domains/` contains a README defining that
+domain's responsibility and exclusions.
 
 ## Prerequisites
 
@@ -154,7 +157,7 @@ Each directory under `apps/` contains a README defining that domain's responsibi
 - Docker Engine
 - Docker Compose v2
 - GNU Make
-- Node.js 22 or newer and npm 11 or newer
+- Node.js 22 or newer and pnpm 11 or newer (via Corepack)
 
 Python 3.13+ is needed on the host only when running tooling outside Docker.
 
@@ -212,7 +215,7 @@ With `make up` or `make bootstrap` running:
 
 | Surface | URL | Notes |
 | --- | --- | --- |
-| Admin/institution/operations web | <http://localhost:3000/> | Compose service `admin`; source in `frontend/admin/` |
+| Admin/institution/operations web | <http://localhost:3000/> | Compose service `admin`; source in `apps/admin/` |
 | Admin portal health proxy | <http://localhost:3000/health/> | Nginx forwards the request to Django |
 | Admin portal API documentation proxy | <http://localhost:3000/api/docs/> | Same Swagger UI through the client origin |
 | Admin portal OpenAPI proxy | <http://localhost:3000/api/schema/> | Same OpenAPI document through the client origin |
@@ -232,7 +235,7 @@ New public API endpoints belong under `/api/v1/`. At present, the checked OpenAP
 Copy the mobile environment example before starting Expo:
 
 ```bash
-cp mobile/.env.example mobile/.env
+cp apps/mobile/.env.example apps/mobile/.env
 make mobile-start
 ```
 

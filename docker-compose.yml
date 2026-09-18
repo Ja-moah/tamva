@@ -1,7 +1,7 @@
 services:
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
+    command: python apps/backend/manage.py runserver 0.0.0.0:8000
     env_file: .env
     volumes:
       - .:/app
@@ -59,7 +59,7 @@ services:
   admin:
     build:
       context: .
-      dockerfile: frontend/admin/Dockerfile
+      dockerfile: apps/admin/Dockerfile
     ports:
       - "3000:80"
     depends_on:
