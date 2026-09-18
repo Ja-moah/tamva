@@ -42,11 +42,15 @@ Ledger
         ↓
 Profile / Features
         ↓
-Rules / Models / Network
+Rules / Models
         ↓
 Risk
         ↓
 Cases
+        ↓
+Notifications
+        ↓
+Trust Graph / Financial Passport
         ↓
 Institution + Customer surfaces
         ↓

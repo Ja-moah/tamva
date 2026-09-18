@@ -42,7 +42,7 @@ The Django backend is the authoritative application layer. It owns authenticatio
 | --- | --- | --- | --- |
 | Customer application | `apps/mobile/` | Scaffolded | Shared customer journeys for Android, iOS, and web |
 | Admin/institution/operations web | `apps/admin/` | Scaffolded | Internal operations and external institutional workflows |
-| Django backend | `apps/backend/` | Scaffolded | APIs, tenancy, security, persistence, and all authoritative business logic |
+| Django backend | `apps/backend/` | Core domain chain complete, hardened | APIs, tenancy, security, persistence, and all authoritative business logic |
 
 Domain code lives under `apps/backend/domains/`; stable Python primitives live under
 `apps/backend/packages/`; shared client contracts live under `packages/contracts/`.

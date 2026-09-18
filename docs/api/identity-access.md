@@ -15,8 +15,10 @@ platform users.
 
 Actor type is classification, not authorization. Access is resolved from the
 active user, institution membership, assigned roles, role permissions, and the
-selected tenant context. Customer data access will additionally require valid
-consent when those domain APIs are implemented.
+selected tenant context. Customer data access additionally requires valid
+consent where a domain API depends on it (Passport sharing calls
+`domains.consent.require_consent_access` directly; see
+[domain-apis.md](domain-apis.md)).
 
 ## Endpoints
 
