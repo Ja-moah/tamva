@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="apexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F2B48"/>
+      <stop offset="100%" stop-color="#051424"/>
+    </linearGradient>
+    <linearGradient id="goldAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F3C64D"/>
+      <stop offset="100%" stop-color="#B8860B"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="28" fill="url(#apexGrad)"/>
+  <!-- Bank Pillar Columns -->
+  <path d="M30 46h60M36 46v32M48 46v32M60 46v32M72 46v32M84 46v32M28 80h64M24 86h72" stroke="url(#goldAccent)" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Pediment Triangular Roof -->
+  <path d="M28 44L60 26l32 18H28z" fill="url(#goldAccent)"/>
+  <text x="60" y="104" font-family="'Plus Jakarta Sans', Arial, sans-serif" font-weight="800" font-size="11" fill="#FFFFFF" text-anchor="middle" letter-spacing="1.5">APEX BANK</text>
+</svg>

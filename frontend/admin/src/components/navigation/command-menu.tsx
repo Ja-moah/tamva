@@ -3,9 +3,11 @@ import {
   Activity,
   BriefcaseBusiness,
   CircleGauge,
+  Coins,
   ExternalLink,
   Network,
   Search,
+  Smartphone,
   Users,
   X,
 } from "lucide-react";
@@ -41,6 +43,24 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
       title: "System Overview",
       desc: "Live operational telemetry, risk volume & domain contracts",
       icon: CircleGauge,
+      action: () => {
+        navigate({ to: "/" });
+        onClose();
+      },
+    },
+    {
+      title: "Mobile Money & Telco Rails",
+      desc: "MTN MoMo, Telecel Cash, and AirtelTigo Money network mesh",
+      icon: Smartphone,
+      action: () => {
+        navigate({ to: "/network" });
+        onClose();
+      },
+    },
+    {
+      title: "Live African Currency Converter",
+      desc: "Instant GHS, USD, EUR, GBP, NGN, KES, XOF FX exchange matrix",
+      icon: Coins,
       action: () => {
         navigate({ to: "/" });
         onClose();
@@ -112,7 +132,7 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
           <input
             type="text"
             className="w-full bg-transparent px-3.5 py-4 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none"
-            placeholder="Type a command or search operations (e.g. Risk, AML, Cases)..."
+            placeholder="Type a command or search (e.g. MoMo, Currency, Risk, KYC)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
@@ -122,7 +142,7 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
           </span>
           <button
             onClick={onClose}
-            className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] sm:hidden"
+            className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] sm:hidden cursor-pointer"
             aria-label="Close"
           >
             <X className="size-4" />
@@ -139,7 +159,7 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
                 No matching operations found
               </p>
               <p className="text-xs text-[var(--text-muted)] mt-1">
-                Try searching for "Risk", "Case", "Passport", or "API"
+                Try searching for &quot;MoMo&quot;, &quot;Currency&quot;, &quot;Risk&quot;, or &quot;Passport&quot;
               </p>
             </div>
           ) : (
@@ -179,4 +199,3 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
     </div>
   );
 }
-

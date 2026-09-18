@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="teleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E60000"/>
+      <stop offset="100%" stop-color="#B30000"/>
+    </linearGradient>
+    <linearGradient id="redGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF3333"/>
+      <stop offset="100%" stop-color="#CC0000"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="28" fill="url(#teleGrad)"/>
+  <!-- Modern Telecel Geometric Swirl / T -->
+  <circle cx="60" cy="50" r="28" fill="#FFFFFF"/>
+  <path d="M46 42h28v7H63v20H55V49H46z" fill="#E60000"/>
+  <!-- Telecel Dot Accent -->
+  <circle cx="75" cy="40" r="4" fill="#E60000"/>
+  <!-- Cash Badge -->
+  <rect x="24" y="84" width="72" height="22" rx="11" fill="#FFFFFF"/>
+  <text x="60" y="100" font-family="'Plus Jakarta Sans', Arial, sans-serif" font-weight="800" font-size="12" fill="#E60000" text-anchor="middle" letter-spacing="1">CASH</text>
+</svg>

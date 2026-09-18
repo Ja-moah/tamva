@@ -664,6 +664,9 @@ export function RiskPage() {
                     onChange={(e) => setSimForm({ ...simForm, institution: e.target.value })}
                     className="w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] focus:border-[var(--accent-gold)] focus:outline-none"
                   >
+                    <option value="MTN Mobile Money">MTN Mobile Money</option>
+                    <option value="Telecel Cash">Telecel Cash</option>
+                    <option value="AirtelTigo Money">AirtelTigo Money</option>
                     <option value="Apex Bank PLC">Apex Bank PLC</option>
                     <option value="Zenith Digital Trust">Zenith Digital Trust</option>
                     <option value="Ecobank Regional Hub">Ecobank Regional Hub</option>

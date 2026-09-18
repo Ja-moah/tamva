@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="mtnGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFCC00"/>
+      <stop offset="100%" stop-color="#E5A900"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="120" height="120" rx="28" fill="url(#mtnGrad)"/>
+  <!-- MTN Oval Shape -->
+  <ellipse cx="60" cy="52" rx="42" ry="24" fill="#002B49" filter="url(#shadow)"/>
+  <ellipse cx="60" cy="52" rx="38" ry="20" fill="#FFCC00"/>
+  <text x="60" y="58" font-family="'Plus Jakarta Sans', Arial, sans-serif" font-weight="900" font-size="19" fill="#002B49" text-anchor="middle" letter-spacing="-1">MTN</text>
+  <!-- MoMo Pill Tag -->
+  <rect x="22" y="82" width="76" height="24" rx="12" fill="#002B49"/>
+  <text x="60" y="99" font-family="'Plus Jakarta Sans', Arial, sans-serif" font-weight="800" font-size="13" fill="#FFCC00" text-anchor="middle" letter-spacing="1">MoMo</text>
+</svg>

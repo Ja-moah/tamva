@@ -6,6 +6,7 @@ import {
   Building2,
   ChevronDown,
   CircleGauge,
+  Coins,
   ExternalLink,
   Menu,
   Network,
@@ -19,10 +20,12 @@ import { useState } from "react";
 import { useSystemHealth } from "../../features/system/use-system-health";
 import { ThemeToggle } from "../../lib/theme";
 import { cn } from "../../lib/utils/cn";
+import { LiveCurrencyConverter } from "../features/currency-converter";
 import { StatusBadge } from "../feedback/status-badge";
 import { CommandMenu } from "../navigation/command-menu";
 import { AdinkraWatermark } from "../ui/adinkra-pattern";
 import { BrandCrest } from "../ui/brand-crest";
+import { BrandLogo, type BrandType } from "../ui/brand-logo";
 import { Button } from "../ui/button";
 import { useToast } from "../ui/toast";
 
@@ -31,7 +34,7 @@ const operationsNav = [
   { label: "Risk Events", to: "/risk-events", icon: Activity, count: "12" },
   { label: "Cases", to: "/cases", icon: BriefcaseBusiness, count: "3" },
   { label: "Customers", to: "/customers", icon: Users, count: null },
-  { label: "Trust Network", to: "/network", icon: Network, count: "Live" },
+  { label: "Trust Network", to: "/network", icon: Network, count: "7 Rails" },
 ] as const;
 
 const platformLinks = [
@@ -43,18 +46,30 @@ const platformLinks = [
   },
 ] as const;
 
-const institutions = [
-  { id: "all", name: "Global Platform Scope", type: "System-wide", code: "TAMVA-ROOT" },
-  { id: "inst-1", name: "Apex Bank PLC", type: "Tier 1 Commercial", code: "APEX-GH" },
-  { id: "inst-2", name: "Zenith Digital Trust", type: "FinTech Rail", code: "ZNTH-AF" },
-  { id: "inst-3", name: "Ecobank Payment Gateway", type: "Regional Hub", code: "ECO-REG" },
+export interface InstitutionScope {
+  id: string;
+  name: string;
+  type: string;
+  code: string;
+  brand: BrandType;
+}
+
+const institutions: InstitutionScope[] = [
+  { id: "all", name: "Global Platform Scope", type: "System-wide", code: "TAMVA-ROOT", brand: "apex" },
+  { id: "momo-1", name: "MTN Mobile Money", type: "Mobile Money Operator", code: "MOMO-GH", brand: "mtn" },
+  { id: "momo-2", name: "Telecel Cash", type: "Mobile Money Operator", code: "TELE-GH", brand: "telecel" },
+  { id: "momo-3", name: "AirtelTigo Money", type: "Mobile Money Operator", code: "AT-GH", brand: "airteltigo" },
+  { id: "inst-1", name: "Apex Bank PLC", type: "Tier 1 Commercial", code: "APEX-GH", brand: "apex" },
+  { id: "inst-2", name: "Zenith Digital Trust", type: "FinTech Rail", code: "ZNTH-AF", brand: "zenith" },
+  { id: "inst-3", name: "Ecobank Payment Gateway", type: "Regional Hub (PAPSS)", code: "ECO-REG", brand: "ecobank" },
 ];
 
 export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [converterModalOpen, setConverterModalOpen] = useState(false);
   const [tenantOpen, setTenantOpen] = useState(false);
-  const [selectedTenant, setSelectedTenant] = useState(institutions[0]);
+  const [selectedTenant, setSelectedTenant] = useState<InstitutionScope>(institutions[0]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -63,7 +78,7 @@ export function AppShell() {
 
   const isConnected = health.data?.status === "ok" && health.data.database === "ok";
 
-  const handleSelectTenant = (inst: typeof institutions[0]) => {
+  const handleSelectTenant = (inst: InstitutionScope) => {
     setSelectedTenant(inst);
     setTenantOpen(false);
     toast({
@@ -80,6 +95,23 @@ export function AppShell() {
 
       {/* Global Command Palette */}
       <CommandMenu open={commandOpen} onClose={() => setCommandOpen(false)} />
+
+      {/* Quick Currency Converter Modal */}
+      {converterModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl">
+            <div className="relative">
+              <button
+                onClick={() => setConverterModalOpen(false)}
+                className="absolute top-4 right-4 z-10 p-2 rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-surface-elevated)] hover:text-[var(--text-primary)] cursor-pointer"
+              >
+                <X className="size-5" />
+              </button>
+              <LiveCurrencyConverter variant="card" />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* iPhone Glassmorphic Sidebar Navigation */}
       <aside
@@ -159,21 +191,19 @@ export function AppShell() {
                     className={cn(
                       "size-5.5 shrink-0 transition-transform group-hover:scale-105",
                       active
-                        ? "text-white dark:text-slate-900"
-                        : "text-[var(--text-muted)] group-hover:text-[var(--accent-gold)]",
+                        ? "text-[var(--accent-gold)]"
+                        : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]",
                     )}
-                    strokeWidth={active ? 2.4 : 2}
-                    aria-hidden="true"
                   />
-                  <span className="text-base font-bold tracking-tight">{label}</span>
+                  <span>{label}</span>
                 </div>
                 {count ? (
                   <span
                     className={cn(
-                      "rounded-full px-2.5 py-0.5 font-mono text-xs font-bold shadow-xs",
+                      "rounded-lg px-2.5 py-0.5 font-mono text-xs font-bold",
                       active
-                        ? "bg-white/25 text-white dark:bg-black/15 dark:text-slate-900"
-                        : "bg-[var(--bg-surface-subtle)] border border-[var(--border-default)] text-[var(--text-primary)]",
+                        ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900"
+                        : "bg-[var(--bg-surface-elevated)] text-[var(--accent-gold)] border border-[var(--border-default)]",
                     )}
                   >
                     {count}
@@ -183,19 +213,33 @@ export function AppShell() {
             );
           })}
 
-          <div className="pt-5 mt-5 border-t border-[var(--border-subtle)]">
+          {/* Quick Currency Converter Navigation Item */}
+          <button
+            onClick={() => setConverterModalOpen(true)}
+            className="w-full flex min-h-12 items-center justify-between rounded-xl px-4 text-base font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)] transition-all group cursor-pointer"
+          >
+            <div className="flex items-center gap-3.5">
+              <Coins className="size-5.5 shrink-0 text-amber-500 transition-transform group-hover:scale-110" />
+              <span>Currency Converter</span>
+            </div>
+            <span className="rounded-lg px-2 py-0.5 font-mono text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+              FX Live
+            </span>
+          </button>
+
+          <div className="pt-4 mt-4 border-t border-[var(--border-subtle)]">
             <p className="px-3.5 py-1.5 font-mono text-xs font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
-              Core Engine API
+              Developer &amp; Backend Contracts
             </p>
             {platformLinks.map((item) => {
               const Icon = item.icon;
               return (
                 <a
-                  key={item.label}
+                  key={item.href}
                   href={item.href}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex min-h-11 items-center justify-between rounded-xl px-4 text-base font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)] transition-colors group"
+                  className="flex min-h-11 items-center justify-between rounded-xl px-4 text-base font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)] transition-colors group cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <Icon className="size-5 text-[var(--text-muted)] group-hover:text-[var(--accent-gold)] shrink-0" />
@@ -255,19 +299,23 @@ export function AppShell() {
               <Menu className="size-6" />
             </button>
 
-            {/* Institution / Scope Switcher Dropdown */}
+            {/* Institution & MoMo Scope Switcher Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setTenantOpen(!tenantOpen)}
                 className="flex items-center gap-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-subtle)] px-4 py-2.5 text-left hover:border-[var(--border-strong)] hover:bg-[var(--bg-surface-hover)] transition-all cursor-pointer shadow-xs"
               >
-                <Building2 className="size-4.5 text-[var(--accent-gold)]" />
+                {selectedTenant.id === "all" ? (
+                  <Building2 className="size-4.5 text-[var(--accent-gold)] shrink-0" />
+                ) : (
+                  <BrandLogo brand={selectedTenant.brand} size="sm" />
+                )}
                 <div className="min-w-0">
                   <p className="text-base font-bold text-[var(--text-primary)] truncate max-w-[170px] sm:max-w-xs">
                     {selectedTenant.name}
                   </p>
                 </div>
-                <ChevronDown className="size-4 text-[var(--text-muted)] ml-0.5" />
+                <ChevronDown className="size-4 text-[var(--text-muted)] ml-0.5 shrink-0" />
               </button>
 
               {tenantOpen ? (
@@ -277,25 +325,34 @@ export function AppShell() {
                     onClick={() => setTenantOpen(false)}
                     aria-hidden="true"
                   />
-                  <div className="absolute left-0 mt-2 z-30 w-84 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-2.5 shadow-xl animate-in fade-in zoom-in-98 ios-glass">
+                  <div className="absolute left-0 mt-2 z-30 w-88 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-2.5 shadow-xl animate-in fade-in zoom-in-98 ios-glass max-h-[80vh] overflow-y-auto">
                     <p className="px-3.5 py-2 text-xs font-mono font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
-                      Switch Institution Scope
+                      Switch Active Tenant &amp; Rail Scope
                     </p>
                     {institutions.map((inst) => (
                       <button
                         key={inst.id}
                         onClick={() => handleSelectTenant(inst)}
                         className={cn(
-                          "w-full text-left px-4 py-3 rounded-xl text-base flex flex-col gap-1 transition-colors cursor-pointer",
+                          "w-full text-left px-3.5 py-2.5 rounded-xl text-base flex items-center gap-3 transition-colors cursor-pointer",
                           selectedTenant.id === inst.id
                             ? "bg-[var(--accent-gold-subtle)] text-[var(--accent-gold-text)] dark:text-[var(--accent-gold)] font-bold border border-[var(--accent-gold-border)]"
                             : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)] font-medium",
                         )}
                       >
-                        <span className="font-bold text-base">{inst.name}</span>
-                        <span className="text-xs text-[var(--text-muted)] font-mono font-semibold">
-                          {inst.type} · {inst.code}
-                        </span>
+                        {inst.id === "all" ? (
+                          <div className="size-7 rounded-lg bg-[var(--bg-canvas)] border border-[var(--border-default)] flex items-center justify-center shrink-0">
+                            <Building2 className="size-4 text-[var(--accent-gold)]" />
+                          </div>
+                        ) : (
+                          <BrandLogo brand={inst.brand} size="sm" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <span className="font-bold text-sm block truncate">{inst.name}</span>
+                          <span className="text-[11px] text-[var(--text-muted)] font-mono block">
+                            {inst.type} &bull; {inst.code}
+                          </span>
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -306,6 +363,17 @@ export function AppShell() {
 
           {/* Right Header Controls */}
           <div className="flex items-center gap-3 sm:gap-4">
+            {/* Quick Live Currency Converter Header Action */}
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setConverterModalOpen(true)}
+              className="hidden md:inline-flex items-center gap-2 text-sm font-bold px-3.5 py-2 rounded-xl text-amber-500 border border-amber-500/20 hover:bg-amber-500/10 cursor-pointer"
+            >
+              <Coins className="size-4 text-amber-500" />
+              <span>Live FX Converter</span>
+            </Button>
+
             {/* Theme Toggle Control */}
             <ThemeToggle />
 
@@ -314,7 +382,7 @@ export function AppShell() {
               variant="secondary"
               size="md"
               onClick={() => setCommandOpen(true)}
-              className="hidden sm:inline-flex gap-2 text-base font-semibold px-4 py-2.5 rounded-xl"
+              className="hidden sm:inline-flex gap-2 text-base font-semibold px-4 py-2.5 rounded-xl cursor-pointer"
             >
               <Search className="size-4.5 text-[var(--accent-gold)]" />
               <span>Search ⌘K</span>
@@ -327,7 +395,7 @@ export function AppShell() {
                 size="icon"
                 onClick={() => setNotificationsOpen(!notificationsOpen)}
                 aria-label="Notifications"
-                className="relative size-11 rounded-xl"
+                className="relative size-11 rounded-xl cursor-pointer"
               >
                 <Bell className="size-5 text-[var(--text-secondary)]" />
                 <span className="absolute top-2.5 right-2.5 size-2.5 rounded-full bg-[var(--accent-gold)] ring-2 ring-[var(--bg-surface)] animate-ping" />
@@ -347,16 +415,16 @@ export function AppShell() {
                         Real-Time Alerts
                       </span>
                       <StatusBadge tone="warning" size="sm">
-                        2 Active
+                        3 Active
                       </StatusBadge>
                     </div>
                     <div className="mt-3 space-y-2.5">
                       <div className="p-3.5 rounded-xl bg-[var(--bg-surface-subtle)] border border-[var(--border-subtle)]">
                         <p className="text-sm font-bold text-[var(--accent-gold)]">
-                          Velocity Spike Flagged
+                          MTN MoMo Settlement Spike
                         </p>
                         <p className="text-sm text-[var(--text-secondary)] mt-1 leading-normal font-medium">
-                          High transaction velocity detected on Apex Bank Rail (Accra West).
+                          High settlement velocity (2,850 TPS) cleared via GhIPSS switch without queue buildup.
                         </p>
                       </div>
                       <div className="p-3.5 rounded-xl bg-[var(--bg-surface-subtle)] border border-[var(--border-subtle)]">

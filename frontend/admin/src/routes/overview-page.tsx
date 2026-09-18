@@ -9,6 +9,7 @@ import {
   Radio,
   RefreshCw,
   ShieldCheck,
+  Smartphone,
   Zap,
 } from "lucide-react";
 import { useState } from "react";
@@ -16,7 +17,9 @@ import { useState } from "react";
 import { RiskDistributionChart } from "../components/charts/risk-distribution-chart";
 import { RiskVelocityChart } from "../components/charts/risk-velocity-chart";
 import { ThroughputSparkline } from "../components/charts/throughput-sparkline";
+import { LiveCurrencyConverter } from "../components/features/currency-converter";
 import { StatusBadge } from "../components/feedback/status-badge";
+import { BrandLogo } from "../components/ui/brand-logo";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { DetailDrawer } from "../components/ui/detail-drawer";
@@ -76,34 +79,90 @@ const domainModules = [
   },
 ];
 
+const mobileMoneyMesh = [
+  {
+    id: "momo-mtn",
+    brand: "mtn",
+    name: "MTN Mobile Money",
+    network: "MTN Ghana (024/054/055/059)",
+    status: "Operational",
+    tone: "success" as const,
+    volume24h: "GH₵ 1.85B",
+    tps: "2,850 TPS",
+    latency: "6ms",
+    floatReserve: "GH₵ 420.0M",
+    simSwapSync: "Active Real-Time",
+  },
+  {
+    id: "momo-telecel",
+    brand: "telecel",
+    name: "Telecel Cash",
+    network: "Telecel Ghana (020/050)",
+    status: "Operational",
+    tone: "success" as const,
+    volume24h: "GH₵ 620.4M",
+    tps: "1,140 TPS",
+    latency: "11ms",
+    floatReserve: "GH₵ 185.2M",
+    simSwapSync: "Active Real-Time",
+  },
+  {
+    id: "momo-at",
+    brand: "airteltigo",
+    name: "AirtelTigo Money",
+    network: "AT Ghana (027/057/026/056)",
+    status: "Operational",
+    tone: "success" as const,
+    volume24h: "GH₵ 245.8M",
+    tps: "580 TPS",
+    latency: "14ms",
+    floatReserve: "GH₵ 82.5M",
+    simSwapSync: "Active Real-Time",
+  },
+];
+
 const initialLiveAuditEvents = [
   {
-    id: "EVT-89201",
+    id: "EVT-89204",
     time: "Just now",
+    type: "MoMo Settlement",
+    desc: "MTN MoMo GH₵ 25,000 -> Apex Bank instant GIP transfer verified (0.04% fee, Score: 96/100)",
+    tone: "success" as const,
+  },
+  {
+    id: "EVT-89203",
+    time: "1m ago",
+    type: "Risk Decision",
+    desc: "Telecel Cash wallet 020****819 SIM-swap check passed. Trust score 94/100 verified on TAMVA mesh",
+    tone: "success" as const,
+  },
+  {
+    id: "EVT-89202",
+    time: "3m ago",
+    type: "Cross-Rail Remittance",
+    desc: "ATMoney GH₵ 12,500 PAPSS regional settlement to Ecobank Abidjan cleared with zero friction",
+    tone: "success" as const,
+  },
+  {
+    id: "EVT-89201",
+    time: "5m ago",
     type: "Risk Decision",
     desc: "Apex Bank GH₵ 45,000 MoMo transfer passed fraud check (Score: 12/100)",
     tone: "success" as const,
   },
   {
     id: "EVT-89200",
-    time: "2m ago",
+    time: "7m ago",
     type: "Velocity Alert",
     desc: "Zenith Trust flagged 3 rapid authentication attempts from unrecognized IP",
     tone: "warning" as const,
   },
   {
     id: "EVT-89199",
-    time: "4m ago",
+    time: "9m ago",
     type: "Outbox Commit",
     desc: "1,200 transactional audit events committed to PostgreSQL outbox partition",
     tone: "info" as const,
-  },
-  {
-    id: "EVT-89198",
-    time: "7m ago",
-    type: "Identity Verified",
-    desc: "Customer GHA-908234-1 promoted to Tier 3 Passport status with biometric proof",
-    tone: "success" as const,
   },
 ];
 
@@ -120,12 +179,12 @@ export function OverviewPage() {
     setSimulating(true);
     setTimeout(() => {
       setSimulating(false);
-      const randomEventId = `EVT-${Math.floor(89202 + Math.random() * 500)}`;
+      const randomEventId = `EVT-${Math.floor(89205 + Math.random() * 500)}`;
       const newEvent = {
         id: randomEventId,
         time: "Just now",
-        type: "Risk Evaluated",
-        desc: "Simulated MoMo inter-bank settlement: Cleared with trust score 92/100",
+        type: "MoMo Rail Clearance",
+        desc: "Simulated MTN MoMo to Telecel Cash interoperability transfer: Cleared with trust score 98/100",
         tone: "success" as const,
       };
 
@@ -133,7 +192,7 @@ export function OverviewPage() {
 
       toast({
         title: "Simulation Dispatched",
-        description: `Dispatched ${randomEventId}: Score 14/100 (Clean AML clearance)`,
+        description: `Dispatched ${randomEventId}: Score 14/100 (Clean AML & SIM-swap clearance)`,
         type: "success",
       });
     }, 600);
@@ -168,7 +227,7 @@ export function OverviewPage() {
             </h1>
             <p className="text-lg text-[var(--text-secondary)] mt-2.5 max-w-3xl leading-relaxed font-medium">
               Real-time transactional integrity, cross-border financial identity passporting, and
-              automated risk intelligence across West Africa and PAPSS regional payment rails.
+              automated risk intelligence across Mobile Money (MTN, Telecel, AT), commercial banks, and PAPSS regional payment rails.
             </p>
           </div>
 
@@ -178,7 +237,7 @@ export function OverviewPage() {
               size="lg"
               onClick={handleRefreshHealth}
               loading={health.isFetching}
-              className="gap-2.5 shadow-sm text-base font-bold rounded-xl"
+              className="gap-2.5 shadow-sm text-base font-bold rounded-xl cursor-pointer"
             >
               <RefreshCw className="size-4.5" />
               <span>Ping Health</span>
@@ -188,7 +247,7 @@ export function OverviewPage() {
               size="lg"
               onClick={handleSimulateRisk}
               loading={simulating}
-              className="gap-2.5 shadow-md text-base font-bold rounded-xl"
+              className="gap-2.5 shadow-md text-base font-bold rounded-xl cursor-pointer"
             >
               <Zap className="size-4.5" />
               <span>Simulate Risk Event</span>
@@ -222,7 +281,7 @@ export function OverviewPage() {
           </div>
           <p className="mt-3 text-4xl font-extrabold text-[var(--text-primary)] font-tabular">1,248,310</p>
           <div className="mt-2.5 flex items-center justify-between text-base">
-            <span className="text-[var(--text-secondary)] font-medium">Avg Decision: 18ms</span>
+            <span className="text-[var(--text-secondary)] font-medium">Avg Decision: 12ms</span>
             <span className="text-[#10b981] font-bold font-mono">99.8% Cleared</span>
           </div>
         </Card>
@@ -230,14 +289,14 @@ export function OverviewPage() {
         <Card className="p-6 ios-glass-card">
           <div className="flex items-center justify-between">
             <span className="font-mono text-xs font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
-              Active Investigations
+              24h MoMo &amp; Bank Flow
             </span>
-            <ThroughputSparkline data={[8, 12, 10, 14, 11, 9, 7, 5, 3]} color="#e11d48" />
+            <ThroughputSparkline data={[8, 14, 22, 38, 52, 70, 85, 92, 100]} color="#d4a017" />
           </div>
-          <p className="mt-3 text-4xl font-extrabold text-[var(--text-primary)] font-tabular">4 Cases</p>
+          <p className="mt-3 text-4xl font-extrabold text-[var(--text-primary)] font-tabular">GH₵ 4.58B</p>
           <div className="mt-2.5 flex items-center justify-between text-base">
-            <span className="text-[var(--text-secondary)] font-medium">0 Breaches in 30d</span>
-            <span className="text-[#e11d48] font-bold font-mono">1 Critical SLA</span>
+            <span className="text-[var(--text-secondary)] font-medium">MoMo + Bank Settlement</span>
+            <span className="text-[#10b981] font-bold font-mono">+24.6% flow</span>
           </div>
         </Card>
 
@@ -246,15 +305,93 @@ export function OverviewPage() {
             <span className="font-mono text-xs font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
               Participant Rails
             </span>
-            <ThroughputSparkline data={[30, 32, 34, 36, 38, 40, 41, 42, 42]} color="#d4a017" />
+            <ThroughputSparkline data={[30, 32, 34, 36, 38, 40, 41, 42, 42]} color="#10b981" />
           </div>
-          <p className="mt-3 text-4xl font-extrabold text-[var(--text-primary)] font-tabular">42 Rails</p>
+          <p className="mt-3 text-4xl font-extrabold text-[var(--text-primary)] font-tabular">7 Core Rails</p>
           <div className="mt-2.5 flex items-center justify-between text-base">
-            <span className="text-[var(--text-secondary)] font-medium">Inter-bank Quorum</span>
+            <span className="text-[var(--text-secondary)] font-medium">MoMo + Commercial</span>
             <span className="text-[#10b981] font-bold font-mono">100% Up</span>
           </div>
         </Card>
       </div>
+
+      {/* DEDICATED MOBILE MONEY OPERATORS TELEMETRY SPACE */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500">
+              <Smartphone className="size-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold text-[var(--text-primary)]">
+                Mobile Money Network Telemetry
+              </h2>
+              <p className="text-sm text-[var(--text-secondary)] mt-0.5">
+                Real-time connection, daily settlement, and liquidity status across Ghana&apos;s leading MNOs.
+              </p>
+            </div>
+          </div>
+          <Button asChild variant="secondary" size="sm" className="rounded-xl font-bold cursor-pointer self-start sm:self-auto">
+            <Link to="/network">
+              <span>View All Rails</span>
+              <ArrowUpRight className="size-4 ml-1" />
+            </Link>
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {mobileMoneyMesh.map((momo) => (
+            <div
+              key={momo.id}
+              className="ios-glass-card rounded-2xl p-5 hover:border-[var(--accent-gold-border)] transition-all shadow-md group relative overflow-hidden"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <BrandLogo brand={momo.brand} size="lg" />
+                <StatusBadge tone={momo.tone}>{momo.status}</StatusBadge>
+              </div>
+
+              <div className="mt-4">
+                <h3 className="text-lg font-extrabold text-[var(--text-primary)] group-hover:text-[var(--accent-gold)] transition-colors">
+                  {momo.name}
+                </h3>
+                <p className="text-xs font-mono text-[var(--text-muted)] mt-0.5">{momo.network}</p>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-[var(--border-subtle)] text-xs">
+                <div>
+                  <span className="text-[var(--text-muted)] block font-medium">Daily Volume</span>
+                  <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{momo.volume24h}</span>
+                </div>
+                <div>
+                  <span className="text-[var(--text-muted)] block font-medium">Throughput</span>
+                  <span className="font-mono font-bold text-sm text-emerald-500">{momo.tps}</span>
+                </div>
+                <div>
+                  <span className="text-[var(--text-muted)] block font-medium">Latency</span>
+                  <span className="font-mono font-bold text-sm text-[var(--accent-gold-text)] dark:text-[var(--accent-gold)]">
+                    {momo.latency}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[var(--text-muted)] block font-medium">Float Escrow</span>
+                  <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{momo.floatReserve}</span>
+                </div>
+              </div>
+
+              <div className="mt-3.5 pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs">
+                <span className="text-[var(--text-muted)]">SIM-Swap Status:</span>
+                <span className="font-bold text-emerald-500 flex items-center gap-1">
+                  <ShieldCheck className="size-3.5" />
+                  {momo.simSwapSync}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* LIVE CURRENCY CONVERTER WIDGET */}
+      <LiveCurrencyConverter />
 
       {/* Analytics Grid: 24h Velocity + Risk Tier Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">
@@ -308,7 +445,7 @@ export function OverviewPage() {
                 Authoritative Django modular monolith boundaries &amp; public contracts
               </p>
             </div>
-            <Button asChild variant="secondary" size="md" className="rounded-xl font-bold">
+            <Button asChild variant="secondary" size="md" className="rounded-xl font-bold cursor-pointer">
               <a href="/api/docs/" target="_blank" rel="noreferrer">
                 <span>Swagger</span>
                 <ArrowUpRight className="size-4 ml-1" />
@@ -401,7 +538,7 @@ export function OverviewPage() {
             ))}
           </div>
 
-          <Button asChild variant="secondary" size="lg" className="w-full text-base font-bold rounded-xl">
+          <Button asChild variant="secondary" size="lg" className="w-full text-base font-bold rounded-xl cursor-pointer">
             <Link to="/risk-events">
               <span>View All Risk Logs</span>
               <ArrowUpRight className="size-5 ml-2" />
@@ -423,13 +560,13 @@ export function OverviewPage() {
         }
         footer={
           <div className="flex items-center justify-between w-full">
-            <Button asChild variant="outline" size="md" className="rounded-xl font-bold">
+            <Button asChild variant="outline" size="md" className="rounded-xl font-bold cursor-pointer">
               <a href="/api/docs/" target="_blank" rel="noreferrer">
                 <span>Swagger API Explorer</span>
                 <ExternalLink className="size-4 ml-1.5" />
               </a>
             </Button>
-            <Button variant="secondary" size="md" onClick={() => setSelectedDomain(null)} className="rounded-xl font-bold">
+            <Button variant="secondary" size="md" onClick={() => setSelectedDomain(null)} className="rounded-xl font-bold cursor-pointer">
               Dismiss
             </Button>
           </div>
