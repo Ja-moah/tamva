@@ -101,6 +101,12 @@ class Case(UUIDModel, TimeStampedModel):
     closed_at = models.DateTimeField(blank=True, null=True)
     metadata = models.JSONField(default=dict, blank=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["institution", "opened_at"]),
+            models.Index(fields=["institution", "status"]),
+        ]
+
     def clean(self) -> None:
         errors: dict[str, str] = {}
         if self.status == self.Status.RESOLVED and not self.closed_at:

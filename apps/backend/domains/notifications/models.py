@@ -102,6 +102,7 @@ class Notification(UUIDModel, TimeStampedModel):
                 name="unique_notification_input",
             )
         ]
+        indexes = [models.Index(fields=["recipient", "created_at"])]
 
 
 class NotificationDeliveryAttempt(UUIDModel):

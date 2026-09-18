@@ -174,6 +174,9 @@ class RiskEvent(UUIDModel, TimeStampedModel):
     evaluated_at = models.DateTimeField()
     metadata = models.JSONField(default=dict, blank=True)
 
+    class Meta:
+        indexes = [models.Index(fields=["institution", "evaluated_at"])]
+
     def clean(self) -> None:
         errors: dict[str, str] = {}
         if not (0 <= self.score <= 1000):
