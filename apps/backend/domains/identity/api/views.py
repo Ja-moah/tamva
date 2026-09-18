@@ -2,7 +2,8 @@ from uuid import UUID
 
 from django.contrib.auth import login, logout
 from django.core.exceptions import PermissionDenied
-from rest_framework import status
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
@@ -54,6 +55,44 @@ def _context_payload(context: ActorContext) -> dict:
     }
 
 
+_actor_context_response = inline_serializer(
+    name="ActorContextEnvelope",
+    fields={
+        "data": inline_serializer(
+            name="ActorContext",
+            fields={
+                "user": inline_serializer(
+                    name="ActorUser",
+                    fields={
+                        "id": serializers.UUIDField(),
+                        "email": serializers.EmailField(),
+                        "actor_type": serializers.CharField(),
+                        "status": serializers.CharField(),
+                    },
+                ),
+                "tenant": inline_serializer(
+                    name="ActorTenant",
+                    fields={
+                        "institution_id": serializers.UUIDField(),
+                        "institution_name": serializers.CharField(),
+                    },
+                ),
+                "memberships": inline_serializer(
+                    name="ActorMembership",
+                    fields={
+                        "institution_id": serializers.UUIDField(),
+                        "institution_name": serializers.CharField(),
+                    },
+                    many=True,
+                ),
+                "roles": serializers.ListField(child=serializers.CharField()),
+                "permissions": serializers.ListField(child=serializers.CharField()),
+            },
+        )
+    },
+)
+
+
 def _audit(
     *,
     user: User | None,
@@ -74,6 +113,7 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = [SessionAuthentication]
 
+    @extend_schema(request=LoginSerializer, responses=_actor_context_response)
     def post(self, request: Request) -> Response:
         serializer = LoginSerializer(data=request.data, context={"request": request})
         try:
@@ -95,6 +135,7 @@ class LoginView(APIView):
 class RefreshView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=None, responses=_actor_context_response)
     def post(self, request: Request) -> Response:
         request.session.cycle_key()
         context = build_actor_context(request.user, _institution_id(request))
@@ -104,6 +145,7 @@ class RefreshView(APIView):
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=None, responses={204: None})
     def post(self, request: Request) -> Response:
         _audit(
             user=request.user,
@@ -118,6 +160,7 @@ class LogoutView(APIView):
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses=_actor_context_response)
     def get(self, request: Request) -> Response:
         context = build_actor_context(request.user, _institution_id(request))
         return Response({"data": _context_payload(context)})

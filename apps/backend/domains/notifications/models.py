@@ -92,6 +92,7 @@ class Notification(UUIDModel, TimeStampedModel):
     subject = models.CharField(max_length=255, blank=True)
     body = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=Status, default=Status.PENDING)
+    read_at = models.DateTimeField(blank=True, null=True)
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:

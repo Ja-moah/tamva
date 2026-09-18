@@ -107,6 +107,16 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "packages.common.exceptions.api_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_PAGINATION_CLASS": "packages.common.pagination.DefaultPagination",
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    # Rates are configuration, not code: override per-environment via env vars.
+    "DEFAULT_THROTTLE_RATES": {
+        "auth": os.getenv("THROTTLE_RATE_AUTH", "20/min"),
+        "credential_ops": os.getenv("THROTTLE_RATE_CREDENTIAL_OPS", "20/min"),
+        "connector_sync": os.getenv("THROTTLE_RATE_CONNECTOR_SYNC", "30/min"),
+        "risk_evaluation": os.getenv("THROTTLE_RATE_RISK_EVALUATION", "60/min"),
+        "passport_share_access": os.getenv("THROTTLE_RATE_PASSPORT_ACCESS", "30/min"),
+    },
 }
 SPECTACULAR_SETTINGS = {
     "TITLE": "TAMVA API",

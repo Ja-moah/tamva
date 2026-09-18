@@ -207,3 +207,12 @@ def process_outbox_event(*, event: OutboxEvent) -> list[Notification]:
     event.attempts += 1
     event.save(update_fields=["published_at", "attempts"])
     return notifications
+
+
+def mark_notification_read(*, notification: Notification, recipient: User) -> Notification:
+    if notification.recipient_id != recipient.id:
+        raise PermissionDenied("Notification does not belong to the requesting user.")
+    if notification.read_at is None:
+        notification.read_at = timezone.now()
+        notification.save(update_fields=["read_at", "updated_at"])
+    return notification
