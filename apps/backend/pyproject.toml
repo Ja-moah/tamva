@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tamva"
+version = "0.1.0"
+description = "TAMVA financial identity and trust infrastructure"
+requires-python = ">=3.13"
+dependencies = [
+  "celery[redis]>=5.4,<6",
+  "dj-database-url>=2.3,<4",
+  "django>=5.2,<6.1",
+  "django-cors-headers>=4.7,<5",
+  "djangorestframework>=3.15,<4",
+  "drf-spectacular>=0.28,<1",
+  "gunicorn>=23,<24",
+  "psycopg[binary]>=3.2,<4",
+  "python-json-logger>=3.2,<5",
+  "sentry-sdk[django]>=2.20,<3",
+]
+
+[project.optional-dependencies]
+dev = [
+  "django-stubs[compatible-mypy]>=5.2,<6",
+  "factory-boy>=3.3,<4",
+  "mypy>=1.15,<2",
+  "pre-commit>=4.1,<5",
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<8",
+  "pytest-django>=4.10,<5",
+  "ruff>=0.11,<1",
+]
+
+[tool.setuptools.packages.find]
+include = ["config*", "domains*", "packages*"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py", "*_test.py"]
+testpaths = ["tests"]
+addopts = "--strict-markers --disable-warnings --cov=domains --cov=packages --cov=config --cov-report=term-missing"
+markers = [
+  "unit: isolated unit tests",
+  "integration: tests requiring database or infrastructure",
+  "contract: API or event contract tests",
+  "security: security boundary tests",
+  "e2e: full end-to-end backend pipeline tests",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+cache-dir = "/tmp/ruff-cache"
+exclude = ["**/migrations/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ", "RUF"]
+ignore = ["DJ001", "RUF012"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.13"
+plugins = ["mypy_django_plugin.main"]
+check_untyped_defs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+explicit_package_bases = true
+exclude = ["migrations"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+[tool.coverage.run]
+omit = ["*/migrations/*", "manage.py", "config/asgi.py", "config/wsgi.py"]

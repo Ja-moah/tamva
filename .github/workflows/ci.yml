@@ -44,17 +44,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
-          cache: npm
-      - run: pip install -r requirements.lock
-      - run: npm ci
-      - run: ruff check .
-      - run: ruff format --check .
-      - run: mypy apps packages config
-      - run: python manage.py migrate --noinput
-      - run: python manage.py check
+          cache: pnpm
+      - run: corepack enable
+      - run: pip install -r apps/backend/requirements.lock
+      - run: pnpm install --frozen-lockfile
+      - run: ruff check apps/backend
+      - run: ruff format --check apps/backend
+      - run: mypy config domains packages
+        working-directory: apps/backend
+      - run: python apps/backend/manage.py migrate --noinput
+      - run: python apps/backend/manage.py check
       - run: pytest
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run build
-      - run: npm run export --workspace @tamva/mobile
+        working-directory: apps/backend
+      - run: pnpm run lint
+      - run: pnpm run typecheck
+      - run: pnpm test
+      - run: pnpm run build
+      - run: pnpm --filter @tamva/mobile export

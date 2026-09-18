@@ -10,7 +10,7 @@ The final ownership model is:
           BUSINESS LOGIC + APIs
               ^         ^
               |         |
-        frontend/admin     mobile
+        apps/admin     mobile
          Admin Web       Customer App
                      Android
                      iOS
@@ -35,7 +35,7 @@ The Expo customer application receives the customer authorization context on And
 
 ## Admin web
 
-The application at `frontend/admin/` is the single operational web platform for
+The application at `apps/admin/` is the single operational web platform for
 TAMVA platform staff, institution administrators, risk analysts, investigators,
 operations staff, security and compliance staff, auditors, API/integration
 developers, and other authorized institutional users. It is not customer-facing.
@@ -46,12 +46,12 @@ service.
 
 ## Customer application
 
-The application at `mobile/` is one Expo Router codebase for Android, iOS, and
+The application at `apps/mobile/` is one Expo Router codebase for Android, iOS, and
 Web. Phone layouts use bottom-tab navigation; wider tablet and desktop layouts
 use a sidebar. There is no separate customer web application or customer web
 workspace under `frontend/`.
 
-Copy `mobile/.env.example` to `mobile/.env` and set `EXPO_PUBLIC_API_BASE_URL` for the target:
+Copy `apps/mobile/.env.example` to `apps/mobile/.env` and set `EXPO_PUBLIC_API_BASE_URL` for the target:
 
 - iOS simulator: `http://localhost:8000`
 - Android emulator: `http://10.0.2.2:8000`
@@ -71,4 +71,4 @@ is implemented. The mobile API client currently wires the shared health check.
 
 ## Contracts
 
-Runtime responses are validated by schemas in `contracts/client`. Admin web and mobile consume the same API contracts. Run `make schema` after an intentional Django API change and review the OpenAPI diff with the server change.
+Runtime responses are validated by schemas in `packages/contracts/client`. Admin web and mobile consume the same API contracts. Run `make schema` after an intentional Django API change and review the OpenAPI diff with the server change.
