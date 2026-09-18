@@ -129,7 +129,7 @@ Analytics, Integrations, Security) need permissions defined first.
 | Fake randomness | `Math.random` in 12 places (cases, customers, integrations, network, overview, team) | Remove as each screen is wired; API-key prefixes must never be client-generated. |
 | No pagination or sorting anywhere | 0 occurrences across all 11 screens | Adopt `page`/`page_size` and a server sort param when endpoints are wired. |
 | Search only on 4 of 11 screens; client-side only | cases, customers, team, notifications | Move to server filters. |
-| Accessibility largely absent | 0 `aria-` on 8 of 12 route files; icon-only buttons unlabelled | Label controls, add `role`/`aria-live` for toasts, focus management for the drawer and modal. Not a redesign. |
+| Accessibility largely absent | 0 `aria-` on 7 of 12 route files; icon-only buttons unlabelled | Label controls, add `role`/`aria-live` for toasts, focus management for the drawer and modal. Not a redesign. |
 | Google Fonts loaded from a CDN | `index.html` | Self-host (privacy, offline, CSP) during hardening. |
 | Fake "Production/Sandbox" switch | Shell environment toggle is local state | Reflect the real deployment environment, or remove. It currently says "Production" over sample data. |
 | Bulk actions with no backend | risk, team, notifications, integrations | Hide until an endpoint exists. |
