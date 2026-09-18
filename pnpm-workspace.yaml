@@ -2,5 +2,6 @@ packages:
   - apps/admin
   - apps/mobile
   - packages/contracts/client
+  - packages/brand
 allowBuilds:
   unrs-resolver: set this to true or false

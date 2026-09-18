@@ -29,7 +29,7 @@ import { NetworkStatusBanner } from "../feedback/network-status-banner";
 import { StatusBadge } from "../feedback/status-badge";
 import { CommandMenu } from "../navigation/command-menu";
 import { AdinkraWatermark } from "../ui/adinkra-pattern";
-import { BrandCrest } from "../ui/brand-crest";
+import { TamvaMark } from "../brand/tamva-logo";
 import { BrandLogo, type BrandType } from "../ui/brand-logo";
 import { Button } from "../ui/button";
 import { useToast } from "../ui/toast";
@@ -148,7 +148,7 @@ export function AppShell() {
             className="flex items-center gap-3 group select-none"
             onClick={() => setMenuOpen(false)}
           >
-            <BrandCrest className="size-10" />
+            <TamvaMark className="size-10" />
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-xl font-extrabold tracking-tight text-[var(--text-primary)]">

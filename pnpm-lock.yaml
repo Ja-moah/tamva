@@ -16,6 +16,9 @@ importers:
       '@radix-ui/react-slot':
         specifier: ^1.2.4
         version: 1.3.3(@types/react@19.2.18)(react@19.3.0)
+      '@tamva/brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
       '@tamva/client-contracts':
         specifier: workspace:*
         version: link:../../packages/contracts/client
@@ -186,6 +189,8 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+
+  packages/brand: {}
 
   packages/contracts/client:
     dependencies:
