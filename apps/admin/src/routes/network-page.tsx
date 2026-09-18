@@ -14,7 +14,7 @@ import {
 import { useMemo, useState } from "react";
 
 import { NetworkTelemetryChart } from "../components/charts/network-telemetry-chart";
-import { LiveCurrencyConverter } from "../components/features/currency-converter";
+import { CurrencyConverterUnavailable } from "../components/features/currency-converter-unavailable";
 import { StatusBadge, type StatusTone } from "../components/feedback/status-badge";
 import { BrandLogo, type BrandType } from "../components/ui/brand-logo";
 import { Button } from "../components/ui/button";
@@ -527,7 +527,7 @@ export function NetworkPage() {
       </div>
 
       {/* LIVE CURRENCY CONVERTER EMBEDDED */}
-      <LiveCurrencyConverter />
+      <CurrencyConverterUnavailable />
 
       {/* Network Telemetry Chart */}
       <Card className="p-6">

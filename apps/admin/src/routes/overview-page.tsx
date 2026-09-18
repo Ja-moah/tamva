@@ -17,7 +17,7 @@ import { useState } from "react";
 import { RiskDistributionChart } from "../components/charts/risk-distribution-chart";
 import { RiskVelocityChart } from "../components/charts/risk-velocity-chart";
 import { ThroughputSparkline } from "../components/charts/throughput-sparkline";
-import { LiveCurrencyConverter } from "../components/features/currency-converter";
+import { CurrencyConverterUnavailable } from "../components/features/currency-converter-unavailable";
 import { StatusBadge } from "../components/feedback/status-badge";
 import { BrandLogo } from "../components/ui/brand-logo";
 import { Button } from "../components/ui/button";
@@ -391,7 +391,7 @@ export function OverviewPage() {
       </div>
 
       {/* LIVE CURRENCY CONVERTER WIDGET */}
-      <LiveCurrencyConverter />
+      <CurrencyConverterUnavailable />
 
       {/* Analytics Grid: 24h Velocity + Risk Tier Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">

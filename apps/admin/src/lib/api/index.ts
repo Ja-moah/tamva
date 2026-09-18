@@ -1,58 +1,41 @@
 import {
-  currencyConvertResponseSchema,
-  currencyRatesResponseSchema,
+  actorContextEnvelopeSchema,
+  capabilitiesResponseSchema,
   healthResponseSchema,
-  type CurrencyConvertResponse,
-  type CurrencyRatesResponse,
+  type ActorContext,
+  type CapabilitiesResponse,
   type HealthResponse,
-} from "../contracts";
+  type LoginRequest,
+} from "@tamva/client-contracts";
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
+import { apiRequest } from "./client";
 
-export async function getSystemHealth(signal?: AbortSignal): Promise<HealthResponse> {
-  const response = await fetch(`${apiBaseUrl}/health/`, {
-    headers: { Accept: "application/json" },
-    signal,
-  });
+export { ApiError, apiRequest, getActiveInstitution, setActiveInstitution } from "./client";
 
-  if (!response.ok) {
-    throw new Error(`Backend health check failed with status ${response.status}`);
-  }
-
-  return healthResponseSchema.parse(await response.json());
+export function getSystemHealth(signal?: AbortSignal): Promise<HealthResponse> {
+  return apiRequest({ path: "/health/", unversioned: true, schema: healthResponseSchema, signal });
 }
 
-export async function getCurrencyRates(signal?: AbortSignal): Promise<CurrencyRatesResponse> {
-  const response = await fetch(`${apiBaseUrl}/api/v1/currency/rates/`, {
-    headers: { Accept: "application/json" },
-    signal,
+export async function login(credentials: LoginRequest): Promise<ActorContext> {
+  const envelope = await apiRequest({
+    method: "POST",
+    path: "/auth/login/",
+    body: credentials,
+    schema: actorContextEnvelopeSchema,
   });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch live currency rates with status ${response.status}`);
-  }
-
-  return currencyRatesResponseSchema.parse(await response.json());
+  return envelope.data;
 }
 
-export async function convertCurrency(
-  params: { from: string; to: string; amount: number },
-  signal?: AbortSignal,
-): Promise<CurrencyConvertResponse> {
-  const query = new URLSearchParams({
-    from: params.from,
-    to: params.to,
-    amount: params.amount.toString(),
-  });
+export async function logout(): Promise<void> {
+  await apiRequest({ method: "POST", path: "/auth/logout/" });
+}
 
-  const response = await fetch(`${apiBaseUrl}/api/v1/currency/convert/?${query.toString()}`, {
-    headers: { Accept: "application/json" },
-    signal,
-  });
+export async function getMe(signal?: AbortSignal): Promise<ActorContext> {
+  const envelope = await apiRequest({ path: "/me/", schema: actorContextEnvelopeSchema, signal });
+  return envelope.data;
+}
 
-  if (!response.ok) {
-    throw new Error(`Currency conversion failed with status ${response.status}`);
-  }
-
-  return currencyConvertResponseSchema.parse(await response.json());
+export async function getCapabilities(signal?: AbortSignal): Promise<CapabilitiesResponse["data"]> {
+  const envelope = await apiRequest({ path: "/capabilities/", schema: capabilitiesResponseSchema, signal });
+  return envelope.data;
 }

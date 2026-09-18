@@ -24,7 +24,8 @@ import { useState } from "react";
 import { useSystemHealth } from "../../features/system/use-system-health";
 import { ThemeToggle } from "../../lib/theme";
 import { cn } from "../../lib/utils/cn";
-import { LiveCurrencyConverter } from "../features/currency-converter";
+import { SampleDataBanner } from "./sample-data-banner";
+import { CurrencyConverterUnavailable } from "../features/currency-converter-unavailable";
 import { NetworkStatusBanner } from "../feedback/network-status-banner";
 import { StatusBadge } from "../feedback/status-badge";
 import { CommandMenu } from "../navigation/command-menu";
@@ -128,7 +129,7 @@ export function AppShell() {
               >
                 <X className="size-5" />
               </button>
-              <LiveCurrencyConverter variant="card" />
+              <CurrencyConverterUnavailable />
             </div>
           </div>
         </div>
@@ -496,6 +497,7 @@ export function AppShell() {
         </header>
 
         {/* Main Content Area */}
+        <SampleDataBanner />
         <main className="flex-1 mx-auto w-full max-w-[1600px] p-5 sm:p-7">
           <Outlet />
         </main>
