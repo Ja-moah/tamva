@@ -6,13 +6,14 @@
  * is kept in JavaScript or in AsyncStorage.
  */
 import { useQueryClient } from '@tanstack/react-query';
+import { Platform } from 'react-native';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { getMe, login as apiLogin, logout as apiLogout } from '../api/endpoints';
 import { apiClient } from '../api/client';
 import { ApiError, describeError } from '../api/errors';
 import { evaluateActor, verdictMessage, type CustomerUser } from './policy';
-import { hintStore, type SessionHint } from './storage';
+import { hintStore, refreshPersistence, type SessionHint } from './storage';
 
 export type AuthStatus = 'loading' | 'anonymous' | 'authenticated' | 'error';
 
@@ -40,8 +41,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const clearLocal = useCallback(async () => {
     setUser(null);
-    apiClient.resetCsrf();
     queryClient.clear();
+    await apiClient.clearTokens();
     await hintStore.clear();
   }, [queryClient]);
 
@@ -51,6 +52,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const remembered = await hintStore.read();
     if (mine === attempt.current) setHint(remembered);
     try {
+      // Native: restore the persisted refresh token and mint a fresh access token.
+      const restored = await apiClient.restoreSession();
+      if (mine !== attempt.current) return;
+      if (restored === 'none') {
+        setUser(null);
+        setStatus('anonymous');
+        return;
+      }
+      if (restored === 'unreachable') {
+        setMessage(describeError(new ApiError({ kind: 'network', code: 'network_error', message: 'unreachable' })));
+        setStatus('error');
+        return;
+      }
       const verdict = evaluateActor(await getMe());
       if (mine !== attempt.current) return;
       if (verdict.kind === 'ok') {
@@ -94,16 +108,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (identifier: string, password: string) => {
       setMessage(null);
       try {
-        apiClient.resetCsrf();
-        await apiClient.refreshCsrf(); // establishes the CSRF cookie before the first POST
-        const actor = await apiLogin(identifier, password);
-        const verdict = evaluateActor(actor);
+        await apiLogin(identifier, password, Platform.OS);
+        const verdict = evaluateActor(await getMe());
         if (verdict.kind !== 'ok') {
           await apiLogout().catch(() => undefined);
           setMessage(verdictMessage(verdict));
           return false;
         }
-        apiClient.resetCsrf(); // Django rotates the token on login
         await hintStore.save({ userId: verdict.user.id, email: verdict.user.email, savedAt: new Date().toISOString() });
         queryClient.clear();
         setUser(verdict.user);

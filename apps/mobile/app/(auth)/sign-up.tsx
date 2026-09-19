@@ -16,7 +16,8 @@
 
 import React, { useState } from 'react';
 import { DEMO_MODE } from '../../src/config/env';
-import { AuthUnavailable } from '../../src/components/auth/AuthUnavailable';
+import { register } from '../../src/api/endpoints';
+import { ApiError, describeError } from '../../src/api/errors';
 import {
   View,
   Text,
@@ -153,12 +154,19 @@ function SignUpScreen() {
 
     setIsLoading(true);
 
-    // Realistic frontend submission simulation
-    setTimeout(() => {
-      setIsLoading(false);
-      setShowConfirmation(true);
-      haptics.success();
-    }, 750);
+    const [first, ...rest] = fullName.trim().split(/\s+/);
+    void register({ email: email.trim(), password, first_name: first, last_name: rest.join(' ') })
+      .then(() => {
+        setShowConfirmation(true);
+        haptics.success();
+      })
+      .catch((error: unknown) => {
+        haptics.error();
+        const details = error instanceof ApiError ? (error.details as Record<string, string[]> | null) : null;
+        if (details?.password?.[0]) setPasswordError(details.password[0]);
+        else setEmailError(error instanceof ApiError && error.status === 400 ? "We couldn't create an account with these details." : describeError(error));
+      })
+      .finally(() => setIsLoading(false));
   };
 
   const handleToggleConsent = () => {
@@ -566,8 +574,8 @@ function SignUpScreen() {
       <Modal
         visible={showConfirmation}
         onClose={() => setShowConfirmation(false)}
-        title="Account details ready"
-        description="Your registration details are ready. Email verification will be the next step when account services are connected."
+        title="Account created"
+        description="Your TAMVA account is ready. Sign in to continue. Email verification is not required yet."
         primaryAction={{
           label: 'Continue',
           onPress: handleModalContinue,
@@ -659,9 +667,4 @@ const styles = StyleSheet.create({
 });
 
 
-// The form only simulates success, so outside demo mode it is replaced by an honest notice.
-function Gated() {
-  return <AuthUnavailable title="Create account" description="Creating an account isn't available in the app yet. If your institution offers TAMVA, use the sign-in details they gave you." />;
-}
-
-export default DEMO_MODE ? SignUpScreen : Gated;
+export default SignUpScreen;

@@ -16,6 +16,8 @@
  */
 
 import { withFeatureGate } from '../../src/components/ui/withFeatureGate';
+import { DEMO_MODE } from '../../src/config/env';
+import { ActivityLive } from '../../src/components/live/ActivityLive';
 import React, { useState } from 'react';
 import {
   View,
@@ -391,9 +393,9 @@ const styles = StyleSheet.create({
 });
 
 
-export default withFeatureGate(ActivityScreen, {
+export default DEMO_MODE ? ActivityScreen : withFeatureGate(ActivityLive, {
   capability: 'customer_activity',
-  wired: false,
+  wired: true,
   title: 'Activity',
   description: "Your live activity isn't available from TAMVA yet.",
 });

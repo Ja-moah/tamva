@@ -13,6 +13,8 @@
  */
 
 import { withFeatureGate } from '../../src/components/ui/withFeatureGate';
+import { DEMO_MODE } from '../../src/config/env';
+import { ConfidenceLive } from '../../src/components/live/ConfidenceLive';
 import React, { useState } from 'react';
 import {
   View,
@@ -330,9 +332,9 @@ const styles = StyleSheet.create({
 });
 
 
-export default withFeatureGate(RiskScreen, {
+export default DEMO_MODE ? RiskScreen : withFeatureGate(ConfidenceLive, {
   capability: 'customer_financial_confidence',
-  wired: false,
+  wired: true,
   title: 'Financial Confidence',
   description: "Your Financial Confidence isn't available from TAMVA yet.",
 });

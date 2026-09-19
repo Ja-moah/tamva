@@ -10,7 +10,8 @@
 
 import React, { useState } from 'react';
 import { DEMO_MODE } from '../../src/config/env';
-import { AuthUnavailable } from '../../src/components/auth/AuthUnavailable';
+import { requestRecovery } from '../../src/api/endpoints';
+import { describeError } from '../../src/api/errors';
 import {
   View,
   Text,
@@ -64,11 +65,17 @@ function ForgotPasswordScreen() {
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setIsSubmitted(true);
-      haptics.success();
-    }, 600);
+    // The response is identical whether or not the address is registered.
+    requestRecovery(email.trim())
+      .then(() => {
+        setIsSubmitted(true);
+        haptics.success();
+      })
+      .catch((error: unknown) => {
+        haptics.error();
+        setEmailError(describeError(error));
+      })
+      .finally(() => setIsLoading(false));
   };
 
   const handleBackToSignIn = () => {
@@ -430,9 +437,4 @@ const styles = StyleSheet.create({
 });
 
 
-// The form only simulates success, so outside demo mode it is replaced by an honest notice.
-function Gated() {
-  return <AuthUnavailable title="Reset password" description="Password recovery isn't available in the app yet." />;
-}
-
-export default DEMO_MODE ? ForgotPasswordScreen : Gated;
+export default ForgotPasswordScreen;

@@ -17,6 +17,8 @@
  */
 
 import { withFeatureGate } from '../../src/components/ui/withFeatureGate';
+import { DEMO_MODE } from '../../src/config/env';
+import { ProtectionLive } from '../../src/components/live/ProtectionLive';
 import React, { useState } from 'react';
 import {
   View,
@@ -360,9 +362,9 @@ const styles = StyleSheet.create({
 });
 
 
-export default withFeatureGate(ProtectionScreen, {
+export default DEMO_MODE ? ProtectionScreen : withFeatureGate(ProtectionLive, {
   capability: 'customer_protection',
-  wired: false,
+  wired: true,
   title: 'Protection',
   description: "Protection signals for your accounts and devices aren't available from TAMVA yet.",
 });

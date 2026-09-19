@@ -8,6 +8,8 @@ import {
   notificationPreferencePageSchema,
   notificationPreferenceEnvelopeSchema,
   notificationEnvelopeSchema,
+  registrationEnvelopeSchema,
+  tokenEnvelopeSchema,
   versionSchema,
   type ActorContext,
   type CapabilitiesResponse,
@@ -24,18 +26,60 @@ import { apiClient } from './client';
 export const getMe = async (signal?: AbortSignal): Promise<ActorContext> =>
   (await apiClient.request({ path: '/me/', schema: actorContextEnvelopeSchema, signal })).data;
 
-export async function login(identifier: string, password: string): Promise<ActorContext> {
+/** Signs in with a bearer token pair; the client adopts the tokens. */
+export async function login(identifier: string, password: string, deviceLabel = ''): Promise<void> {
   const result = await apiClient.request({
     method: 'POST',
-    path: '/auth/login/',
-    body: { identifier, password },
-    schema: actorContextEnvelopeSchema,
+    path: '/auth/token/',
+    body: { identifier, password, device_label: deviceLabel },
+    schema: tokenEnvelopeSchema,
+    anonymous: true,
   });
-  return result.data;
+  await apiClient.setTokens(result.data);
 }
 
+/** Ends the session server-side (revokes the token family), then forgets local tokens. */
 export const logout = async (): Promise<void> => {
-  await apiClient.requestVoid({ method: 'POST', path: '/auth/logout/' });
+  const refresh = apiClient.getRefreshToken();
+  try {
+    await apiClient.requestVoid({
+      method: 'POST',
+      path: '/auth/token/revoke/',
+      body: refresh ? { refresh_token: refresh } : {},
+      anonymous: true,
+    });
+  } finally {
+    await apiClient.clearTokens();
+  }
+};
+
+export const register = async (input: {
+  email: string;
+  password: string;
+  first_name?: string;
+  last_name?: string;
+}) =>
+  (
+    await apiClient.request({
+      method: 'POST',
+      path: '/customer/register/',
+      body: { ...input, accepted_terms: true },
+      schema: registrationEnvelopeSchema,
+      anonymous: true,
+    })
+  ).data;
+
+export const requestRecovery = async (email: string): Promise<void> => {
+  await apiClient.requestVoid({ method: 'POST', path: '/auth/recovery/request/', body: { email }, anonymous: true });
+};
+
+export const confirmRecovery = async (token: string, newPassword: string): Promise<void> => {
+  await apiClient.requestVoid({
+    method: 'POST',
+    path: '/auth/recovery/confirm/',
+    body: { token, new_password: newPassword },
+    anonymous: true,
+  });
 };
 
 export const getCapabilities = async (signal?: AbortSignal): Promise<CapabilitiesResponse['data']> =>

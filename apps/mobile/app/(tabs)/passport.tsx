@@ -19,6 +19,8 @@
  */
 
 import { withFeatureGate } from '../../src/components/ui/withFeatureGate';
+import { DEMO_MODE } from '../../src/config/env';
+import { PassportLive } from '../../src/components/live/PassportLive';
 import React from 'react';
 import {
   View,
@@ -328,9 +330,9 @@ const styles = StyleSheet.create({
 });
 
 
-export default withFeatureGate(PassportScreen, {
+export default DEMO_MODE ? PassportScreen : withFeatureGate(PassportLive, {
   capability: 'customer_passport',
-  wired: false,
+  wired: true,
   title: 'Financial Passport',
   description: "Viewing and sharing your Financial Passport isn't available from TAMVA yet.",
 });

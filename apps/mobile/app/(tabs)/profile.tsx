@@ -14,6 +14,8 @@
  */
 
 import { withFeatureGate } from '../../src/components/ui/withFeatureGate';
+import { DEMO_MODE } from '../../src/config/env';
+import { ProfileLive } from '../../src/components/live/ProfileLive';
 import React, { useState } from 'react';
 import {
   View,
@@ -518,9 +520,9 @@ const styles = StyleSheet.create({
 });
 
 
-export default withFeatureGate(ProfileScreen, {
+export default DEMO_MODE ? ProfileScreen : withFeatureGate(ProfileLive, {
   capability: 'customer_financial_profile',
-  wired: false,
+  wired: true,
   title: 'Financial Profile',
   description: "Your financial profile isn't available from TAMVA yet.",
 });

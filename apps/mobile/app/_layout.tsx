@@ -48,6 +48,9 @@ function RootNavigation() {
       <Stack.Screen name="send" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="receive" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="save" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="consent-grant" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="passport-share" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="reset-password" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="help" options={{ headerShown: false }} />
       <Stack.Screen name="accounts" options={{ headerShown: false }} />

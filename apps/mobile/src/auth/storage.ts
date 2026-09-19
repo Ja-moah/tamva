@@ -1,16 +1,18 @@
 /**
- * What the app remembers between launches.
+ * What survives an app restart.
  *
- * There is no token to store: the backend uses a cookie session held by the
- * native networking stack, so JavaScript never touches a credential. We keep
- * only a small, non-secret "who signed in last" hint (in SecureStore on native,
- * because it is personal data) so the app can greet the right person while it
- * re-verifies the session with GET /me/. On the web there is no secure store;
- * nothing is persisted there and the browser's own cookie is the whole session.
+ * The refresh token is the only credential kept, and only on native, in
+ * SecureStore (Keychain / Keystore). The access token is never persisted. On the
+ * web there is no secure store, so nothing is persisted and a reload signs out.
+ * A small non-secret "who signed in last" hint is kept alongside it so the app can
+ * greet the right person while the session is restored.
  */
 import { Platform } from 'react-native';
 
-const KEY = 'tamva.session.hint';
+import type { RefreshPersistence } from '../api/client';
+
+const REFRESH_KEY = 'tamva.auth.refresh';
+const HINT_KEY = 'tamva.session.hint';
 
 export interface SessionHint {
   userId: string;
@@ -36,30 +38,48 @@ export function parseHint(raw: string | null): SessionHint | null {
   }
 }
 
+async function store() {
+  return import('expo-secure-store');
+}
+
+const native = Platform.OS !== 'web';
+
+export const refreshPersistence: RefreshPersistence = {
+  async read() {
+    if (!native) return null;
+    return (await store()).getItemAsync(REFRESH_KEY);
+  },
+  async write(token) {
+    if (!native) return;
+    await (await store()).setItemAsync(REFRESH_KEY, token);
+  },
+  async clear() {
+    if (!native) return;
+    await (await store()).deleteItemAsync(REFRESH_KEY);
+  },
+};
+
 export const hintStore: HintStore = {
   async read() {
-    if (Platform.OS === 'web') return null;
+    if (!native) return null;
     try {
-      const SecureStore = await import('expo-secure-store');
-      return parseHint(await SecureStore.getItemAsync(KEY));
+      return parseHint(await (await store()).getItemAsync(HINT_KEY));
     } catch {
       return null;
     }
   },
   async save(hint) {
-    if (Platform.OS === 'web') return;
+    if (!native) return;
     try {
-      const SecureStore = await import('expo-secure-store');
-      await SecureStore.setItemAsync(KEY, JSON.stringify(hint));
+      await (await store()).setItemAsync(HINT_KEY, JSON.stringify(hint));
     } catch {
       // Remembering is a convenience; sign-in works without it.
     }
   },
   async clear() {
-    if (Platform.OS === 'web') return;
+    if (!native) return;
     try {
-      const SecureStore = await import('expo-secure-store');
-      await SecureStore.deleteItemAsync(KEY);
+      await (await store()).deleteItemAsync(HINT_KEY);
     } catch {
       // Nothing to clear.
     }

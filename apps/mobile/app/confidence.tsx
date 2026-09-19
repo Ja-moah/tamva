@@ -1,4 +1,6 @@
 import { router } from "expo-router";
+import { DEMO_MODE } from '../src/config/env';
+import { ConfidenceLive } from '../src/components/live/ConfidenceLive';
 import { withFeatureGate } from '../src/components/ui/withFeatureGate';
 import {
   ArrowLeft,
@@ -303,9 +305,9 @@ function ConfidenceScreen() {
 }
 
 
-export default withFeatureGate(ConfidenceScreen, {
+export default DEMO_MODE ? ConfidenceScreen : withFeatureGate(ConfidenceLive, {
   capability: 'customer_financial_confidence',
-  wired: false,
+  wired: true,
   showBack: true,
   title: 'Financial Confidence',
   description: "Your Financial Confidence isn't available from TAMVA yet.",

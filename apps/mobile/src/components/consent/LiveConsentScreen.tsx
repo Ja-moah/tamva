@@ -10,11 +10,14 @@ import { useTheme } from '../../theme';
 import { Badge } from '../ui/Badge';
 import { EmptyState } from '../ui/EmptyState';
 import { ErrorState } from '../ui/ErrorState';
+import { Button } from '../ui/Button';
 import { ScreenHeader } from '../ui/ScreenHeader';
+import { useRouter } from 'expo-router';
 
 export function LiveConsentScreen() {
   const { theme } = useTheme();
   const format = useFormatters();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: ['customer-consents'],
@@ -22,7 +25,11 @@ export function LiveConsentScreen() {
   });
   const revoke = useMutation({
     mutationFn: revokeConsent,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customer-consents'] }),
+    onSuccess: () => {
+      for (const key of ['customer-consents', 'customer-home', 'customer-security']) {
+        void queryClient.invalidateQueries({ queryKey: [key] });
+      }
+    },
   });
 
   const confirmRevoke = (consent: Consent) => {
@@ -38,7 +45,12 @@ export function LiveConsentScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
-      <ScreenHeader title="Consent" subtitle="Purpose-bound access you control" borderBottom />
+      <ScreenHeader
+        title="Consent & data sharing"
+        subtitle="Purpose-bound access you control"
+        borderBottom
+        rightElement={<Button label="Grant" size="sm" variant="secondary" onPress={() => router.push('/consent-grant')} accessibilityHint="Give an institution access to your data" />}
+      />
       {query.isPending ? (
         <View style={styles.center}><ActivityIndicator color={theme.colors.primary} /></View>
       ) : query.isError ? (
@@ -59,7 +71,7 @@ export function LiveConsentScreen() {
             <EmptyState
               icon="lock"
               title="No consent records"
-              description="When you grant an institution purpose-bound access, it will appear here. New consent cannot yet be granted in this app."
+              description="When you grant an institution purpose-bound access, it will appear here. Use Grant to give an institution purpose-bound, time-limited access."
             />
           ) : (
             query.data?.results.map((consent) => (

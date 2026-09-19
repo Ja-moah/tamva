@@ -1,110 +1,127 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { listConsents } from '../../api/endpoints';
+import { getHome } from '../../api/customer';
 import { useAuth } from '../../auth/AuthProvider';
-import { useNotifications } from '../../context/NotificationsContext';
-import { useCapabilities } from '../../features/capabilities';
-import { useFormatters } from '../../i18n/useFormatters';
 import { useTheme } from '../../theme';
+import { QueryScreen } from '../live/QueryScreen';
+import { fmt, humanize, money, toNumber } from '../live/format';
+import { Badge } from '../ui/Badge';
 import { Card } from '../ui/Card';
 import { ListRow } from '../ui/ListRow';
-import { ScreenHeader } from '../ui/ScreenHeader';
 import { SectionHeader } from '../ui/SectionHeader';
 
-/**
- * Home when the backend has no customer dashboard yet: only what is real —
- * notifications and consent — plus a plain list of what is still to come.
- * No balances, scores or activity are shown or estimated.
- */
+/** Home: every figure is a trusted backend summary; nothing is computed or estimated here. */
 export function HomeLive() {
   const { theme } = useTheme();
   const router = useRouter();
   const auth = useAuth();
-  const format = useFormatters();
-  const { unreadCount, refresh: refreshNotifications, isRefreshing } = useNotifications();
-  const capabilities = useCapabilities();
-  const consents = useQuery({
-    queryKey: ['customer-consents'],
-    queryFn: ({ signal }) => listConsents(signal),
-  });
-
-  const active = (consents.data?.results ?? []).filter((c) => c.status === 'GRANTED');
-  const soonest = active.map((c) => c.expires_at).sort()[0];
-  const upcoming = [
-    ['customer_financial_confidence', 'Financial Confidence'],
-    ['customer_financial_profile', 'Financial Profile'],
-    ['customer_activity', 'Activity'],
-    ['customer_passport', 'Financial Passport'],
-    ['customer_protection', 'Protection'],
-  ].filter(([code]) => (capabilities.data?.[code] ?? 'NOT_AVAILABLE') !== 'AVAILABLE');
+  const query = useQuery({ queryKey: ['customer-home'], queryFn: ({ signal }) => getHome(signal) });
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
-      <ScreenHeader title="Home" subtitle={auth.user?.email} />
-      <ScrollView
-        contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing || consents.isRefetching}
-            onRefresh={() => {
-              refreshNotifications();
-              void consents.refetch();
-            }}
-          />
-        }
-      >
-        <Card padding="none">
-          <ListRow
-            title="Notifications"
-            subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'You are all caught up'}
-            leftIcon="bell"
-            showChevron
-            onPress={() => router.push('/notifications')}
-          />
-          <ListRow
-            title="Data sharing"
-            subtitle={
-              consents.isError
-                ? 'Unable to load right now'
-                : consents.isPending
-                  ? 'Loading…'
-                  : active.length === 0
-                    ? 'No active consents'
-                    : `${active.length} active · next expires ${format.date(soonest)}`
-            }
-            leftIcon="lock"
-            showChevron
-            onPress={() => router.push('/(tabs)/consent')}
-            showDivider={false}
-          />
-        </Card>
-
-        {upcoming.length > 0 ? (
+    <QueryScreen title="Home" subtitle={auth.user?.email} query={query}>
+      {(home) => {
+        const fc = home.financial_confidence;
+        const score = toNumber(fc?.score);
+        const inflows = Object.entries(home.activity_30d.inflow_by_currency);
+        const outflows = Object.entries(home.activity_30d.outflow_by_currency);
+        return (
           <>
-            <SectionHeader
-              title="Still to come"
-              subtitle="These parts of TAMVA are not connected to your data yet, so nothing is shown for them."
-            />
+            <Card onPress={() => router.push('/confidence')} accessibilityLabel="Financial Confidence. Open details.">
+              <Text style={[theme.typography.overline, { color: theme.colors.textTertiary }]}>FINANCIAL CONFIDENCE</Text>
+              {fc && score !== null ? (
+                <>
+                  <View style={styles.scoreRow}>
+                    <Text style={[theme.typography.display, { color: theme.colors.textPrimary }]}>{fmt.number(score, 0)}</Text>
+                    <Text style={[theme.typography.bodySm, { color: theme.colors.textTertiary }]}> / {fc.scale.max}</Text>
+                    <Badge label={humanize(fc.band)} tone="success" style={styles.badge} />
+                  </View>
+                  <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                    Based on data from {fc.institution_name} · updated {fmt.date(fc.as_of)}. {fc.scale.note}
+                  </Text>
+                </>
+              ) : (
+                <Text style={[theme.typography.bodySm, { color: theme.colors.textSecondary }]}>
+                  Not enough verified data yet. Connect an account you&apos;ve consented to share to build it.
+                </Text>
+              )}
+            </Card>
+
+            <SectionHeader title="Last 30 days" subtitle="Observed movement on accounts you have connected. This is not a balance." />
             <Card>
-              {upcoming.map(([code, label]) => (
-                <View key={code} style={styles.upcomingRow} accessible accessibilityLabel={`${label}: not available yet`}>
-                  <Text style={[theme.typography.bodySm, { color: theme.colors.textPrimary }]}>{label}</Text>
-                  <Text style={[theme.typography.caption, { color: theme.colors.textTertiary }]}>Not available yet</Text>
-                </View>
-              ))}
+              {home.activity_30d.transaction_count === 0 ? (
+                <Text style={[theme.typography.bodySm, { color: theme.colors.textSecondary }]}>No activity yet.</Text>
+              ) : (
+                <>
+                  {inflows.map(([currency, amount]) => (
+                    <ListRow key={`in-${currency}`} title="Money in" rightText={money(amount, currency)} showDivider={false} />
+                  ))}
+                  {outflows.map(([currency, amount]) => (
+                    <ListRow key={`out-${currency}`} title="Money out" rightText={money(amount, currency)} showDivider={false} />
+                  ))}
+                  <ListRow
+                    title={`${home.activity_30d.transaction_count} transactions`}
+                    showChevron
+                    onPress={() => router.push('/(tabs)/activity')}
+                    showDivider={false}
+                  />
+                </>
+              )}
+            </Card>
+
+            <Card padding="none">
+              <ListRow
+                title="Accounts"
+                subtitle={
+                  home.connections.total === 0
+                    ? 'None connected'
+                    : `${home.connections.active} active${home.connections.needs_attention ? ` · ${home.connections.needs_attention} need attention` : ''}`
+                }
+                leftIcon="link"
+                showChevron
+                onPress={() => router.push('/accounts')}
+              />
+              <ListRow
+                title="Data sharing"
+                subtitle={`${home.consents.active} active${home.consents.expiring_within_30_days ? ` · ${home.consents.expiring_within_30_days} expiring soon` : ''}`}
+                leftIcon="lock"
+                showChevron
+                onPress={() => router.push('/(tabs)/consent')}
+              />
+              <ListRow
+                title="Financial Passport"
+                subtitle={`${home.passport.active_shares} active share${home.passport.active_shares === 1 ? '' : 's'}`}
+                leftIcon="shield"
+                showChevron
+                onPress={() => router.push('/(tabs)/passport')}
+              />
+              <ListRow
+                title="Protection"
+                subtitle={home.protection.events_30d === 0 ? 'No new signals' : `${home.protection.events_30d} signals in 30 days`}
+                leftIcon="alert-circle"
+                badge={home.protection.high_or_critical_30d > 0 ? { label: 'Review', tone: 'warning' } : undefined}
+                showChevron
+                onPress={() => router.push('/(tabs)/protection')}
+              />
+              <ListRow
+                title="Notifications"
+                subtitle={home.notifications.unread > 0 ? `${home.notifications.unread} unread` : 'All caught up'}
+                leftIcon="bell"
+                showChevron
+                onPress={() => router.push('/notifications')}
+                showDivider={false}
+              />
             </Card>
           </>
-        ) : null}
-      </ScrollView>
-    </View>
+        );
+      }}
+    </QueryScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  content: { padding: 16, gap: 8, paddingBottom: 48 },
-  upcomingRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
+  scoreRow: { flexDirection: 'row', alignItems: 'baseline', marginVertical: 6 },
+  badge: { marginLeft: 12 },
 });
