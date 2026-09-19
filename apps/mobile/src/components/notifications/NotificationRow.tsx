@@ -47,6 +47,7 @@ export const NotificationRow: React.FC<NotificationRowProps> = ({
       case 'protection':
         return 'success';
       case 'account_sync':
+      case 'other':
       default:
         return 'neutral';
     }

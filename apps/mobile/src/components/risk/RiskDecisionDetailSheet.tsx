@@ -16,7 +16,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../theme';
 import { useHaptics } from '../../hooks/useHaptics';
 import { RiskFactor, RiskLevel, RiskFinancialPositionItem } from '../../types/risk';
-import { DECISION_INTELLIGENCE_DISCLOSURE } from '../../data/mockRiskData';
+import { DECISION_INTELLIGENCE_DISCLOSURE } from '../../demo/data/mockRiskData';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';

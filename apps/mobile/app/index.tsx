@@ -11,12 +11,14 @@ import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useOnboarding } from '../src/hooks/useOnboarding';
 import { useTheme } from '../src/theme';
+import { useAuth } from '../src/auth/AuthProvider';
 
 export default function RootIndex() {
   const { theme } = useTheme();
   const { hasCompletedOnboarding, isLoading } = useOnboarding();
+  const auth = useAuth();
 
-  if (isLoading) {
+  if (isLoading || auth.status === 'loading') {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="small" color={theme.colors.primary} />
@@ -28,7 +30,7 @@ export default function RootIndex() {
     return <Redirect href="/onboarding" />;
   }
 
-  return <Redirect href="/(auth)" />;
+  return <Redirect href={auth.status === 'authenticated' ? '/(tabs)' : '/(auth)'} />;
 }
 
 const styles = StyleSheet.create({

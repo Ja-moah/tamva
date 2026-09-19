@@ -11,7 +11,7 @@ import {
   mockRiskAssessment,
   mockLimitedRiskAssessment,
   mockUnavailableRiskAssessment,
-} from '../data/mockRiskData';
+} from '../demo/data/mockRiskData';
 import { useHaptics } from './useHaptics';
 
 export interface UseRiskOverviewReturn {

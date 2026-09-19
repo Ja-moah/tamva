@@ -117,13 +117,16 @@ export const notificationSchema = z.object({
 });
 export type NotificationItem = z.infer<typeof notificationSchema>;
 export const notificationPageSchema = paginatedSchema(notificationSchema);
+export const notificationEnvelopeSchema = z.object({ data: notificationSchema });
 export const notificationPreferenceSchema = z.object({
   id: z.string(),
   category: z.string(),
   channel: z.string(),
   enabled: z.boolean(),
 });
+export type NotificationPreference = z.infer<typeof notificationPreferenceSchema>;
 export const notificationPreferencePageSchema = paginatedSchema(notificationPreferenceSchema);
+export const notificationPreferenceEnvelopeSchema = z.object({ data: notificationPreferenceSchema });
 export const bulkReadResultSchema = z.object({
   data: z.object({
     requested: z.number(),
@@ -132,6 +135,7 @@ export const bulkReadResultSchema = z.object({
     not_found: z.number(),
   }),
 });
+export type BulkReadResult = z.infer<typeof bulkReadResultSchema>["data"];
 
 // ----------------------------------------------------------- customers
 export const customerSummarySchema = z.object({

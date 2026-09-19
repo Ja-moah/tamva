@@ -12,6 +12,7 @@
  * - Developer-only QA State Switcher (__DEV__ only)
  */
 
+import { withFeatureGate } from '../../src/components/ui/withFeatureGate';
 import React, { useState } from 'react';
 import {
   View,
@@ -45,7 +46,7 @@ import { EmptyState } from '../../src/components/ui/EmptyState';
 import { ErrorState } from '../../src/components/ui/ErrorState';
 import { Chip } from '../../src/components/ui/Chip';
 
-export default function RiskScreen() {
+function RiskScreen() {
   const { theme } = useTheme();
   const router = useRouter();
 
@@ -326,4 +327,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 10,
   },
+});
+
+
+export default withFeatureGate(RiskScreen, {
+  capability: 'customer_financial_confidence',
+  wired: false,
+  title: 'Financial Confidence',
+  description: "Your Financial Confidence isn't available from TAMVA yet.",
 });

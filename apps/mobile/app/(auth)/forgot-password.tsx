@@ -9,6 +9,8 @@
  */
 
 import React, { useState } from 'react';
+import { DEMO_MODE } from '../../src/config/env';
+import { AuthUnavailable } from '../../src/components/auth/AuthUnavailable';
 import {
   View,
   Text,
@@ -28,7 +30,7 @@ import { IconButton } from '../../src/components/ui/IconButton';
 import { Chip } from '../../src/components/ui/Chip';
 import { Icon } from '../../src/components/ui/Icon';
 
-export default function ForgotPasswordScreen() {
+function ForgotPasswordScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -321,7 +323,7 @@ export default function ForgotPasswordScreen() {
           )}
 
           {/* Development-only QA controls */}
-          {__DEV__ && (
+          {DEMO_MODE && (
             <View style={styles.devDock}>
               <Text
                 style={[
@@ -426,3 +428,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
 });
+
+
+// The form only simulates success, so outside demo mode it is replaced by an honest notice.
+function Gated() {
+  return <AuthUnavailable title="Reset password" description="Password recovery isn't available in the app yet." />;
+}
+
+export default DEMO_MODE ? ForgotPasswordScreen : Gated;

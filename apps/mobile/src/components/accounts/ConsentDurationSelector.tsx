@@ -14,7 +14,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, ViewStyle } from 'react-native';
 import { useTheme } from '../../theme';
 import { ConsentDuration } from '../../types/accounts';
-import { CONSENT_DURATION_OPTIONS } from '../../data/mockConnectedAccountsData';
+import { CONSENT_DURATION_OPTIONS } from '../../demo/data/mockConnectedAccountsData';
 import { Icon } from '../ui/Icon';
 import { useHaptics } from '../../hooks/useHaptics';
 

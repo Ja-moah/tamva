@@ -7,14 +7,14 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
-import { CurrencyCode, TransactionFlow } from '../types/financial';
 import { formatCurrency, maskCurrency, FormatCurrencyOptions } from '../utils/currency';
 
 interface PrivacyContextValue {
   isPrivate: boolean;
   togglePrivacy: () => void;
   setPrivacy: (isPrivate: boolean) => void;
-  formatAmount: (amount: number, options?: FormatCurrencyOptions & { overridePrivate?: boolean }) => string;
+  /** The currency is required: amounts are shown in the currency they were recorded in. */
+  formatAmount: (amount: number, options: FormatCurrencyOptions & { overridePrivate?: boolean }) => string;
 }
 
 const PrivacyContext = createContext<PrivacyContextValue | undefined>(undefined);
@@ -41,9 +41,9 @@ export const PrivacyProvider: React.FC<PrivacyProviderProps> = ({
   const formatAmount = useCallback(
     (
       amount: number,
-      options: FormatCurrencyOptions & { overridePrivate?: boolean } = {}
+      options: FormatCurrencyOptions & { overridePrivate?: boolean }
     ): string => {
-      const { overridePrivate, currency = 'GHS', ...rest } = options;
+      const { overridePrivate, currency, ...rest } = options;
       const shouldMask = overridePrivate !== undefined ? overridePrivate : isPrivate;
 
       if (shouldMask) {

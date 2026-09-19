@@ -46,8 +46,11 @@ import { EmptyState } from '../../src/components/ui/EmptyState';
 import { ErrorState } from '../../src/components/ui/ErrorState';
 import { Chip } from '../../src/components/ui/Chip';
 import { Icon } from '../../src/components/ui/Icon';
+import { DEMO_MODE } from '../../src/config/env';
+import { FeatureGate } from '../../src/components/ui/FeatureGate';
+import { LiveConsentScreen } from '../../src/components/consent/LiveConsentScreen';
 
-export default function ConsentScreen() {
+export function DemoConsentScreen() {
   const { theme } = useTheme();
 
   const {
@@ -317,6 +320,20 @@ function renderStateSwitcher(
         })}
       </View>
     </View>
+  );
+}
+
+export default function ConsentScreen() {
+  if (DEMO_MODE) return <DemoConsentScreen />;
+  return (
+    <FeatureGate
+      capability="customer_consent"
+      wired
+      title="Consent"
+      description="Consent access is not available from the API right now."
+    >
+      <LiveConsentScreen />
+    </FeatureGate>
   );
 }
 

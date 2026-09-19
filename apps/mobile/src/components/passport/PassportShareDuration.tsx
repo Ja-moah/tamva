@@ -13,7 +13,7 @@ import { Icon } from '../ui/Icon';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { PassportShareDurationId } from '../../types/passport';
-import { PASSPORT_SHARE_DURATIONS } from '../../data/mockPassportData';
+import { PASSPORT_SHARE_DURATIONS } from '../../demo/data/mockPassportData';
 
 export interface PassportShareDurationProps {
   selectedDurationId: PassportShareDurationId;

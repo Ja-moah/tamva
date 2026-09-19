@@ -11,7 +11,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useTheme } from '../../theme';
 import { useHaptics } from '../../hooks/useHaptics';
 import { RiskDecisionContext } from '../../types/risk';
-import { DECISION_CONTEXT_OPTIONS } from '../../data/mockRiskData';
+import { DECISION_CONTEXT_OPTIONS } from '../../demo/data/mockRiskData';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';

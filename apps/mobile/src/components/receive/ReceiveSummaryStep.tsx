@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme';
 import { useHaptics } from '../../hooks/useHaptics';
 import { ReceivingAccount, ReceiveRequestDraft } from '../../types/receive';
-import { formatShareDetails } from '../../data/mockReceiveData';
+import { formatShareDetails } from '../../demo/data/mockReceiveData';
 import { ScreenHeader } from '../ui/ScreenHeader';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';

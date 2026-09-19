@@ -5,18 +5,11 @@
  */
 
 import { CurrencyCode, TransactionFlow } from '../types/financial';
-
-export const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
-  GHS: 'GH₵',
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  NGN: '₦',
-  KES: 'KSh',
-};
+import { makeFormatters } from '../i18n/format';
 
 export interface FormatCurrencyOptions {
-  currency?: CurrencyCode;
+  /** The currency the amount was recorded in. There is deliberately no default. */
+  currency: CurrencyCode;
   showSign?: boolean;
   flow?: TransactionFlow;
   hideDecimals?: boolean;
@@ -24,75 +17,26 @@ export interface FormatCurrencyOptions {
 }
 
 /**
- * Formats a numeric value into a standard currency string.
- * Example: 12450.5 -> "GH₵ 12,450.50"
+ * Formats an amount in the currency it was recorded in, in the device locale.
+ * It never converts between currencies.
  */
-export function formatCurrency(
-  amount: number,
-  options: FormatCurrencyOptions = {}
-): string {
-  const {
-    currency = 'GHS',
-    showSign = false,
-    flow,
-    hideDecimals = false,
-    compact = false,
-  } = options;
+export function formatCurrency(amount: number, options: FormatCurrencyOptions): string {
+  const { currency, showSign = false, flow, hideDecimals = false, compact = false } = options;
+  const signed = flow === 'outflow' && amount > 0 ? -amount : flow === 'income' && amount < 0 ? -amount : amount;
+  return makeFormatters().money(signed, currency, { showSign, hideDecimals, compact });
+}
 
-  const symbol = CURRENCY_SYMBOLS[currency] || currency;
-  const absAmount = Math.abs(amount);
-
-  let formattedNumber: string;
-
-  if (compact && absAmount >= 1000) {
-    if (absAmount >= 1_000_000) {
-      formattedNumber = `${(absAmount / 1_000_000).toFixed(1)}M`;
-    } else {
-      formattedNumber = `${(absAmount / 1_000).toFixed(1)}k`;
-    }
-  } else {
-    formattedNumber = absAmount.toLocaleString('en-US', {
-      minimumFractionDigits: hideDecimals ? 0 : 2,
-      maximumFractionDigits: hideDecimals ? 0 : 2,
-    });
-  }
-
-  let signPrefix = '';
-  if (showSign) {
-    if (flow === 'income' || amount > 0) {
-      signPrefix = '+';
-    } else if (flow === 'outflow' || amount < 0) {
-      signPrefix = '-';
-    }
-  } else if (amount < 0) {
-    signPrefix = '-';
-  }
-
-  return `${signPrefix}${symbol} ${formattedNumber}`;
+/** Masks a currency value for privacy mode, e.g. "GH₵ ••••••" in an en-GH locale. */
+export function maskCurrency(currency: CurrencyCode): string {
+  return makeFormatters().maskedMoney(currency);
 }
 
 /**
- * Masks a currency value for privacy mode.
- * Example: 12450 -> "GH₵ ••••••"
+ * Masks any currency figures embedded in descriptive text when privacy mode is
+ * active. Matches an ISO code or currency symbol followed by digits.
  */
-export function maskCurrency(
-  currency: CurrencyCode = 'GHS',
-  maskCharacter = '••••••'
-): string {
-  const symbol = CURRENCY_SYMBOLS[currency] || currency;
-  return `${symbol} ${maskCharacter}`;
-}
-
-/**
- * Masks any embedded currency figures inside descriptive text when privacy mode is active.
- * Example: "GH₵7,200/mo avg" -> "GH₵ ••••••/mo avg"
- */
-export function maskEmbeddedCurrency(
-  text?: string,
-  isPrivate = false
-): string {
+export function maskEmbeddedCurrency(text?: string, isPrivate = false): string {
   if (!text) return '';
   if (!isPrivate) return text;
-  return text.replace(/(GH₵|\$|€|£|₦|KSh)\s*[\d,]+(\.\d+)?/g, '$1 ••••••');
+  return text.replace(/([A-Z]{3}|\p{Sc}[A-Za-z]*)\s*[\d,]+(\.\d+)?/gu, '$1 ••••••');
 }
-

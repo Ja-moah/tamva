@@ -5,6 +5,8 @@
  * Composed entirely from Phase 1 design tokens, typography, and reusable primitives.
  */
 
+import { DEMO_MODE } from '../../src/config/env';
+import { HomeLive } from '../../src/components/home/HomeLive';
 import React, { useState } from 'react';
 import {
   View,
@@ -37,7 +39,7 @@ import {
 } from '../../src/components/home';
 import { QuickActionItem } from '../../src/types/home';
 
-export default function HomeScreen() {
+function HomeScreen() {
   const { theme } = useTheme();
   const { showToast } = useToast();
   const router = useRouter();
@@ -318,3 +320,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
 });
+
+
+// Outside demo mode Home shows only what the backend can verify.
+export default DEMO_MODE ? HomeScreen : HomeLive;

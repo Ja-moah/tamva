@@ -14,7 +14,7 @@ import { Icon } from '../ui/Icon';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { PassportShareScopeId } from '../../types/passport';
-import { PASSPORT_SHARE_SCOPES } from '../../data/mockPassportData';
+import { PASSPORT_SHARE_SCOPES } from '../../demo/data/mockPassportData';
 
 export interface PassportShareScopesProps {
   selectedScopes: PassportShareScopeId[];

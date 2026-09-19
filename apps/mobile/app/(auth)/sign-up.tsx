@@ -15,6 +15,8 @@
  */
 
 import React, { useState } from 'react';
+import { DEMO_MODE } from '../../src/config/env';
+import { AuthUnavailable } from '../../src/components/auth/AuthUnavailable';
 import {
   View,
   Text,
@@ -35,7 +37,7 @@ import { Modal } from '../../src/components/ui/Modal';
 import { Chip } from '../../src/components/ui/Chip';
 import { Icon } from '../../src/components/ui/Icon';
 
-export default function SignUpScreen() {
+function SignUpScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -519,7 +521,7 @@ export default function SignUpScreen() {
           </View>
 
           {/* Development-only QA controls (Strictly isolated to __DEV__) */}
-          {__DEV__ && (
+          {DEMO_MODE && (
             <View style={styles.devDock}>
               <Text
                 style={[
@@ -655,3 +657,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
 });
+
+
+// The form only simulates success, so outside demo mode it is replaced by an honest notice.
+function Gated() {
+  return <AuthUnavailable title="Create account" description="Creating an account isn't available in the app yet. If your institution offers TAMVA, use the sign-in details they gave you." />;
+}
+
+export default DEMO_MODE ? SignUpScreen : Gated;

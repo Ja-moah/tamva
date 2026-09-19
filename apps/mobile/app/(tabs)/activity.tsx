@@ -15,6 +15,7 @@
  * - QA State previewer for rapid testing
  */
 
+import { withFeatureGate } from '../../src/components/ui/withFeatureGate';
 import React, { useState } from 'react';
 import {
   View,
@@ -42,7 +43,7 @@ import { ErrorState } from '../../src/components/ui/ErrorState';
 import { Chip } from '../../src/components/ui/Chip';
 import { Icon } from '../../src/components/ui/Icon';
 
-export default function ActivityScreen() {
+function ActivityScreen() {
   const { theme } = useTheme();
 
   const {
@@ -387,4 +388,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 10,
   },
+});
+
+
+export default withFeatureGate(ActivityScreen, {
+  capability: 'customer_activity',
+  wired: false,
+  title: 'Activity',
+  description: "Your live activity isn't available from TAMVA yet.",
 });

@@ -13,6 +13,7 @@
  * - Interactive Developer QA State Switcher (Loaded, Loading, Empty, Error)
  */
 
+import { withFeatureGate } from '../../src/components/ui/withFeatureGate';
 import React, { useState } from 'react';
 import {
   View,
@@ -56,7 +57,7 @@ import {
   Icon,
 } from '../../src/components/ui';
 
-export default function ProfileScreen() {
+function ProfileScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const haptics = useHaptics();
@@ -514,4 +515,12 @@ const styles = StyleSheet.create({
   riskActionIcon: {
     marginLeft: 6,
   },
+});
+
+
+export default withFeatureGate(ProfileScreen, {
+  capability: 'customer_financial_profile',
+  wired: false,
+  title: 'Financial Profile',
+  description: "Your financial profile isn't available from TAMVA yet.",
 });

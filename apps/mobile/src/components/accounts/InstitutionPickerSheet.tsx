@@ -24,7 +24,7 @@ import { Icon } from '../ui/Icon';
 import { BrandLogo } from '../ui/BrandLogo';
 import { Badge } from '../ui/Badge';
 import { InstitutionCatalogItem, ConnectedAccount } from '../../types/accounts';
-import { INSTITUTION_CATALOG } from '../../data/mockConnectedAccountsData';
+import { INSTITUTION_CATALOG } from '../../demo/data/mockConnectedAccountsData';
 import { useHaptics } from '../../hooks/useHaptics';
 
 export interface InstitutionPickerSheetProps {

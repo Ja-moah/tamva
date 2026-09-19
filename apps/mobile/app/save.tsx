@@ -16,6 +16,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { withFeatureGate } from '../src/components/ui/withFeatureGate';
 import { View, StyleSheet, BackHandler } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../src/theme';
@@ -34,7 +35,7 @@ import {
   saveSessionPlan,
   recordDemoContribution,
   getSessionPlans,
-} from '../src/data/mockSaveData';
+} from '../src/demo/data/mockSaveData';
 import {
   SavingsGoalStep,
   CustomGoalModal,
@@ -48,7 +49,7 @@ import {
   DemoContributionModal,
 } from '../src/components/save';
 
-export default function SaveMoneyScreen() {
+function SaveMoneyScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const haptics = useHaptics();
@@ -369,4 +370,13 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
+});
+
+
+export default withFeatureGate(SaveMoneyScreen, {
+  capability: 'customer_payments',
+  wired: false,
+  showBack: true,
+  title: 'Save',
+  description: "TAMVA does not hold or grow savings.",
 });

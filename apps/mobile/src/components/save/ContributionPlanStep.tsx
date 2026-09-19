@@ -21,7 +21,7 @@ import { Icon } from '../ui/Icon';
 import {
   calculateEstimatedContribution,
   formatTargetDate,
-} from '../../data/mockSaveData';
+} from '../../demo/data/mockSaveData';
 
 export interface ContributionPlanStepProps {
   goalName: string;

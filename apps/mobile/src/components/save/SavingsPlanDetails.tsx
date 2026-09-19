@@ -23,7 +23,7 @@ import { MoneyDisplay } from '../financial/MoneyDisplay';
 import {
   calculateEstimatedContribution,
   formatTargetDate,
-} from '../../data/mockSaveData';
+} from '../../demo/data/mockSaveData';
 
 export interface SavingsPlanDetailsProps {
   plan: SavingsPlan;

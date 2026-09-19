@@ -5,7 +5,7 @@
  * gesture handler, and toast system.
  */
 
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -25,74 +25,54 @@ import { PrivacyProvider } from '../src/context/PrivacyContext';
 import { OnboardingProvider } from '../src/context/OnboardingContext';
 import { NotificationsProvider } from '../src/context/NotificationsContext';
 import { ToastProvider } from '../src/components/ui/Toast';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from '../src/auth/AuthProvider';
+import { DemoBanner } from '../src/components/ui/DemoBanner';
+import { OfflineBanner } from '../src/components/ui/OfflineBanner';
 
 function RootNavigation() {
   const { theme, isDark } = useTheme();
+  const stack = (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: theme.colors.background },
+        animation: 'fade_from_bottom',
+      }}
+    >
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding/index" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="notifications" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="send" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="receive" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="save" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="settings" options={{ headerShown: false }} />
+      <Stack.Screen name="help" options={{ headerShown: false }} />
+      <Stack.Screen name="accounts" options={{ headerShown: false }} />
+      <Stack.Screen name="+not-found" options={{ title: 'Not Found', headerShown: true }} />
+    </Stack>
+  );
 
   return (
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: theme.colors.background },
-          animation: 'fade_from_bottom',
-        }}
-      >
-        <Stack.Screen
-          name="index"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="onboarding/index"
-          options={{ headerShown: false, gestureEnabled: false }}
-        />
-        <Stack.Screen
-          name="(auth)"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="(tabs)"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="notifications"
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="send"
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="receive"
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="save"
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="+not-found"
-          options={{ title: 'Not Found', headerShown: true }}
-        />
-      </Stack>
+      {stack}
     </>
   );
 }
 
 export default function RootLayout() {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { retry: false, refetchOnWindowFocus: false },
+          mutations: { retry: false },
+        },
+      })
+  );
   const [fontsLoaded, fontError] = useFonts({
     PlusJakartaSans_400Regular,
     PlusJakartaSans_500Medium,
@@ -112,17 +92,23 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
-        <ThemeProvider initialMode="light">
-          <PrivacyProvider initialPrivate={false}>
-            <NotificationsProvider>
-              <ToastProvider>
-                <OnboardingProvider>
-                  <RootNavigation />
-                </OnboardingProvider>
-              </ToastProvider>
-            </NotificationsProvider>
-          </PrivacyProvider>
-        </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider initialMode="light">
+            <AuthProvider>
+              <PrivacyProvider initialPrivate={false}>
+                <NotificationsProvider>
+                  <ToastProvider>
+                    <OnboardingProvider>
+                      <DemoBanner />
+                      <OfflineBanner />
+                      <RootNavigation />
+                    </OnboardingProvider>
+                  </ToastProvider>
+                </NotificationsProvider>
+              </PrivacyProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

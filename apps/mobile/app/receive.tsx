@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { withFeatureGate } from '../src/components/ui/withFeatureGate';
 import { View, StyleSheet, BackHandler, Share } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../src/theme';
@@ -24,7 +25,7 @@ import {
 import {
   MOCK_RECEIVING_ACCOUNTS,
   formatShareDetails,
-} from '../src/data/mockReceiveData';
+} from '../src/demo/data/mockReceiveData';
 import {
   ReceivingAccountStep,
   ReceiveDetailsStep,
@@ -32,7 +33,7 @@ import {
   ReceiveReadyStep,
 } from '../src/components/receive';
 
-export default function ReceiveMoneyScreen() {
+function ReceiveMoneyScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const haptics = useHaptics();
@@ -194,4 +195,13 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
+});
+
+
+export default withFeatureGate(ReceiveMoneyScreen, {
+  capability: 'customer_payments',
+  wired: false,
+  showBack: true,
+  title: 'Receive',
+  description: "TAMVA is not a bank or wallet and does not receive money.",
 });

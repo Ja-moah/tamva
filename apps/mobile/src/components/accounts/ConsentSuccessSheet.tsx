@@ -21,7 +21,7 @@ import { ConnectedAccount } from '../../types/accounts';
 import {
   CONSENTED_SCOPE_DETAILS,
   CONSENT_DURATION_OPTIONS,
-} from '../../data/mockConnectedAccountsData';
+} from '../../demo/data/mockConnectedAccountsData';
 import { useHaptics } from '../../hooks/useHaptics';
 
 export interface ConsentSuccessSheetProps {

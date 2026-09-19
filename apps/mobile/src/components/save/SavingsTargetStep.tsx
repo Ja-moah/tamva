@@ -32,7 +32,7 @@ import {
   TARGET_DATE_PRESETS,
   getPresetTargetDate,
   formatTargetDate,
-} from '../../data/mockSaveData';
+} from '../../demo/data/mockSaveData';
 
 export interface SavingsTargetStepProps {
   goalName: string;
