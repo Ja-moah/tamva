@@ -115,7 +115,7 @@ export function WindowPicker({ days, onChange }: { days: number; onChange: (days
           className={cn(
             "cursor-pointer px-3 py-1.5 text-xs font-bold",
             days === option.days
-              ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+              ? "bg-[var(--brand-primary)] text-[var(--brand-on-primary)]"
               : "bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)]",
           )}
         >

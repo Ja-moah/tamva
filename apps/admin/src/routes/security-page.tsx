@@ -147,7 +147,7 @@ export function SecurityPage() {
               aria-selected={tab === t.id}
               aria-controls={`panel-${t.id}`}
               onClick={() => setTab(t.id)}
-              className={cn("cursor-pointer border-b-2 px-3 py-2 text-xs font-bold", tab === t.id ? "border-[var(--accent-gold)] text-[var(--text-primary)]" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]")}
+              className={cn("cursor-pointer border-b-2 px-3 py-2 text-xs font-bold", tab === t.id ? "border-[var(--brand-primary)] text-[var(--text-primary)]" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]")}
             >
               {t.label}
             </button>

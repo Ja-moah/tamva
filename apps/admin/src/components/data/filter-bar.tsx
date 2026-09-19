@@ -16,7 +16,7 @@ export interface ColumnOption {
 }
 
 const control =
-  "h-8 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 text-xs text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--accent-gold)]";
+  "h-8 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 text-xs text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--brand-primary)]";
 
 interface FilterBarProps {
   resource: ResourceType;

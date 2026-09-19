@@ -180,7 +180,7 @@ export function AppShell() {
                 className={cn(
                   "relative flex min-h-10 items-center justify-between rounded-xl px-3 py-1.5 text-xs font-bold transition-all group",
                   active
-                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs scale-[1.01]"
+                    ? "bg-[var(--brand-primary)] text-[var(--brand-on-primary)] shadow-xs scale-[1.01]"
                     : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]",
                 )}
               >
@@ -189,7 +189,7 @@ export function AppShell() {
                     className={cn(
                       "size-4 shrink-0 transition-transform group-hover:scale-105",
                       active
-                        ? "text-[var(--accent-gold)]"
+                        ? "text-[var(--brand-on-primary)]"
                         : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]",
                     )}
                   />
@@ -214,7 +214,7 @@ export function AppShell() {
                   className={cn(
                     "relative flex min-h-10 items-center justify-between rounded-xl px-3 py-1.5 text-xs font-bold transition-all group",
                     active
-                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs scale-[1.01]"
+                      ? "bg-[var(--brand-primary)] text-[var(--brand-on-primary)] shadow-xs scale-[1.01]"
                       : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]",
                   )}
                 >
@@ -223,7 +223,7 @@ export function AppShell() {
                       className={cn(
                         "size-4 shrink-0 transition-transform group-hover:scale-105",
                         active
-                          ? "text-[var(--accent-gold)]"
+                          ? "text-[var(--brand-on-primary)]"
                           : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]",
                       )}
                     />
@@ -249,7 +249,7 @@ export function AppShell() {
                   className={cn(
                     "relative flex min-h-10 items-center justify-between rounded-xl px-3 py-1.5 text-xs font-bold transition-all group",
                     active
-                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs scale-[1.01]"
+                      ? "bg-[var(--brand-primary)] text-[var(--brand-on-primary)] shadow-xs scale-[1.01]"
                       : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]",
                   )}
                 >
@@ -258,7 +258,7 @@ export function AppShell() {
                       className={cn(
                         "size-4 shrink-0 transition-transform group-hover:scale-105",
                         active
-                          ? "text-[var(--accent-gold)]"
+                          ? "text-[var(--brand-on-primary)]"
                           : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]",
                       )}
                     />

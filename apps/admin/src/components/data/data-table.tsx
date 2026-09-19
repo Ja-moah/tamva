@@ -110,7 +110,7 @@ export function DataTable<T>({
                       <button
                         type="button"
                         onClick={() => onOrderingChange(nextOrdering(ordering, column.sortKey!))}
-                        className="inline-flex cursor-pointer items-center gap-1 uppercase hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--accent-gold)]"
+                        className="inline-flex cursor-pointer items-center gap-1 uppercase hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--brand-primary)]"
                       >
                         {column.header}
                         {sorted === "ascending" ? (

@@ -42,6 +42,14 @@
   --accent-emerald-border: rgba(5, 150, 105, 0.4);
   --accent-emerald-text: #065f46;
 
+  /* TAMVA primary: the same deep teal as the customer app (teal600 / dark primary).
+     Gold stays a restrained institutional accent, never a second primary. */
+  --brand-primary: #1a7f64;
+  --brand-primary-hover: #146350;
+  --brand-primary-subtle: rgba(26, 127, 100, 0.12);
+  --brand-primary-border: rgba(26, 127, 100, 0.4);
+  --brand-on-primary: #ffffff;
+
   /* Risk & Status Colors (High Contrast WCAG AAA) */
   --risk-low-bg: #ecfdf5;
   --risk-low-text: #065f46;
@@ -100,6 +108,12 @@
   --accent-emerald-subtle: rgba(16, 185, 129, 0.16);
   --accent-emerald-border: rgba(16, 185, 129, 0.45);
   --accent-emerald-text: #34d399;
+
+  --brand-primary: #20a880;
+  --brand-primary-hover: #2dc298;
+  --brand-primary-subtle: rgba(32, 168, 128, 0.16);
+  --brand-primary-border: rgba(32, 168, 128, 0.5);
+  --brand-on-primary: #072b23;
 
   --risk-low-bg: rgba(16, 185, 129, 0.16);
   --risk-low-text: #34d399;
