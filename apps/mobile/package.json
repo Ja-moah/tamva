@@ -35,6 +35,7 @@
   "devDependencies": {
     "@types/node": "^24.13.5",
     "@types/react": "~19.2.2",
+    "eslint": "^9.39.5",
     "eslint-config-expo": "^57.0.2",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.3",
