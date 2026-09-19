@@ -16,6 +16,9 @@
  * - Interactive ProtectionAccountSheet (Account-level trust & consent scopes)
  */
 
+import { withFeatureGate } from '../../src/components/ui/withFeatureGate';
+import { DEMO_MODE } from '../../src/config/env';
+import { ProtectionLive } from '../../src/components/live/ProtectionLive';
 import React, { useState } from 'react';
 import {
   View,
@@ -50,7 +53,7 @@ import { EmptyState } from '../../src/components/ui/EmptyState';
 import { ErrorState } from '../../src/components/ui/ErrorState';
 import { Chip } from '../../src/components/ui/Chip';
 
-export default function ProtectionScreen() {
+function ProtectionScreen() {
   const { theme } = useTheme();
   const router = useRouter();
 
@@ -356,4 +359,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 10,
   },
+});
+
+
+export default DEMO_MODE ? ProtectionScreen : withFeatureGate(ProtectionLive, {
+  capability: 'customer_protection',
+  wired: true,
+  title: 'Protection',
+  description: "Protection signals for your accounts and devices aren't available from TAMVA yet.",
 });

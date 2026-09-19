@@ -10,6 +10,7 @@
  */
 
 import React from 'react';
+import { DEMO_MODE } from '../../src/config/env';
 import { View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -182,7 +183,7 @@ export default function AuthWelcomeScreen() {
         </Text>
 
         {/* 4. Development QA dock (Strictly isolated to __DEV__) */}
-        {__DEV__ && (
+        {DEMO_MODE && (
           <View style={styles.devDock}>
             <Text
               style={[

@@ -49,6 +49,7 @@ export const NotificationDetailView: React.FC<NotificationDetailViewProps> = ({
       case 'protection':
         return 'success';
       case 'account_sync':
+      case 'other':
       default:
         return 'neutral';
     }

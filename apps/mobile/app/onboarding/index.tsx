@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useRef } from 'react';
+import { DEMO_MODE } from '../../src/config/env';
 import {
   View,
   Text,
@@ -293,7 +294,7 @@ export default function OnboardingScreen() {
         )}
 
         {/* 4. Developer QA Controls (__DEV__ only, completely excluded in production) */}
-        {__DEV__ && (
+        {DEMO_MODE && (
           <View style={styles.devControlsContainer}>
             <Chip
               label="DEV: Reset Onboarding"

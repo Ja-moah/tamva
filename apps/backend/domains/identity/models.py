@@ -78,3 +78,51 @@ class Role(UUIDModel, TimeStampedModel):
 
     def __str__(self) -> str:
         return self.code
+
+
+class AuthSession(UUIDModel, TimeStampedModel):
+    """One sign-in on one client, and the family of tokens issued for it.
+
+    Access and refresh tokens are opaque, random and stored only as SHA-256
+    hashes. Revoking the session (logout, password reset, refresh-token reuse)
+    invalidates every token in the family at once.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="auth_sessions")
+    client = models.CharField(max_length=30, default="mobile")
+    device_label = models.CharField(max_length=100, blank=True)
+    last_used_at = models.DateTimeField(blank=True, null=True)
+    revoked_at = models.DateTimeField(blank=True, null=True)
+    revoked_reason = models.CharField(max_length=30, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "revoked_at"])]
+
+    @property
+    def is_active(self) -> bool:
+        return self.revoked_at is None
+
+
+class AuthToken(UUIDModel):
+    class Kind(models.TextChoices):
+        ACCESS = "ACCESS", "Access"
+        REFRESH = "REFRESH", "Refresh"
+
+    session = models.ForeignKey(AuthSession, on_delete=models.CASCADE, related_name="tokens")
+    kind = models.CharField(max_length=10, choices=Kind)
+    token_hash = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField(db_index=True)
+    # A refresh token may be exchanged exactly once; presenting it again means
+    # it leaked, and the whole session is revoked.
+    used_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class RecoveryToken(UUIDModel):
+    """Single-use, short-lived account-recovery token (hashed at rest)."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="recovery_tokens")
+    token_hash = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)

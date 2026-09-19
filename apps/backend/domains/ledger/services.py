@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -13,7 +14,14 @@ from domains.audit.models import AuditEvent
 from domains.normalisation.models import CanonicalTransaction
 from domains.partner.models import Institution
 
-from .models import Account, LedgerEntry, LedgerPosting, ReconciliationItem, ReconciliationRun
+from .models import (
+    Account,
+    ExchangeRateSnapshot,
+    LedgerEntry,
+    LedgerPosting,
+    ReconciliationItem,
+    ReconciliationRun,
+)
 
 
 def _transaction_for_tenant(
@@ -224,3 +232,23 @@ def reconcile_transactions(
         metadata={"run_id": str(run.id), "mismatch_count": run.mismatch_count},
     )
     return run
+
+
+def latest_exchange_rate(
+    base_currency: str, quote_currency: str, *, max_age: timedelta
+) -> ExchangeRateSnapshot | None:
+    """The most recent observed rate no older than `max_age`, or None.
+
+    Callers must treat None as "conversion unavailable" and show the original
+    amount and currency; they must never fall back to an assumed rate.
+    """
+    cutoff = timezone.now() - max_age
+    return (
+        ExchangeRateSnapshot.objects.filter(
+            base_currency=base_currency.upper(),
+            quote_currency=quote_currency.upper(),
+            observed_at__gte=cutoff,
+        )
+        .order_by("-observed_at")
+        .first()
+    )

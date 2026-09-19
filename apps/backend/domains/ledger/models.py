@@ -205,3 +205,54 @@ class ReconciliationItem(UUIDModel, TimeStampedModel):
                 fields=["run", "source_event_id"], name="unique_reconciliation_source_event"
             )
         ]
+
+
+class ExchangeRateSnapshot(UUIDModel):
+    """An observed exchange rate from a named source at a point in time.
+
+    A foundation only: TAMVA has no approved rate provider, so no rows are
+    created by the platform and no client shows a converted amount. Ledger
+    entries are never restated with these rates; a rate is reference data used
+    to *display* a conversion, always alongside the original amount/currency.
+    """
+
+    base_currency = models.CharField(max_length=3)
+    quote_currency = models.CharField(max_length=3)
+    rate = models.DecimalField(max_digits=24, decimal_places=10)
+    source = models.CharField(max_length=100)
+    observed_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["base_currency", "quote_currency", "source", "observed_at"],
+                name="unique_exchange_rate_observation",
+            ),
+            models.CheckConstraint(condition=models.Q(rate__gt=0), name="exchange_rate_positive"),
+        ]
+        indexes = [models.Index(fields=["base_currency", "quote_currency", "-observed_at"])]
+
+    def clean(self) -> None:
+        errors: dict[str, str] = {}
+        for field in ("base_currency", "quote_currency"):
+            code = getattr(self, field)
+            if not (len(code) == 3 and code.isalpha() and code.isupper()):
+                errors[field] = "Must be an upper-case ISO 4217 alpha-3 code."
+        if self.base_currency == self.quote_currency:
+            errors["quote_currency"] = "Base and quote currencies must differ."
+        if not self.source.strip():
+            errors["source"] = "A rate must name its source."
+        if self.rate is not None and self.rate <= 0:
+            errors["rate"] = "Rate must be positive."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if not self._state.adding:
+            raise ValidationError("Exchange rate observations are append-only.")
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.base_currency}/{self.quote_currency}@{self.observed_at:%Y-%m-%d}"

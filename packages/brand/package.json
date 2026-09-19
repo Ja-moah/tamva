@@ -1,0 +1,12 @@
+{
+  "name": "@tamva/brand",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Single source of truth for TAMVA brand assets and their expected names.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./colors": "./tokens/colors.ts"
+  },
+  "types": "./src/index.ts"
+}

@@ -15,6 +15,9 @@
  */
 
 import React, { useState } from 'react';
+import { DEMO_MODE } from '../../src/config/env';
+import { register } from '../../src/api/endpoints';
+import { ApiError, describeError } from '../../src/api/errors';
 import {
   View,
   Text,
@@ -35,7 +38,7 @@ import { Modal } from '../../src/components/ui/Modal';
 import { Chip } from '../../src/components/ui/Chip';
 import { Icon } from '../../src/components/ui/Icon';
 
-export default function SignUpScreen() {
+function SignUpScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -151,12 +154,19 @@ export default function SignUpScreen() {
 
     setIsLoading(true);
 
-    // Realistic frontend submission simulation
-    setTimeout(() => {
-      setIsLoading(false);
-      setShowConfirmation(true);
-      haptics.success();
-    }, 750);
+    const [first, ...rest] = fullName.trim().split(/\s+/);
+    void register({ email: email.trim(), password, first_name: first, last_name: rest.join(' ') })
+      .then(() => {
+        setShowConfirmation(true);
+        haptics.success();
+      })
+      .catch((error: unknown) => {
+        haptics.error();
+        const details = error instanceof ApiError ? (error.details as Record<string, string[]> | null) : null;
+        if (details?.password?.[0]) setPasswordError(details.password[0]);
+        else setEmailError(error instanceof ApiError && error.status === 400 ? "We couldn't create an account with these details." : describeError(error));
+      })
+      .finally(() => setIsLoading(false));
   };
 
   const handleToggleConsent = () => {
@@ -519,7 +529,7 @@ export default function SignUpScreen() {
           </View>
 
           {/* Development-only QA controls (Strictly isolated to __DEV__) */}
-          {__DEV__ && (
+          {DEMO_MODE && (
             <View style={styles.devDock}>
               <Text
                 style={[
@@ -564,8 +574,8 @@ export default function SignUpScreen() {
       <Modal
         visible={showConfirmation}
         onClose={() => setShowConfirmation(false)}
-        title="Account details ready"
-        description="Your registration details are ready. Email verification will be the next step when account services are connected."
+        title="Account created"
+        description="Your TAMVA account is ready. Sign in to continue. Email verification is not required yet."
         primaryAction={{
           label: 'Continue',
           onPress: handleModalContinue,
@@ -655,3 +665,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
 });
+
+
+export default SignUpScreen;

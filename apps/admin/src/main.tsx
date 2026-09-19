@@ -4,6 +4,9 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { router } from "./app/router";
+import { SessionProvider } from "./features/session/session";
+import { ThemeProvider } from "./lib/theme";
+import { ToastProvider } from "./components/ui/toast";
 import "./styles/global.css";
 
 const queryClient = new QueryClient({
@@ -12,8 +15,14 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <SessionProvider>
+            <RouterProvider router={router} />
+          </SessionProvider>
+        </ToastProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   </StrictMode>,
 );

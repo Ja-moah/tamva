@@ -28,7 +28,7 @@ import {
   TARGET_DATE_PRESETS,
   getPresetTargetDate,
   formatTargetDate,
-} from '../../data/mockSaveData';
+} from '../../demo/data/mockSaveData';
 
 export interface CustomGoalData {
   name: string;

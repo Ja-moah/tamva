@@ -13,7 +13,7 @@ import { Icon } from '../ui/Icon';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { PassportSharePurposeId } from '../../types/passport';
-import { PASSPORT_SHARE_PURPOSES } from '../../data/mockPassportData';
+import { PASSPORT_SHARE_PURPOSES } from '../../demo/data/mockPassportData';
 
 export interface PassportSharePurposeProps {
   selectedPurposeId: PassportSharePurposeId;

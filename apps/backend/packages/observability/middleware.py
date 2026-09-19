@@ -5,6 +5,9 @@ from django.http import HttpRequest, HttpResponse
 
 from packages.observability.context import request_id_var, tenant_id_var, user_id_var
 
+# The wire version clients are speaking; bumped only with a breaking /api/vN change.
+API_VERSION = "1"
+
 
 class RequestContextMiddleware:
     def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
@@ -19,6 +22,7 @@ class RequestContextMiddleware:
         try:
             response = self.get_response(request)
             response["X-Request-ID"] = request_id
+            response["X-API-Version"] = API_VERSION
             return response
         finally:
             request_id_var.reset(request_token)

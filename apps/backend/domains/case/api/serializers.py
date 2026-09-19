@@ -112,3 +112,18 @@ class RecordCaseActionSerializer(serializers.Serializer):
 class ResolveCaseSerializer(serializers.Serializer):
     outcome = serializers.ChoiceField(choices=CaseResolution.Outcome.choices)
     reason = serializers.CharField()
+
+
+class BulkAssignCasesSerializer(serializers.Serializer):
+    case_ids = serializers.ListField(
+        child=serializers.UUIDField(), min_length=1, max_length=100, allow_empty=False
+    )
+    assignee_id = serializers.UUIDField(required=False, allow_null=True, default=None)
+    note = serializers.CharField(required=False, allow_blank=True, default="", max_length=2000)
+
+
+class BulkTriageCasesSerializer(serializers.Serializer):
+    case_ids = serializers.ListField(
+        child=serializers.UUIDField(), min_length=1, max_length=100, allow_empty=False
+    )
+    note = serializers.CharField(required=False, allow_blank=True, default="", max_length=2000)

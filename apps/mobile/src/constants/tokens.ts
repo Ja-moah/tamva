@@ -5,61 +5,14 @@
  * Every component must reference these tokens — never hardcode values.
  */
 
+import { flatPalette } from '@tamva/brand';
+
 // ─────────────────────────────────────────────────────────────
 // Color Palette (Primitive)
 // ─────────────────────────────────────────────────────────────
 
-const palette = {
-  // Teal-Green family (TAMVA Primary)
-  teal50: '#E8F5F1',
-  teal100: '#C3E5DA',
-  teal200: '#9AD4C1',
-  teal300: '#6DC3A8',
-  teal400: '#40B28F',
-  teal500: '#1A9F78',
-  teal600: '#1A7F64', // Primary brand
-  teal700: '#146350',
-  teal800: '#0E473A',
-  teal900: '#072B23',
-
-  // Neutral family
-  neutral0: '#FFFFFF',
-  neutral50: '#F7F8FA',
-  neutral100: '#EEF0F4',
-  neutral200: '#E5E9EF',
-  neutral300: '#CED4DE',
-  neutral400: '#9AA3B0',
-  neutral500: '#667085',
-  neutral600: '#475467',
-  neutral700: '#344054',
-  neutral800: '#1D2939',
-  neutral900: '#111827',
-
-  // Semantic families
-  green50: '#ECFDF5',
-  green100: '#D1FAE5',
-  green500: '#12B76A',
-  green600: '#059652',
-  green700: '#027A48',
-
-  amber50: '#FFFBEB',
-  amber100: '#FEF3C7',
-  amber500: '#F79009',
-  amber600: '#DC6803',
-  amber700: '#B54708',
-
-  red50: '#FEF3F2',
-  red100: '#FEE4E2',
-  red500: '#F04438',
-  red600: '#D92D20',
-  red700: '#B42318',
-
-  blue50: '#EFF8FF',
-  blue100: '#DBEAFE',
-  blue500: '#2E90FA',
-  blue600: '#1570EF',
-  blue700: '#175CD3',
-} as const;
+// Primitives come from the shared brand tokens (packages/brand/tokens/colors.ts).
+const palette = flatPalette;
 
 // ─────────────────────────────────────────────────────────────
 // Semantic Colors (Light Theme)

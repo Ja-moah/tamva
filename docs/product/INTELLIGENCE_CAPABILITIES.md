@@ -65,3 +65,18 @@ message regardless of cause and are audited. Rate limit:
   *reviewed*, or value associated with blocked/held recommendations.
 - Account takeover, malware, or compromised-device verdicts.
 - Any location or device statement without a provenanced source observation.
+
+## Institutional operations surface (Admin)
+
+`GET /api/v1/capabilities/` also reports the operations features the Admin
+depends on, so the UI renders what exists and nothing else.
+
+| Capability | State | Meaning |
+| --- | --- | --- |
+| `admin_overview`, `customer_directory`, `trust_network`, `audit_trail`, `saved_views`, `data_export` | AVAILABLE | Built and tested. |
+| `bulk_operations` | PARTIAL | Case assign, case triage and notification mark-read only. |
+| `team_management` | PARTIAL | Roles and status; no invitations. |
+| `partner_integrations` | PARTIAL | Credentials, webhooks (create) and connection health; no request logs. |
+| `team_invitations`, `api_usage_metrics`, `quiet_hours`, `scheduled_reports` | NOT_AVAILABLE | Not built. |
+| `currency_conversion` | NOT_AVAILABLE | No approved exchange-rate provider. A rate-snapshot foundation exists; nothing converts. |
+| `fraud_prevented_value`, `institution_comparison`, `geographic_risk` | NOT_AVAILABLE | Not derivable from what TAMVA records; deliberately not reported. |

@@ -4,8 +4,11 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
+    "@expo/metro-runtime": "~57.0.16",
     "@expo/vector-icons": "^15.0.2",
+    "@tamva/brand": "workspace:*",
     "@tamva/client-contracts": "workspace:*",
+    "@tanstack/react-query": "^5.103.1",
     "expo": "~57.0.22",
     "expo-constants": "~57.0.18",
     "expo-font": "~57.0.4",
@@ -17,18 +20,22 @@
     "lucide-react-native": "^1.46.0",
     "nativewind": "^4.2.7",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
-    "react-native-svg": "^15.15.5"
+    "react-native-svg": "^15.15.5",
+    "react-native-web": "^0.21.2",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
     "eslint-config-expo": "^57.0.2",
     "tailwindcss": "^4.3.3",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.1"
   },
   "scripts": {
     "start": "expo start",
@@ -40,7 +47,8 @@
     "export:android": "expo export --platform android --output-dir dist/android",
     "export:ios": "expo export --platform ios --output-dir dist/ios",
     "export:web": "expo export --platform web --output-dir dist/web",
-    "typecheck": "tsc --noEmit"
+    "test": "vitest run",
+    "typecheck": "node --stack_size=8192 ../../node_modules/typescript/bin/tsc --noEmit"
   },
   "private": true
 }

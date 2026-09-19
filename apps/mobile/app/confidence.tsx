@@ -1,4 +1,7 @@
 import { router } from "expo-router";
+import { DEMO_MODE } from '../src/config/env';
+import { ConfidenceLive } from '../src/components/live/ConfidenceLive';
+import { withFeatureGate } from '../src/components/ui/withFeatureGate';
 import {
   ArrowLeft,
   Bell,
@@ -17,11 +20,11 @@ import Svg, { Circle, Defs, LinearGradient, Path, Stop, Text as SvgText } from "
 
 import { BouncyPressable } from "../components/animated/bouncy-pressable";
 import { ProgressBar } from "../components/animated/progress-bar";
-import { SCORE_HISTORY } from "../constants/mock-data";
-import { useTamvaStore } from "../store/use-tamva-store";
+import { SCORE_HISTORY, confidencePillars, confidenceUser } from "../src/demo/data/mockConfidenceData";
 
-export default function ConfidenceScreen() {
-  const { user, behavioralPillars } = useTamvaStore();
+function ConfidenceScreen() {
+  const user = confidenceUser;
+  const behavioralPillars = confidencePillars;
   const [activeTab, setActiveTab] = useState<"Overview" | "Breakdown" | "History" | "Tips">("Overview");
 
   return (
@@ -300,3 +303,12 @@ export default function ConfidenceScreen() {
     </View>
   );
 }
+
+
+export default DEMO_MODE ? ConfidenceScreen : withFeatureGate(ConfidenceLive, {
+  capability: 'customer_financial_confidence',
+  wired: true,
+  showBack: true,
+  title: 'Financial Confidence',
+  description: "Your Financial Confidence isn't available from TAMVA yet.",
+});

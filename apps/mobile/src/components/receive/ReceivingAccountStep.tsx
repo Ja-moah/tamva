@@ -21,7 +21,7 @@ import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { BrandLogo } from '../ui/BrandLogo';
 import { MoneyDisplay } from '../financial/MoneyDisplay';
-import { MOCK_CUSTOMER_NAME } from '../../data/mockReceiveData';
+import { MOCK_CUSTOMER_NAME } from '../../demo/data/mockReceiveData';
 
 export interface ReceivingAccountStepProps {
   accounts: ReceivingAccount[];

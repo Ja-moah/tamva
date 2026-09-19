@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.cache import cache
 from django.db import connections
 from django.db.utils import OperationalError
@@ -116,3 +117,39 @@ class CapabilitiesView(APIView):
     )
     def get(self, request: object) -> Response:
         return Response({"data": {code: state.value for code, state in CAPABILITIES.items()}})
+
+
+class VersionView(APIView):
+    """Safe, unauthenticated deployment metadata so clients can label the
+    environment truthfully. Never returns hostnames, settings or secrets."""
+
+    permission_classes = [AllowAny]
+    authentication_classes: list[type] = []
+
+    @extend_schema(
+        responses=inline_serializer(
+            name="VersionResponse",
+            fields={
+                "data": inline_serializer(
+                    name="VersionInfo",
+                    fields={
+                        "api_version": serializers.CharField(),
+                        "application_version": serializers.CharField(),
+                        "environment": serializers.CharField(),
+                        "release": serializers.CharField(allow_blank=True),
+                    },
+                )
+            },
+        )
+    )
+    def get(self, request: object) -> Response:
+        return Response(
+            {
+                "data": {
+                    "api_version": "v1",
+                    "application_version": settings.APP_VERSION,
+                    "environment": settings.APP_ENVIRONMENT,
+                    "release": settings.APP_RELEASE,
+                }
+            }
+        )

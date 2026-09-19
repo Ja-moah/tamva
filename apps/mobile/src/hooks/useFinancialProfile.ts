@@ -7,7 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { FinancialProfileData, ProfileStateMode } from '../types/profile';
-import { mockProfileData } from '../data/mockProfileData';
+import { mockProfileData } from '../demo/data/mockProfileData';
 import { useHaptics } from './useHaptics';
 
 export interface UseFinancialProfileReturn {

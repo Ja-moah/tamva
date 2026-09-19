@@ -28,7 +28,7 @@ import {
   CONSENTED_SCOPE_DETAILS,
   DEFAULT_CONSENT_PURPOSE,
   CONSENT_DURATION_OPTIONS,
-} from '../../data/mockConnectedAccountsData';
+} from '../../demo/data/mockConnectedAccountsData';
 import { useHaptics } from '../../hooks/useHaptics';
 
 export interface ConsentReviewSheetProps {

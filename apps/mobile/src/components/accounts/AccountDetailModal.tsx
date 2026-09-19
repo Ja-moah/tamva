@@ -33,7 +33,7 @@ import {
 import {
   CONSENTED_SCOPE_DETAILS,
   CONSENT_DURATION_OPTIONS,
-} from '../../data/mockConnectedAccountsData';
+} from '../../demo/data/mockConnectedAccountsData';
 import { FeatherIconName } from '../../constants/icons';
 
 export interface AccountDetailModalProps {

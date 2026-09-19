@@ -7,6 +7,8 @@ from typing import Any
 from django.utils import timezone
 from rest_framework import serializers
 
+from domains.security.models import CustomerDevice, LocationObservation, SecurityEvent
+
 # Tolerated clock skew between an integration's clock and ours.
 FUTURE_SKEW = timedelta(minutes=5)
 
@@ -60,3 +62,66 @@ class ObservationSerializer(StrictSerializer):
         if other in attrs:
             raise serializers.ValidationError({other: "Not allowed for this type."})
         return attrs
+
+
+class SecurityEventSerializer(serializers.ModelSerializer):
+    customer_id = serializers.UUIDField(read_only=True, allow_null=True)
+
+    class Meta:
+        # `metadata` is intentionally not exposed: it is producer-defined and
+        # may carry identifiers beyond what an operator needs to triage.
+        model = SecurityEvent
+        fields = [
+            "id",
+            "customer_id",
+            "category",
+            "severity",
+            "source",
+            "occurred_at",
+            "provenance_type",
+            "provenance_id",
+        ]
+        read_only_fields = fields
+
+
+class CustomerDeviceSerializer(serializers.ModelSerializer):
+    customer_id = serializers.UUIDField(read_only=True)
+    device_ref = serializers.SerializerMethodField()
+    source = serializers.CharField(source="device.source", read_only=True)
+
+    class Meta:
+        model = CustomerDevice
+        fields = [
+            "id",
+            "customer_id",
+            "device_ref",
+            "source",
+            "status",
+            "first_seen_at",
+            "last_seen_at",
+            "observation_count",
+        ]
+        read_only_fields = fields
+
+    def get_device_ref(self, obj: CustomerDevice) -> str:
+        # Opaque integration-issued id, truncated: enough to correlate, not to replay.
+        key = obj.device.device_key
+        return f"…{key[-6:]}" if len(key) > 6 else key
+
+
+class LocationObservationSerializer(serializers.ModelSerializer):
+    customer_id = serializers.UUIDField(read_only=True)
+
+    class Meta:
+        model = LocationObservation
+        fields = [
+            "id",
+            "customer_id",
+            "source",
+            "country_code",
+            "region",
+            "city",
+            "confidence",
+            "observed_at",
+        ]
+        read_only_fields = fields

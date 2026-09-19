@@ -21,6 +21,8 @@ import {
   StyleSheet,
   Pressable,
   BackHandler,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,6 +36,8 @@ import {
 import { ScreenHeader } from '../src/components/ui/ScreenHeader';
 import { Chip } from '../src/components/ui/Chip';
 import { EmptyState } from '../src/components/ui/EmptyState';
+import { ErrorState } from '../src/components/ui/ErrorState';
+import { describeError } from '../src/api/errors';
 import {
   NotificationRow,
   NotificationDetailView,
@@ -50,6 +54,11 @@ export default function NotificationsScreen() {
     unreadCount,
     markAsRead,
     markAllAsRead,
+    isLoading,
+    isError,
+    error,
+    isRefreshing,
+    refresh,
   } = useNotifications();
 
   const [selectedFilter, setSelectedFilter] = useState<NotificationFilter>('all');
@@ -214,12 +223,26 @@ export default function NotificationsScreen() {
       {/* 3. NOTIFICATION LIST OR EMPTY STATE */}
       <ScrollView
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
         contentContainerStyle={[
           styles.listContent,
           { paddingBottom: Math.max(insets.bottom, 24) + 16 },
         ]}
       >
-        {filteredNotifications.length === 0 ? (
+        {isLoading ? (
+          <View style={styles.emptyContainer}>
+            <ActivityIndicator color={theme.colors.primary} />
+          </View>
+        ) : isError && notifications.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <ErrorState
+              title="Unable to load notifications"
+              message={describeError(error)}
+              onRetry={refresh}
+              retryLabel="Try again"
+            />
+          </View>
+        ) : filteredNotifications.length === 0 ? (
           <View style={styles.emptyContainer}>
             <EmptyState
               icon={selectedFilter === 'unread' ? 'check-circle' : 'bell'}

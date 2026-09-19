@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { HomeScreenData } from '../types/home';
-import { mockHomeData, mockEmptyHomeData } from '../data/mockHomeData';
+import { mockHomeData, mockEmptyHomeData } from '../demo/data/mockHomeData';
 import { useNotifications } from '../context/NotificationsContext';
 
 export type ScreenStateMode = 'loaded' | 'loading' | 'error' | 'empty';

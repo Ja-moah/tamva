@@ -21,7 +21,7 @@ import {
   PASSPORT_SHARE_PURPOSES,
   PASSPORT_SHARE_SCOPES,
   PASSPORT_SHARE_DURATIONS,
-} from '../../data/mockPassportData';
+} from '../../demo/data/mockPassportData';
 
 export interface PassportShareReviewProps {
   purposeId: PassportSharePurposeId;

@@ -14,7 +14,7 @@ import {
 } from '../types/protection';
 import {
   mockProtectionScenarios,
-} from '../data/mockProtectionData';
+} from '../demo/data/mockProtectionData';
 import { useHaptics } from './useHaptics';
 
 export interface UseFinancialProtectionReturn {

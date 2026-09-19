@@ -15,7 +15,7 @@ import { RiskDecisionContext , RiskDecisionKeySignals } from '../../types/risk';
 import {
   DECISION_CONTEXT_OPTIONS,
   DECISION_CONTEXT_EXPLANATIONS,
-} from '../../data/mockRiskData';
+} from '../../demo/data/mockRiskData';
 import { Badge, BadgeTone } from '../ui/Badge';
 import { Icon } from '../ui/Icon';
 

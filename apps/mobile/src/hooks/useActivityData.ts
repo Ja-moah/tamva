@@ -30,7 +30,7 @@ import {
   mockEmptyActivityData,
   mockTransactions,
   availableAccounts,
-} from '../data/mockActivityData';
+} from '../demo/data/mockActivityData';
 import { useHaptics } from './useHaptics';
 
 export const INITIAL_SECONDARY_FILTERS: ActivitySecondaryFilters = {

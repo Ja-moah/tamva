@@ -35,4 +35,41 @@ CAPABILITIES: dict[str, CapabilityState] = {
     "cross_institution_graph": CapabilityState.NOT_AVAILABLE,
     "merchant_intelligence": CapabilityState.NOT_AVAILABLE,
     "account_takeover_detection": CapabilityState.NOT_AVAILABLE,
+    # Institutional operations surface (Admin).
+    "admin_overview": CapabilityState.AVAILABLE,
+    "customer_directory": CapabilityState.AVAILABLE,
+    "trust_network": CapabilityState.AVAILABLE,
+    "audit_trail": CapabilityState.AVAILABLE,
+    "saved_views": CapabilityState.AVAILABLE,
+    "data_export": CapabilityState.AVAILABLE,
+    # Bulk is limited to case assign, case triage and notification mark-read.
+    "bulk_operations": CapabilityState.PARTIAL,
+    "team_management": CapabilityState.PARTIAL,
+    "team_invitations": CapabilityState.NOT_AVAILABLE,
+    # Credentials and webhooks are managed; request logs and usage metering are not.
+    "partner_integrations": CapabilityState.PARTIAL,
+    "api_usage_metrics": CapabilityState.NOT_AVAILABLE,
+    # Nothing here is derived from data TAMVA records or licenses.
+    "currency_conversion": CapabilityState.NOT_AVAILABLE,
+    "fraud_prevented_value": CapabilityState.NOT_AVAILABLE,
+    "institution_comparison": CapabilityState.NOT_AVAILABLE,
+    "geographic_risk": CapabilityState.NOT_AVAILABLE,
+    "quiet_hours": CapabilityState.NOT_AVAILABLE,
+    "scheduled_reports": CapabilityState.NOT_AVAILABLE,
+    # Customer (mobile) surface: /api/v1/customer/* plus token auth and recovery.
+    "customer_authentication": CapabilityState.AVAILABLE,
+    "customer_notifications": CapabilityState.AVAILABLE,
+    "customer_registration": CapabilityState.AVAILABLE,
+    "customer_account_recovery": CapabilityState.AVAILABLE,
+    "customer_consent": CapabilityState.AVAILABLE,
+    "customer_home": CapabilityState.AVAILABLE,
+    "customer_activity": CapabilityState.AVAILABLE,
+    "customer_financial_profile": CapabilityState.AVAILABLE,
+    "customer_financial_confidence": CapabilityState.AVAILABLE,
+    # Connections are created pending; completing provider authorization is not built.
+    "customer_connections": CapabilityState.PARTIAL,
+    "customer_passport": CapabilityState.AVAILABLE,
+    # Only new-device and unusual-location signals are produced today.
+    "customer_protection": CapabilityState.PARTIAL,
+    "customer_payments": CapabilityState.NOT_AVAILABLE,
 }

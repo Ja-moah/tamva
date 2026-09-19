@@ -156,3 +156,45 @@ def test_refresh_and_logout_end_session(api_client: APIClient, partner_context):
 
     logout_response = api_client.post("/api/v1/auth/logout/", format="json")
     assert logout_response.status_code == 204
+
+
+@pytest.mark.security
+@pytest.mark.django_db
+def test_csrf_endpoint_gives_native_clients_a_token_that_unsafe_requests_accept() -> None:
+    from rest_framework.test import APIClient
+
+    user = User.objects.create_user(
+        username="mobile-customer",
+        email="mobile-customer@example.test",
+        password="correct horse battery staple",
+        identity_type=User.IdentityType.CUSTOMER,
+    )
+    client = APIClient(enforce_csrf_checks=True)
+
+    token_response = client.get("/api/v1/auth/csrf/")
+    assert token_response.status_code == 200
+    assert token_response["Cache-Control"] == "no-store"
+    assert "csrftoken" in token_response.cookies
+    token = token_response.data["data"]["csrf_token"]
+
+    login = client.post(
+        "/api/v1/auth/login/",
+        {"identifier": user.email, "password": "correct horse battery staple"},
+        format="json",
+        HTTP_X_CSRFTOKEN=token,
+    )
+    assert login.status_code == 200
+
+    # The token rotates on login; the old one no longer authorises unsafe calls.
+    stale = client.post("/api/v1/auth/logout/", HTTP_X_CSRFTOKEN=token)
+    assert stale.status_code == 403
+    fresh = client.get("/api/v1/auth/csrf/").data["data"]["csrf_token"]
+    assert client.post("/api/v1/auth/logout/", HTTP_X_CSRFTOKEN=fresh).status_code == 204
+
+
+@pytest.mark.contract
+@pytest.mark.django_db
+def test_every_response_carries_request_and_api_version_headers(api_client) -> None:
+    response = api_client.get("/health/", HTTP_X_REQUEST_ID="req-abc")
+    assert response["X-Request-ID"] == "req-abc"
+    assert response["X-API-Version"] == "1"

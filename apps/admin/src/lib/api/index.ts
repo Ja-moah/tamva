@@ -1,16 +1,55 @@
-import { healthResponseSchema, type HealthResponse } from "@tamva/client-contracts";
+import {
+  actorContextEnvelopeSchema,
+  capabilitiesResponseSchema,
+  healthResponseSchema,
+  versionSchema,
+  type ActorContext,
+  type CapabilitiesResponse,
+  type HealthResponse,
+  type LoginRequest,
+  type VersionInfo,
+} from "@tamva/client-contracts";
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
+import { apiRequest } from "./client";
 
-export async function getSystemHealth(signal?: AbortSignal): Promise<HealthResponse> {
-  const response = await fetch(`${apiBaseUrl}/health/`, {
-    headers: { Accept: "application/json" },
-    signal,
+export {
+  ApiError,
+  apiBlob,
+  apiRequest,
+  getActiveInstitution,
+  setActiveInstitution,
+  setUnauthenticatedHandler,
+} from "./client";
+
+export function getSystemHealth(signal?: AbortSignal): Promise<HealthResponse> {
+  return apiRequest({ path: "/health/", unversioned: true, schema: healthResponseSchema, signal });
+}
+
+export async function login(credentials: LoginRequest): Promise<ActorContext> {
+  const envelope = await apiRequest({
+    method: "POST",
+    path: "/auth/login/",
+    body: credentials,
+    schema: actorContextEnvelopeSchema,
   });
+  return envelope.data;
+}
 
-  if (!response.ok) {
-    throw new Error(`Backend health check failed with status ${response.status}`);
-  }
+export async function logout(): Promise<void> {
+  await apiRequest({ method: "POST", path: "/auth/logout/" });
+}
 
-  return healthResponseSchema.parse(await response.json());
+export async function getMe(signal?: AbortSignal): Promise<ActorContext> {
+  const envelope = await apiRequest({ path: "/me/", schema: actorContextEnvelopeSchema, signal });
+  return envelope.data;
+}
+
+export async function getCapabilities(signal?: AbortSignal): Promise<CapabilitiesResponse["data"]> {
+  const envelope = await apiRequest({ path: "/capabilities/", schema: capabilitiesResponseSchema, signal });
+  return envelope.data;
+}
+
+export async function getVersion(signal?: AbortSignal): Promise<VersionInfo> {
+  const envelope = await apiRequest({ path: "/meta/version/", schema: versionSchema, signal });
+  return envelope.data;
 }

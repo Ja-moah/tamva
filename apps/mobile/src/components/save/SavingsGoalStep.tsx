@@ -21,7 +21,7 @@ import {
   MOCK_RECENT_NET_CASH_FLOW,
   MOCK_CASH_FLOW_LABEL,
   MOCK_CASH_FLOW_DESCRIPTION,
-} from '../../data/mockSaveData';
+} from '../../demo/data/mockSaveData';
 
 export interface SavingsGoalStepProps {
   templates: SavingsGoalTemplate[];

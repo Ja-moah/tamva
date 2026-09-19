@@ -26,7 +26,7 @@ import {
   mockEmptyConnectedAccountsData,
   DEFAULT_CONSENT_PURPOSE,
   INSTITUTION_CATALOG,
-} from '../data/mockConnectedAccountsData';
+} from '../demo/data/mockConnectedAccountsData';
 import { useHaptics } from './useHaptics';
 import { useToast } from '../components/ui/Toast';
 

@@ -9,6 +9,9 @@
  */
 
 import React, { useState } from 'react';
+import { DEMO_MODE } from '../../src/config/env';
+import { requestRecovery } from '../../src/api/endpoints';
+import { describeError } from '../../src/api/errors';
 import {
   View,
   Text,
@@ -28,7 +31,7 @@ import { IconButton } from '../../src/components/ui/IconButton';
 import { Chip } from '../../src/components/ui/Chip';
 import { Icon } from '../../src/components/ui/Icon';
 
-export default function ForgotPasswordScreen() {
+function ForgotPasswordScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -62,11 +65,17 @@ export default function ForgotPasswordScreen() {
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setIsSubmitted(true);
-      haptics.success();
-    }, 600);
+    // The response is identical whether or not the address is registered.
+    requestRecovery(email.trim())
+      .then(() => {
+        setIsSubmitted(true);
+        haptics.success();
+      })
+      .catch((error: unknown) => {
+        haptics.error();
+        setEmailError(describeError(error));
+      })
+      .finally(() => setIsLoading(false));
   };
 
   const handleBackToSignIn = () => {
@@ -321,7 +330,7 @@ export default function ForgotPasswordScreen() {
           )}
 
           {/* Development-only QA controls */}
-          {__DEV__ && (
+          {DEMO_MODE && (
             <View style={styles.devDock}>
               <Text
                 style={[
@@ -426,3 +435,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
 });
+
+
+export default ForgotPasswordScreen;

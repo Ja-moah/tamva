@@ -6,10 +6,13 @@ from domains.notifications.models import Notification, NotificationChannel, Noti
 
 
 class NotificationSerializer(serializers.ModelSerializer):
+    category = serializers.CharField(source="template.category", read_only=True)
+
     class Meta:
         model = Notification
         fields = [
             "id",
+            "category",
             "channel",
             "subject",
             "body",
@@ -31,3 +34,9 @@ class SetNotificationPreferenceSerializer(serializers.Serializer):
     category = serializers.CharField(max_length=50)
     channel = serializers.ChoiceField(choices=NotificationChannel.choices)
     enabled = serializers.BooleanField()
+
+
+class BulkReadSerializer(serializers.Serializer):
+    notification_ids = serializers.ListField(
+        child=serializers.UUIDField(), min_length=1, max_length=200, allow_empty=False
+    )

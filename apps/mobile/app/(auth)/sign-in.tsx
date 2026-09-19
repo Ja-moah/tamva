@@ -12,6 +12,7 @@
  */
 
 import React, { useState } from 'react';
+import { DEMO_MODE } from '../../src/config/env';
 import {
   View,
   Text,
@@ -30,12 +31,14 @@ import { Button } from '../../src/components/ui/Button';
 import { IconButton } from '../../src/components/ui/IconButton';
 import { Chip } from '../../src/components/ui/Chip';
 import { Icon } from '../../src/components/ui/Icon';
+import { useAuth } from '../../src/auth/AuthProvider';
 
 export default function SignInScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const haptics = useHaptics();
+  const auth = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -81,19 +84,15 @@ export default function SignInScreen() {
     }
 
     setIsLoading(true);
-
-    // Simulate authentication processing
-    setTimeout(() => {
-      setIsLoading(false);
-      // If error trigger or invalid dummy credentials used intentionally for testing
-      if (email.trim().toLowerCase() === 'error@example.com') {
-        setAuthError(true);
-        haptics.error();
-      } else {
-        haptics.success();
-        router.replace('/(tabs)');
-      }
-    }, 700);
+    const signedIn = await auth.signIn(email.trim(), password);
+    setIsLoading(false);
+    setAuthError(!signedIn);
+    if (signedIn) {
+      haptics.success();
+      router.replace('/(tabs)');
+    } else {
+      haptics.error();
+    }
   };
 
   const handleForgotPassword = () => {
@@ -206,7 +205,7 @@ export default function SignInScreen() {
                   },
                 ]}
               >
-                Those details don&apos;t match. Please check your email and password and try again.
+                {auth.message ?? "Those details don't match. Please check your email and password and try again."}
               </Text>
             </View>
           )}
@@ -319,7 +318,7 @@ export default function SignInScreen() {
           </View>
 
           {/* Development-only QA controls */}
-          {__DEV__ && (
+          {DEMO_MODE && (
             <View style={styles.devDock}>
               <Text
                 style={[

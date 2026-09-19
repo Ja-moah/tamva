@@ -18,6 +18,9 @@
  * - Developer QA state switcher for testing loaded, loading, empty, and error modes
  */
 
+import { withFeatureGate } from '../../src/components/ui/withFeatureGate';
+import { DEMO_MODE } from '../../src/config/env';
+import { PassportLive } from '../../src/components/live/PassportLive';
 import React from 'react';
 import {
   View,
@@ -50,7 +53,7 @@ import { EmptyState } from '../../src/components/ui/EmptyState';
 import { ErrorState } from '../../src/components/ui/ErrorState';
 import { Chip } from '../../src/components/ui/Chip';
 
-export default function PassportScreen() {
+function PassportScreen() {
   const { theme } = useTheme();
   const router = useRouter();
 
@@ -324,4 +327,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 10,
   },
+});
+
+
+export default DEMO_MODE ? PassportScreen : withFeatureGate(PassportLive, {
+  capability: 'customer_passport',
+  wired: true,
+  title: 'Financial Passport',
+  description: "Viewing and sharing your Financial Passport isn't available from TAMVA yet.",
 });

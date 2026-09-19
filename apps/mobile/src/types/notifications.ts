@@ -16,7 +16,8 @@ export type NotificationCategory =
   | 'consent'
   | 'protection'
   | 'account_sync'
-  | 'passport';
+  | 'passport'
+  | 'other';
 
 /**
  * Filter chip keys available in the Notification Center.

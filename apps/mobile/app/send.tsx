@@ -16,6 +16,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { withFeatureGate } from '../src/components/ui/withFeatureGate';
 import { View, StyleSheet, BackHandler } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../src/theme';
@@ -32,8 +33,8 @@ import {
   MOCK_FUNDING_ACCOUNTS,
   MOCK_RECIPIENTS,
   calculateEstimatedFee,
-} from '../src/data/mockTransferData';
-import { addActivityTransaction } from '../src/data/mockActivityData';
+} from '../src/demo/data/mockTransferData';
+import { addActivityTransaction } from '../src/demo/data/mockActivityData';
 import {
   SourceAccountStep,
   SelectRecipientStep,
@@ -46,7 +47,7 @@ import {
 } from '../src/components/send';
 import { TransactionDetailSheet } from '../src/components/activity/TransactionDetailSheet';
 
-export default function SendMoneyScreen() {
+function SendMoneyScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const haptics = useHaptics();
@@ -372,4 +373,13 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
+});
+
+
+export default withFeatureGate(SendMoneyScreen, {
+  capability: 'customer_payments',
+  wired: false,
+  showBack: true,
+  title: 'Send',
+  description: "TAMVA is not a bank or wallet and does not send money.",
 });

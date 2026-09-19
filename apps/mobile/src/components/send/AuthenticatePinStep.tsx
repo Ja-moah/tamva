@@ -21,7 +21,7 @@ import { TransferDraft } from '../../types/transfer';
 import { ScreenHeader } from '../ui/ScreenHeader';
 import { Icon } from '../ui/Icon';
 import { NumericKeypad } from './NumericKeypad';
-import { DEMO_FAILURE_PIN, DEMO_INCORRECT_PIN } from '../../data/mockTransferData';
+import { DEMO_FAILURE_PIN, DEMO_INCORRECT_PIN } from '../../demo/data/mockTransferData';
 
 export interface AuthenticatePinStepProps {
   draft: TransferDraft;

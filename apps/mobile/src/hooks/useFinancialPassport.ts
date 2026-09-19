@@ -19,7 +19,7 @@ import {
   PASSPORT_SHARE_PURPOSES,
   PASSPORT_SHARE_DURATIONS,
   mockInitialShareHistory,
-} from '../data/mockPassportData';
+} from '../demo/data/mockPassportData';
 import { useHaptics } from './useHaptics';
 
 export interface UseFinancialPassportReturn {

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import re
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -234,3 +236,46 @@ class WebhookEndpoint(UUIDModel, TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.environment_id}:{self.url}"
+
+
+class InstitutionLocaleSettings(UUIDModel, TimeStampedModel):
+    """Country, currency, timezone and locale an institution operates in.
+
+    These control presentation and defaults only. Financial records always keep
+    their original amount and currency; nothing here converts them.
+    """
+
+    institution = models.OneToOneField(
+        Institution, on_delete=models.CASCADE, related_name="locale_settings"
+    )
+    country_code = models.CharField(max_length=2, default="GH")
+    default_currency = models.CharField(max_length=3, default="GHS")
+    timezone = models.CharField(max_length=64, default="Africa/Accra")
+    locale = models.CharField(max_length=20, default="en-GH")
+
+    class Meta:
+        verbose_name_plural = "institution locale settings"
+
+    def clean(self) -> None:
+        errors: dict[str, str] = {}
+        if not (len(self.country_code) == 2 and self.country_code.isalpha()):
+            errors["country_code"] = "Must be an ISO 3166-1 alpha-2 code."
+        if not (len(self.default_currency) == 3 and self.default_currency.isalpha()):
+            errors["default_currency"] = "Must be an ISO 4217 alpha-3 code."
+        try:
+            ZoneInfo(self.timezone)
+        except (ZoneInfoNotFoundError, ValueError):
+            errors["timezone"] = "Must be a valid IANA timezone name."
+        if not re.fullmatch(r"[a-z]{2,3}(-[A-Za-z0-9]{2,8})*", self.locale):
+            errors["locale"] = "Must be a BCP 47 language tag such as en-GH."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.country_code = self.country_code.upper()
+        self.default_currency = self.default_currency.upper()
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.institution_id}:{self.country_code}/{self.default_currency}"
