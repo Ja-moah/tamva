@@ -60,4 +60,5 @@ jobs:
       - run: pnpm run typecheck
       - run: pnpm test
       - run: pnpm run build
+      - run: pnpm --filter @tamva/admin verify:build
       - run: pnpm --filter @tamva/mobile export
