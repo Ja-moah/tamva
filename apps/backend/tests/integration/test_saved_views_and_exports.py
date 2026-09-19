@@ -406,3 +406,106 @@ def test_unknown_resource_is_a_validation_error(case_export_context):
             columns=[],
             selected_ids=[],
         )
+
+
+# ------------------------------------------------- reliability: never stuck
+
+
+def _pending_job(context, user):
+    return request_export(
+        institution=context[1],
+        actor=user,
+        resource_key="CASES",
+        file_format="CSV",
+        filters={},
+        ordering="",
+        columns=[],
+        selected_ids=[],
+    )
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_a_storage_failure_fails_the_job_instead_of_leaving_it_running(
+    case_export_context, monkeypatch
+):
+    context, _case, user = case_export_context
+    job = _pending_job(context, user)
+
+    def boom(*_args, **_kwargs):
+        raise OSError("bucket unreachable")
+
+    monkeypatch.setattr("django.db.models.fields.files.FieldFile.save", boom)
+
+    result = execute_export(job.id)
+
+    assert result.status == ExportJob.Status.FAILED
+    assert result.error_code == "EXPORT_ERROR"
+    assert "bucket" not in result.error_code  # internals never reach the client field
+    assert AuditEvent.objects.filter(action="EXPORT_FAILED").exists()
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_soft_time_limit_fails_the_job_with_a_timeout_code(case_export_context, monkeypatch):
+    from celery.exceptions import SoftTimeLimitExceeded
+
+    context, _case, user = case_export_context
+    job = _pending_job(context, user)
+    monkeypatch.setattr(
+        "domains.operations.exports._build_artifact",
+        lambda _job: (_ for _ in ()).throw(SoftTimeLimitExceeded()),
+    )
+
+    assert execute_export(job.id).error_code == "EXPORT_TIMEOUT"
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_stale_pending_and_running_exports_are_failed_but_fresh_ones_are_not(
+    case_export_context, settings
+):
+    from domains.operations.exports import fail_stale
+
+    context, _case, user = case_export_context
+    stale_pending, stale_running, fresh = (_pending_job(context, user) for _ in range(3))
+    old = timezone.now() - timedelta(minutes=settings.EXPORT_STALE_MINUTES + 1)
+    ExportJob.objects.filter(pk=stale_pending.pk).update(updated_at=old)
+    ExportJob.objects.filter(pk=stale_running.pk).update(
+        updated_at=old, status=ExportJob.Status.RUNNING
+    )
+
+    assert fail_stale() == 2
+
+    codes = {j.pk: (j.status, j.error_code) for j in ExportJob.objects.all()}
+    assert codes[stale_pending.pk] == (ExportJob.Status.FAILED, "EXPORT_STALE")
+    assert codes[stale_running.pk] == (ExportJob.Status.FAILED, "EXPORT_TIMEOUT")
+    assert codes[fresh.pk][0] == ExportJob.Status.PENDING
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_a_broker_outage_does_not_break_the_export_request(
+    api_client, case_export_context, django_capture_on_commit_callbacks, monkeypatch
+):
+    context, _case, user = case_export_context
+
+    def down(*_args, **_kwargs):
+        raise ConnectionError("broker down")
+
+    monkeypatch.setattr("domains.operations.tasks.run_export_job.delay", down)
+
+    response = request_via_api(api_client, user, context, django_capture_on_commit_callbacks)
+
+    assert response.status_code == 202
+    assert ExportJob.objects.get(pk=response.data["data"]["id"]).status == ExportJob.Status.PENDING
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_export_artifacts_are_stored_under_the_institution_prefix(case_export_context):
+    context, _case, user = case_export_context
+    job = execute_export(_pending_job(context, user).id)
+
+    assert job.artifact.name.startswith(f"exports/{context[1].id}/")
+    assert job.artifact.name.endswith(f"{job.id}.csv")

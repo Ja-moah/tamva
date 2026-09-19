@@ -61,11 +61,13 @@ locale settings and a rate-snapshot foundation; the permission/role catalog;
 8. **Currency support** is a fixed set in normalisation (`GHS, USD, EUR, GBP, NGN, KES, ZAR`), not per-institution configuration.
 9. **Shared saved views** (only private views exist).
 10. **Contract generation.** The Admin's zod contracts are hand-written from the OpenAPI schema. A contract test or generator that fails on drift is still to be added.
-11. **Export storage.** Artifacts use Django's default storage. Production needs a private bucket and a running worker; the hourly purge task needs the Celery beat process.
-12. **Mobile** was not changed. It still uses mock data and hard-coded `GH₵`.
+11. **Export storage.** Resolved in hardening: production requires a private S3-compatible bucket (`EXPORT_STORAGE_BACKEND=s3`); the worker and exactly one Celery beat run in the deployment compose file.
+12. **Mobile** is now wired to the customer platform APIs (see `MOBILE_INTEGRATION_AUDIT.md`).
 
-## Repository hygiene (unchanged, for hardening)
+## Repository hygiene (resolved in hardening)
 
-- `apps/admin/dist` is tracked and rewritten by every build. Untrack it during hardening.
-- Google Fonts is loaded from a CDN. Self-host Plus Jakarta Sans and JetBrains Mono.
-- The Admin bundle's main chunk is ~500 kB; code-split the shell if it grows.
+- `apps/admin/dist` is no longer tracked; images build the SPA in a builder stage.
+- Plus Jakarta Sans and JetBrains Mono are self-hosted (`@fontsource-variable/*`); the Google Fonts CDN
+  is gone and `pnpm --filter @tamva/admin verify:build` fails the build if it or a localhost URL returns.
+- Unreferenced demo imagery (`public/assets/*.jpg`) was removed.
+- Still open: the Admin bundle's main chunk is ~500 kB; code-split the shell if it grows.

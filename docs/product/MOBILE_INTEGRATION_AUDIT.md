@@ -130,7 +130,7 @@ view, focus rings on web, and an automated component-test setup (only pure-logic
 
 ## What remains (deliberately deferred)
 
-- **Provider catalogue and authorization completion.** A customer-started connection is created
+- **Provider catalogue and authorization completion (post-launch).** A customer-started connection is created
   `PENDING_AUTHORIZATION`; nothing completes it yet, and customers cannot discover provider codes, so Mobile
   does not offer "add account". Needs a provider/institution catalogue and an OAuth-style completion step.
 - **Protection breadth:** only new-device and unusual-location signals exist. Dark-web, breach and

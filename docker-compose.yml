@@ -1,6 +1,8 @@
 services:
   web:
-    build: .
+    build:
+      context: .
+      target: dev
     command: python apps/backend/manage.py runserver 0.0.0.0:8000
     env_file: .env
     volumes:
@@ -45,7 +47,9 @@ services:
       retries: 10
 
   celery-worker:
-    build: .
+    build:
+      context: .
+      target: dev
     command: celery -A config worker --loglevel=INFO
     env_file: .env
     volumes:
@@ -55,6 +59,51 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  celery-beat:
+    build:
+      context: .
+      target: dev
+    command: celery -A config beat --loglevel=INFO --schedule /tmp/celerybeat-schedule
+    env_file: .env
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Optional S3-compatible object storage for exercising the production export path:
+  #   docker compose --profile storage up -d minio minio-init
+  minio:
+    profiles: ["storage"]
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: tamva-dev
+      MINIO_ROOT_PASSWORD: tamva-dev-secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-init:
+    profiles: ["storage"]
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "mc alias set local http://minio:9000 tamva-dev tamva-dev-secret &&
+             mc mb --ignore-existing local/tamva-private &&
+             mc anonymous set none local/tamva-private"
 
   admin:
     build:
@@ -73,3 +122,4 @@ services:
 
 volumes:
   postgres_data:
+  minio_data:

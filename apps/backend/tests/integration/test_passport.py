@@ -412,3 +412,33 @@ def test_cannot_share_section_not_on_snapshot(normalisation_context):
             created_by=normalisation_context[0],
             expires_at=timezone.now() + timedelta(days=7),
         )
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_access_is_denied_and_recorded_once_the_underlying_consent_is_revoked(
+    normalisation_context,
+):
+    from domains.consent.models import Consent
+    from domains.consent.services import revoke_consent
+    from domains.passport.models import PassportShareAccess
+
+    build_chain(normalisation_context)
+    customer, issuer, recipient = normalisation_context[:3]
+    snapshot = generate_passport_snapshot(institution=issuer, customer=customer)
+    share, token = make_share(
+        normalisation_context, snapshot=snapshot, allowed_sections=["FINANCIAL_SUMMARY"]
+    )
+    assert access_passport_share(token=token, accessor_institution=recipient)
+
+    revoke_consent(
+        consent_id=Consent.objects.get(customer=customer, institution=recipient).id,
+        institution=recipient,
+        actor=customer,
+    )
+
+    with pytest.raises(PermissionDenied, match="no longer active"):
+        access_passport_share(token=token, accessor_institution=recipient)
+    denial = PassportShareAccess.objects.filter(share=share).latest("accessed_at")
+    assert denial.outcome == PassportShareAccess.Outcome.DENIED
+    assert denial.reason == "consent_not_active"

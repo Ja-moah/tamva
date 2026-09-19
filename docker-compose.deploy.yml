@@ -1,0 +1,155 @@
+# Single-host deployment (staging and production) for a ~2 vCPU / 4 GB VPS.
+# One file, parameterised by the env file, so staging and production are the same shape:
+#
+#   docker compose -f docker-compose.deploy.yml --env-file .env.production -p tamva-prod up -d
+#   docker compose -f docker-compose.deploy.yml --env-file .env.staging    -p tamva-stg  up -d
+#
+# (use `make deploy-staging` / `make deploy-production`; see docs/operations/DEPLOYMENT.md)
+#
+# Only `edge` publishes ports. Postgres and Redis are reachable on the private network only.
+# Object storage is external (any S3-compatible service); MinIO is a development tool.
+
+x-backend: &backend
+  image: tamva-backend:${TAMVA_IMAGE_TAG:-local}
+  build:
+    context: .
+    target: runtime
+    args:
+      APP_RELEASE: ${APP_RELEASE:-}
+  env_file: ${TAMVA_ENV_FILE:-.env.production}
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging: &logging
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+services:
+  edge:
+    image: tamva-edge:${TAMVA_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: deploy/edge/Dockerfile
+      args:
+        EXPO_PUBLIC_API_BASE_URL: https://api.${TAMVA_DOMAIN:?set TAMVA_DOMAIN}
+        EXPO_PUBLIC_APP_ENV: ${APP_ENVIRONMENT:-production}
+    environment:
+      TAMVA_DOMAIN: ${TAMVA_DOMAIN:?set TAMVA_DOMAIN}
+      TAMVA_ACME_EMAIL: ${TAMVA_ACME_EMAIL:?set TAMVA_ACME_EMAIL}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 128m
+    logging: *logging
+
+  migrate:
+    <<: *backend
+    command: sh -c "python apps/backend/manage.py check --deploy && python apps/backend/manage.py migrate --noinput && python apps/backend/manage.py sync_access_catalog"
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    mem_limit: 384m
+
+  web:
+    <<: *backend
+    command: >
+      gunicorn config.wsgi:application --bind 0.0.0.0:8000
+      --workers ${WEB_CONCURRENCY:-2} --timeout 30 --graceful-timeout 30
+      --max-requests 1000 --max-requests-jitter 100 --worker-tmp-dir /dev/shm
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    mem_limit: 768m
+    healthcheck:
+      # Liveness (process only). Readiness (PostgreSQL + Redis) is /health/ready/.
+      test: ["CMD", "python", "/app/scripts/healthcheck.py", "/health/live/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  celery-worker:
+    <<: *backend
+    command: celery -A config worker --loglevel=INFO --concurrency=${CELERY_CONCURRENCY:-2} --max-tasks-per-child=200
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    mem_limit: 640m
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping -d celery@$$HOSTNAME --timeout 5"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 40s
+
+  # Exactly one beat instance: it drives export expiry, stale-export failure and the outbox.
+  celery-beat:
+    <<: *backend
+    command: celery -A config beat --loglevel=INFO --schedule /tmp/celerybeat-schedule
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    mem_limit: 256m
+    healthcheck:
+      disable: true
+
+  postgres:
+    image: postgres:17-alpine
+    env_file: ${TAMVA_ENV_FILE:-.env.production}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    command: >
+      postgres -c max_connections=60 -c shared_buffers=384MB -c effective_cache_size=1GB
+      -c work_mem=8MB -c log_min_duration_statement=500
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    mem_limit: 1g
+    shm_size: 128m
+    logging: *logging
+
+  redis:
+    image: redis:7-alpine
+    # Redis holds the cache, rate-limit counters and the Celery queue. Nothing here is the
+    # system of record, but queued work is lost if it is wiped, hence appendonly.
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy noeviction
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    mem_limit: 320m
+    logging: *logging
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:

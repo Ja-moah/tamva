@@ -1,0 +1,27 @@
+# Backend image (Dockerfile). Only apps/backend, scripts and VERSION are needed.
+.git
+.github
+.env
+.env.*
+!.env.*.example
+venv
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+coverage
+docs
+tests
+node_modules
+**/node_modules
+**/.expo
+dist
+apps/admin
+apps/mobile
+packages
+deploy
+apps/backend/tests
+apps/backend/requirements-dev.lock

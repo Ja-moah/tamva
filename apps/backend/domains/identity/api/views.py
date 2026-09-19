@@ -136,6 +136,7 @@ def _audit(
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_scope = "auth"  # brute-force ceiling on the cookie-session login too
     authentication_classes = [SessionAuthentication]
 
     @extend_schema(request=LoginSerializer, responses=_actor_context_response)

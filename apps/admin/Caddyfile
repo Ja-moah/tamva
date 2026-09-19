@@ -1,0 +1,28 @@
+# Local/standalone Admin container: static SPA plus a same-origin proxy to the API,
+# so the browser sends the session and CSRF cookies to one origin. Production uses the
+# edge image (deploy/edge), which does the same on the admin.<domain> host.
+{
+	auto_https off
+	admin off
+}
+
+:80 {
+	encode gzip zstd
+
+	handle /api/* {
+		reverse_proxy web:8000
+	}
+	handle /health/ {
+		reverse_proxy web:8000
+	}
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		X-Frame-Options DENY
+	}
+}

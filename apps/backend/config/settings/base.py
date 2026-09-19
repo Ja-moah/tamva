@@ -1,9 +1,20 @@
 import os
 from pathlib import Path
+from typing import Any
 
 import dj_database_url
+from corsheaders.defaults import default_headers
 
 BASE_DIR = Path(__file__).resolve().parents[2]
+REPO_ROOT = BASE_DIR.parent.parent
+
+
+def _read_version() -> str:
+    """The release version lives in one file (VERSION at the repo root, copied into images)."""
+    for candidate in (BASE_DIR / "VERSION", REPO_ROOT / "VERSION"):
+        if candidate.exists():
+            return candidate.read_text().strip()
+    return "0.0.0"
 
 
 def env_bool(name: str, default: bool = False) -> bool:
@@ -87,10 +98,17 @@ ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {
     "default": dj_database_url.config(
         default="postgresql://tamva:tamva@localhost:5432/tamva",
-        conn_max_age=60,
+        conn_max_age=int(os.getenv("DB_CONN_MAX_AGE", "60")),
         conn_health_checks=True,
     )
 }
+# Fail fast instead of hanging: connect and per-statement timeouts (ms; 0 disables).
+# SSL is requested in DATABASE_URL (?sslmode=require|verify-full).
+DATABASES["default"].setdefault("OPTIONS", {})["connect_timeout"] = int(
+    os.getenv("DB_CONNECT_TIMEOUT_SECONDS", "10")
+)
+if _statement_timeout := int(os.getenv("DB_STATEMENT_TIMEOUT_MS", "0")):
+    DATABASES["default"]["OPTIONS"]["options"] = f"-c statement_timeout={_statement_timeout}"
 
 AUTH_USER_MODEL = "identity.User"
 AUTH_PASSWORD_VALIDATORS = [
@@ -114,6 +132,8 @@ MEDIA_ROOT = BASE_DIR / "media"
 EXPORT_RETENTION_HOURS = int(os.getenv("EXPORT_RETENTION_HOURS", "24"))
 EXPORT_MAX_ROWS = int(os.getenv("EXPORT_MAX_ROWS", "50000"))
 EXPORT_LINK_TTL_SECONDS = int(os.getenv("EXPORT_LINK_TTL_SECONDS", "300"))
+# Must exceed CELERY_TASK_TIME_LIMIT: past this a PENDING/RUNNING export is failed, not waited on.
+EXPORT_STALE_MINUTES = int(os.getenv("EXPORT_STALE_MINUTES", "15"))
 
 # Safe deployment metadata surfaced by GET /api/v1/meta/version/.
 # Account recovery: deep link the customer app handles; delivery uses Django's
@@ -122,12 +142,12 @@ RECOVERY_LINK_BASE = os.getenv("RECOVERY_LINK_BASE", "tamva://reset-password")
 RECOVERY_TOKEN_LIFETIME_MINUTES = int(os.getenv("RECOVERY_TOKEN_LIFETIME_MINUTES", "60"))
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "TAMVA <no-reply@tamva.invalid>")
 
-APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
+APP_VERSION = os.getenv("APP_VERSION") or _read_version()
 APP_RELEASE = os.getenv("APP_RELEASE", "")
 APP_ENVIRONMENT = os.getenv("APP_ENVIRONMENT", "development")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-REST_FRAMEWORK = {
+REST_FRAMEWORK: dict[str, Any] = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "packages.auth.bearer.BearerTokenAuthentication",
@@ -136,7 +156,12 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "packages.common.exceptions.api_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_PAGINATION_CLASS": "packages.common.pagination.DefaultPagination",
-    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.ScopedRateThrottle",
+        # Backstops: a ceiling per signed-in user and per anonymous client IP.
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.AnonRateThrottle",
+    ],
     # Rates are configuration, not code: override per-environment via env vars.
     "DEFAULT_THROTTLE_RATES": {
         "auth": os.getenv("THROTTLE_RATE_AUTH", "20/min"),
@@ -149,6 +174,9 @@ REST_FRAMEWORK = {
         "registration": os.getenv("THROTTLE_RATE_REGISTRATION", "10/hour"),
         "recovery": os.getenv("THROTTLE_RATE_RECOVERY", "10/hour"),
         "bulk": os.getenv("THROTTLE_RATE_BULK", "20/min"),
+        "customer_write": os.getenv("THROTTLE_RATE_CUSTOMER_WRITE", "30/min"),
+        "user": os.getenv("THROTTLE_RATE_USER", "600/min"),
+        "anon": os.getenv("THROTTLE_RATE_ANON", "120/min"),
     },
 }
 _API_DESCRIPTION = """\
@@ -202,15 +230,80 @@ SPECTACULAR_SETTINGS = {
     },
 }
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
+# Headers TAMVA clients send, and headers they must be able to read back.
+CORS_ALLOW_HEADERS = (
+    *default_headers,
+    "x-request-id",
+    "x-api-version",
+    "x-institution-id",
+    "idempotency-key",
+)
+CORS_EXPOSE_HEADERS = ["X-Request-ID", "X-API-Version", "Idempotent-Replay", "Retry-After"]
+# Bearer auth carries no ambient credentials, so cross-origin cookies are not enabled.
+CORS_ALLOW_CREDENTIALS = env_bool("CORS_ALLOW_CREDENTIALS", False)
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CACHES = {
     "default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": REDIS_URL}
 }
+# Client IPs (throttling, audit) come from X-Forwarded-For; trust exactly this many proxies.
+NUM_PROXIES = int(os.getenv("DJANGO_NUM_PROXIES", "1" if env_bool("DJANGO_BEHIND_PROXY") else "0"))
+REST_FRAMEWORK["NUM_PROXIES"] = NUM_PROXIES or None
+
+# Surfaces that are conveniences for developers, not product: off unless enabled.
+API_DOCS_ENABLED = env_bool("API_DOCS_ENABLED", True)
+DJANGO_ADMIN_ENABLED = env_bool("DJANGO_ADMIN_ENABLED", True)
+
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT_SECONDS", "10"))
+
+# Private artifacts (exports). "filesystem" is for development/tests only; production
+# uses an S3-compatible private bucket (AWS S3, MinIO, R2, ...).
+EXPORT_STORAGE_BACKEND = os.getenv("EXPORT_STORAGE_BACKEND", "filesystem")
+if EXPORT_STORAGE_BACKEND == "s3":
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": os.environ["AWS_STORAGE_BUCKET_NAME"],
+                "endpoint_url": os.getenv("AWS_S3_ENDPOINT_URL") or None,
+                "region_name": os.getenv("AWS_S3_REGION_NAME") or None,
+                "access_key": os.getenv("AWS_ACCESS_KEY_ID") or None,
+                "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY") or None,
+                "addressing_style": os.getenv("AWS_S3_ADDRESSING_STYLE", "auto"),
+                # Never public: no ACLs, signed URLs only, short expiry, no overwrites.
+                "default_acl": None,
+                "querystring_auth": True,
+                "querystring_expire": int(os.getenv("AWS_QUERYSTRING_EXPIRE", "60")),
+                "file_overwrite": False,
+                "signature_version": "s3v4",
+                "object_parameters": (
+                    {"ServerSideEncryption": os.environ["AWS_S3_SSE"]}
+                    if os.getenv("AWS_S3_SSE")
+                    else {}
+                ),
+            },
+        },
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/2")
 CELERY_TASK_ACKS_LATE = True
+# One task at a time per worker slot: exports can be long, and a prefetched
+# backlog would sit behind them.
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+# Hard limits so a wedged task cannot hold a worker forever.
+CELERY_TASK_SOFT_TIME_LIMIT = int(os.getenv("CELERY_TASK_SOFT_TIME_LIMIT", "300"))
+CELERY_TASK_TIME_LIMIT = int(os.getenv("CELERY_TASK_TIME_LIMIT", "360"))
+# Redelivery window for unacknowledged tasks (must exceed the hard limit).
+CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 3600}
+CELERY_TASK_DEFAULT_RETRY_DELAY = 30
 CELERY_TASK_REJECT_ON_WORKER_LOST = True
 CELERY_TASK_TRACK_STARTED = True
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
@@ -218,6 +311,10 @@ CELERY_BEAT_SCHEDULE = {
     "purge-expired-exports": {
         "task": "domains.operations.tasks.purge_expired_exports",
         "schedule": 3600.0,
+    },
+    "fail-stale-exports": {
+        "task": "domains.operations.tasks.fail_stale_exports",
+        "schedule": 300.0,
     },
     "dispatch-pending-outbox-events": {
         "task": "packages.events.tasks.dispatch_pending_outbox_events",

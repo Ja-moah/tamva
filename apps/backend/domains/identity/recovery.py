@@ -8,6 +8,7 @@ backend. The raw token exists only in the outgoing message.
 
 from __future__ import annotations
 
+import logging
 import secrets
 from datetime import timedelta
 
@@ -20,6 +21,8 @@ from django.utils import timezone
 from domains.audit.services import record_audit
 from domains.identity.models import RecoveryToken, User
 from domains.identity.tokens import TokenError, hash_token, revoke_all_sessions
+
+logger = logging.getLogger(__name__)
 
 
 def request_recovery(email: str) -> None:
@@ -39,6 +42,15 @@ def request_recovery(email: str) -> None:
             expires_at=timezone.now() + timedelta(minutes=settings.RECOVERY_TOKEN_LIFETIME_MINUTES),
         )
         record_audit(action="RECOVERY_REQUESTED", actor=user, metadata={"known": True})
+    try:
+        _send_recovery_email(user, token)
+    except Exception:
+        # Not surfaced to the caller (it would reveal the account exists), but never
+        # silent: operators see it. Neither the token nor the address is logged.
+        logger.exception("recovery_email_delivery_failed", extra={"user_id": str(user.id)})
+
+
+def _send_recovery_email(user: User, token: str) -> None:
     send_mail(
         subject="Reset your TAMVA password",
         message=(
@@ -48,7 +60,7 @@ def request_recovery(email: str) -> None:
         ),
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[user.email],
-        fail_silently=True,  # a delivery failure must not reveal the account exists
+        fail_silently=False,
     )
 
 

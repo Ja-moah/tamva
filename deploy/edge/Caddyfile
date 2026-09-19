@@ -1,0 +1,81 @@
+# Edge reverse proxy: the only container that publishes ports (80/443).
+# Caddy obtains and renews TLS certificates automatically (Let's Encrypt/ZeroSSL).
+# Hostnames come from TAMVA_DOMAIN; nothing here is hard-coded to a real domain.
+{
+	email {$TAMVA_ACME_EMAIL}
+	admin off
+}
+
+(security_headers) {
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		X-Frame-Options DENY
+		-Server
+	}
+}
+
+# API. Caddy sets X-Forwarded-For / X-Forwarded-Proto and overwrites any client copy
+# (Django is configured to trust exactly one proxy hop: DJANGO_NUM_PROXIES=1).
+api.{$TAMVA_DOMAIN} {
+	import security_headers
+	encode gzip zstd
+	request_body {
+		max_size 10MB
+	}
+	reverse_proxy web:8000 {
+		header_up X-Request-ID {http.request.header.X-Request-ID}
+		health_uri /health/live/
+		health_interval 15s
+		# Django rejects Hosts outside ALLOWED_HOSTS, so the probe must carry the real one.
+		health_headers {
+			Host api.{$TAMVA_DOMAIN}
+		}
+	}
+}
+
+# Admin console: static SPA, same-origin proxy so session + CSRF cookies stay first-party.
+admin.{$TAMVA_DOMAIN} {
+	import security_headers
+	encode gzip zstd
+	handle /api/* {
+		reverse_proxy web:8000
+	}
+	handle {
+		root * /srv/admin
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# Customer web app (Expo web export). Talks to api.<domain> with bearer tokens.
+app.{$TAMVA_DOMAIN} {
+	import security_headers
+	encode gzip zstd
+	root * /srv/app
+	try_files {path} /index.html
+	file_server
+}
+
+# There is no marketing site yet: www sends visitors to the app.
+www.{$TAMVA_DOMAIN} {
+	redir https://app.{$TAMVA_DOMAIN}{uri} permanent
+}
+
+# API reference. Served only if the API container has API_DOCS_ENABLED=true; otherwise
+# the upstream answers 404. Consider restricting by IP or basic auth before enabling.
+docs.{$TAMVA_DOMAIN} {
+	import security_headers
+	@docs path /api/docs/ /api/redoc/ /api/schema/
+	handle @docs {
+		reverse_proxy web:8000
+	}
+	handle {
+		respond "Not found" 404
+	}
+}
+
+# Container health only (port 8081 is never published).
+http://:8081 {
+	respond /healthz "ok" 200
+}

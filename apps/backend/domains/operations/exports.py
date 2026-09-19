@@ -9,10 +9,12 @@ is requested and again when it runs, so a revoked role cannot export.
 
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 from typing import Any
 from uuid import UUID
 
+from celery.exceptions import SoftTimeLimitExceeded
 from django.conf import settings
 from django.core import signing
 from django.core.exceptions import PermissionDenied
@@ -29,6 +31,8 @@ from domains.operations.models import ExportJob
 from domains.operations.resources import RESOURCES, Resource, can_read
 from domains.partner.models import Institution
 from packages.common.filtering import apply_filters, validate_params
+
+logger = logging.getLogger(__name__)
 
 MAX_SELECTED_IDS = 1000
 _TOKEN_SALT = "tamva.exports.download"
@@ -115,8 +119,17 @@ def request_export(
         )
         from domains.operations.tasks import run_export_job
 
-        transaction.on_commit(lambda: run_export_job.delay(str(job.id)))
+        transaction.on_commit(lambda: _enqueue(run_export_job, str(job.id)))
     return job
+
+
+def _enqueue(task: Any, job_id: str) -> None:
+    """A broker outage must not turn a committed request into a 500. The job stays
+    PENDING and `fail_stale_exports` closes it out if nothing ever picks it up."""
+    try:
+        task.delay(job_id)
+    except Exception:
+        logger.exception("export_enqueue_failed", extra={"export_id": job_id})
 
 
 def _fail(job: ExportJob, code: str) -> ExportJob:
@@ -147,6 +160,18 @@ def execute_export(job_id: UUID | str) -> ExportJob:
         job.status = ExportJob.Status.RUNNING
         job.save(update_fields=["status", "updated_at"])
 
+    try:
+        return _build_artifact(job)
+    except SoftTimeLimitExceeded:
+        return _fail(job, "EXPORT_TIMEOUT")
+    except Exception:
+        # Whatever went wrong (storage outage, bad data), the job ends FAILED with a
+        # code rather than stuck RUNNING; details go to the log, not to the client.
+        logger.exception("export_failed", extra={"export_id": str(job.id)})
+        return _fail(job, "EXPORT_ERROR")
+
+
+def _build_artifact(job: ExportJob) -> ExportJob:
     resource = RESOURCES[job.resource_type]
     actor, institution_id = job.requested_by, job.institution_id
     # Re-check at execution time: the actor may have lost access since the request.
@@ -209,6 +234,22 @@ def verify_download_token(token: str, job: ExportJob, actor: User) -> bool:
     except signing.BadSignature:
         return False
     return payload == {"job": str(job.id), "user": str(actor.id)}
+
+
+def fail_stale(now: Any = None) -> int:
+    """Close out exports that can never finish (lost message, killed worker, broker
+    outage). A job is never left PENDING or RUNNING indefinitely."""
+    moment = now or timezone.now()
+    cutoff = moment - timedelta(minutes=settings.EXPORT_STALE_MINUTES)
+    stale = ExportJob.objects.filter(
+        status__in=[ExportJob.Status.PENDING, ExportJob.Status.RUNNING], updated_at__lte=cutoff
+    ).select_related("institution", "requested_by")
+    failed = 0
+    for job in stale:
+        code = "EXPORT_STALE" if job.status == ExportJob.Status.PENDING else "EXPORT_TIMEOUT"
+        _fail(job, code)
+        failed += 1
+    return failed
 
 
 def purge_expired(now: Any = None) -> int:

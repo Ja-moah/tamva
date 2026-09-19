@@ -7,6 +7,8 @@ import { router } from "./app/router";
 import { SessionProvider } from "./features/session/session";
 import { ThemeProvider } from "./lib/theme";
 import { ToastProvider } from "./components/ui/toast";
+import "@fontsource-variable/jetbrains-mono";
+import "@fontsource-variable/plus-jakarta-sans";
 import "./styles/global.css";
 
 const queryClient = new QueryClient({

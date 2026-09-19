@@ -8,6 +8,10 @@ app = Celery("tamva")
 app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
+from packages.observability import celery as _observability  # noqa: E402
+
+_observability.connect()
+
 
 @app.task(bind=True)
 def diagnostic_ping(self: object) -> str:

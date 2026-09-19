@@ -335,3 +335,19 @@ def test_production_webhooks_require_https_and_are_tenant_scoped(
     assert AuditEvent.objects.filter(
         institution=institution, action="WEBHOOK_ENDPOINT_CREATED"
     ).exists()
+
+
+@pytest.mark.security
+@pytest.mark.django_db
+def test_sandbox_webhooks_may_not_target_internal_hosts(partner_application_context):
+    manager, _, institution, _, _, _ = partner_application_context
+    _, sandbox = build_application(partner_application_context)
+
+    with pytest.raises(ValidationError, match="publicly reachable"):
+        create_webhook_endpoint(
+            environment_id=sandbox.id,
+            institution=institution,
+            actor=manager,
+            url="http://169.254.169.254/latest/meta-data/",
+            event_types=["consent.revoked"],
+        )
