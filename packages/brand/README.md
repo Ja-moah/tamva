@@ -12,6 +12,20 @@ inventing a logo here would quietly become the brand. Until the real files
 arrive, applications render a neutral placeholder and flag it
 (`data-brand-placeholder="true"`).
 
+## Colour tokens
+
+`tokens/colors.ts` is the canonical TAMVA palette and role map: **primary = deep teal /
+dark green**, secondary = emerald/mint, accent = restrained gold, plus blue (info),
+amber (warning), red (danger), green (success) and neutral surfaces. Admin maps it to
+CSS variables and Mobile to its React Native theme; a test in each app fails if its
+values drift from this file. Gold is an institutional accent, never a second primary.
+
+## Reference renders (not assets)
+
+Raster concept renders (`tamva*.png`) may be present locally. They are **references only**:
+noisy raster lockups, not the source SVGs, and are neither committed nor wired. Do not
+trace or redraw them into SVGs here; the brand owner supplies the official files.
+
 ## Add the official files
 
 Drop them into `assets/` with exactly these names; nothing else needs to

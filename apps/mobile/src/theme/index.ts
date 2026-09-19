@@ -5,6 +5,7 @@
  * TAMVA's calm, trustworthy, and minimal aesthetic.
  */
 
+import { roles } from '@tamva/brand';
 import { Colors, Spacing, Radius, Elevation, ZIndex, Opacity } from '../constants/tokens';
 import { TypeScale, FontFamily } from '../constants/typography';
 import { Motion } from '../constants/motion';
@@ -21,7 +22,7 @@ export const darkColors: ThemeColors = {
   surfaceInverse: '#F7F8FA',
 
   // Primary brand (Calibrated for dark mode contrast)
-  primary: '#20A880',
+  primary: roles.dark.primary,
   primaryLight: '#0D3328',
   primaryMedium: '#144D3D',
   primaryDark: '#1A7F64',
@@ -33,7 +34,7 @@ export const darkColors: ThemeColors = {
   textTertiary: '#667085',
   textDisabled: '#475467',
   textInverse: '#111827',
-  textLink: '#2DC298',
+  textLink: roles.dark.primaryHover,
 
   // Borders
   border: '#2A3444',

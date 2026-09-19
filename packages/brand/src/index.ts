@@ -28,3 +28,5 @@ export type BrandSurface = "light" | "dark";
 export function preferredLogoKeys(surface: BrandSurface): BrandAssetKey[] {
   return surface === "dark" ? ["logoDark", "logo"] : ["logoLight", "logo"];
 }
+
+export * from "../tokens/colors";
