@@ -32,9 +32,19 @@ Frontends:
       - `pnpm --filter @tamva/mobile lint`
       - `pnpm --filter @tamva/mobile typecheck`
       - `cd apps/mobile && pnpm dlx expo-doctor` (network-backed checks may be skipped in offline CI)
-      - `pnpm --filter @tamva/mobile export:android`
-      - `pnpm --filter @tamva/mobile export:ios`
-      - `pnpm --filter @tamva/mobile export:web`
+      - Set real API origins first (no localhost/private/example hosts):
+        - `export STAGING_API_ORIGIN=https://staging-api.<your-real-domain>`
+        - `export PRODUCTION_API_ORIGIN=https://api.<your-real-domain>`
+      - Staging export verification (must be explicit and use a real https origin):
+        - `EXPO_PUBLIC_APP_ENV=staging EXPO_PUBLIC_API_BASE_URL="$STAGING_API_ORIGIN" pnpm --filter @tamva/mobile export:android`
+        - `EXPO_PUBLIC_APP_ENV=staging EXPO_PUBLIC_API_BASE_URL="$STAGING_API_ORIGIN" pnpm --filter @tamva/mobile export:ios`
+        - `EXPO_PUBLIC_APP_ENV=staging EXPO_PUBLIC_API_BASE_URL="$STAGING_API_ORIGIN" pnpm --filter @tamva/mobile export:web`
+      - Production export verification (must be explicit and use a real https origin):
+        - `EXPO_PUBLIC_APP_ENV=production EXPO_PUBLIC_API_BASE_URL="$PRODUCTION_API_ORIGIN" pnpm --filter @tamva/mobile export:android`
+        - `EXPO_PUBLIC_APP_ENV=production EXPO_PUBLIC_API_BASE_URL="$PRODUCTION_API_ORIGIN" pnpm --filter @tamva/mobile export:ios`
+        - `EXPO_PUBLIC_APP_ENV=production EXPO_PUBLIC_API_BASE_URL="$PRODUCTION_API_ORIGIN" pnpm --filter @tamva/mobile export:web`
+      - Demo fixture export verification (separate explicit demo profile):
+        - `EXPO_PUBLIC_APP_ENV=development EXPO_PUBLIC_DEMO_MODE=true pnpm --filter @tamva/mobile export:web`
 - [ ] Mobile launch validation (do not stop at static checks):
       - `cd apps/mobile && CI=1 pnpm exec expo start --web --port 19006`
       - open `http://localhost:19006` and confirm bundle loading without native-module/runtime errors
