@@ -11,9 +11,9 @@ things in the same words. This compares them without changing mobile.
 | User | Institution analyst, investigator, administrator | Individual customer |
 | Job | Review risk, work cases, manage access, see what a customer consented to | See own Financial Confidence, control consent, share a Passport |
 | Data reach | One institution (`X-Institution-ID`) | The customer's own data |
-| Backend status | **Wired** to the real API (see `ADMIN_INTEGRATION_AUDIT.md`) | Sample data (`constants/mock-data.ts`); only `/health/` is called |
+| Backend status | **Wired** to the real API (see `ADMIN_INTEGRATION_AUDIT.md`) | Authentication and notifications are live; consent list/revoke is live; unsupported areas are capability-gated (see `MOBILE_INTEGRATION_AUDIT.md`) |
 
-The Admin now reads real data; the customer app does not yet. Integrating mobile is a separate task and was deliberately not done here.
+Both clients now use the shared API boundary. That does not imply feature parity: the Mobile audit records which customer capabilities have a real endpoint and which remain unavailable.
 
 ## Canonical vocabulary
 
@@ -39,15 +39,14 @@ the docs.
 | Concept | Admin | Mobile | Action |
 | --- | --- | --- | --- |
 | Reason text for a decision | `lib/reason-codes.ts` (analyst tone, plus the raw code) | not built | One shared code → text source when mobile is wired; tone may differ, codes must not. |
-| Currency | Per-record, institution locale, never converted | Hard-coded `GH₵` in several screens | Mobile to adopt the same rule. |
-| Contracts | `@tamva/client-contracts` | Local types and mock data | Migrate mobile to the shared package when it is wired. |
+| Currency | Per-record, institution locale, never converted | Shared formatter uses record currency and device locale; demo fixtures may contain GHS | Aligned for live data. |
+| Contracts | `@tamva/client-contracts` | `@tamva/client-contracts` at the API boundary; local presentation types remain | Wire contracts aligned. |
 
 ## Shared contracts
 
-- Both apps should consume `@tamva/client-contracts`. Admin does now. Mobile
-  still has its own health call in `apps/mobile/lib/api/index.ts` and local
-  types in `src/types`; migrating it is a separate, deliberate task (not done
-  here).
+- Both apps consume `@tamva/client-contracts` for wire validation. Mobile has a
+  dedicated customer transport in `apps/mobile/src/api`; the obsolete local
+  health-only transport was removed.
 - Wire conventions — `X-Institution-ID`, `X-Request-ID`, `/api/v1`, error
   envelope, pagination — are defined once in the contracts package. Mobile is
   single-customer, so it will not send `X-Institution-ID`.
@@ -61,21 +60,39 @@ the docs.
   Mobile documents its official assets in `apps/mobile/assets/brands/ASSET_SOURCES.md`;
   admin's imitation SVGs were removed.
 
+## Concept comparison (backend · Admin · Mobile)
+
+| Concept | Backend term | Admin presentation | Mobile presentation | Status |
+| --- | --- | --- | --- | --- |
+| Financial Profile | `FinancialProfileSnapshot` | Counts and completeness, no raw data | Profile tab (design kept) | Mobile: no customer API → unavailable |
+| Financial Confidence | `FinancialConfidenceSnapshot` (0–100) | Per-customer value, bands | Confidence screen (design kept) | Mobile: no customer API → unavailable |
+| Risk | `RiskEvent` score 0–1000, decision | Risk events table and drawer | Not shown as a customer "score" | Intentional difference |
+| Connections | `InstitutionConnection` | Health list, no credentials | Connected accounts | Mobile: no customer API → unavailable |
+| Consent | `Consent` | Read-only counts | Consent & data sharing: list + revoke | Live, partial (no grant catalogue) |
+| Notifications | `Notification` | Own inbox + preferences | Notification centre + preferences | Live in both |
+| Security | `SecurityEvent`, devices, locations | Security tab | Protection | Admin live; Mobile: no customer API |
+| Trust Network | institution graph | Entities and relationships | Not customer-facing | Intentional difference |
+| Financial Passport | `FinancialPassport`, shares | Share counts (`passport:read`) | Passport tab | Mobile: no customer API → unavailable |
+
 ## Navigation
 
-| Admin (sidebar, 11) | Mobile (tabs, 8) | Note |
+| Admin (sidebar) | Mobile (tabs) | Note |
 | --- | --- | --- |
 | Overview | Home | Different jobs; no shared nav needed. |
-| Risk events | Risk / Protection | Same backend resource, opposite viewpoint. |
-| Cases | — | Institution-only. |
+| Risk events, Cases, Analytics, Network | — | Institution-only. |
 | Customers | Profile | Admin sees only consented data about a customer. |
-| Security | Protection | Customer sees own devices/locations; institution sees events. |
-| Notifications, Settings | Activity, More | Same notification and preference endpoints. |
-| Team, Network, Analytics, Integrations | — | Institution-only; backend mostly missing. |
-| — | Passport, Consent | Customer-only controls the admin can only observe. |
+| Security & governance | Protection (under More) | Customer sees own signals; institution sees events. |
+| Notifications, Settings | Notifications, Settings (under More) | Same notification and preference contracts, scoped to the signed-in recipient. |
+| Team, Integrations | — | Institution-only. |
+| — | Activity, Passport | Customer-only. |
+
+Mobile tabs are **Home · Activity · Profile · Passport · More**; More holds Connected accounts, Consent &
+data sharing, Protection, Notifications, Settings and Help. Admin and Mobile deliberately do not share a
+navigation model or information density.
 
 ## Open items
 
-1. Wire mobile to the API and to `@tamva/client-contracts`; remove hard-coded `GH₵`.
-2. Decide whether Admin's Customers screen should ever show Financial Confidence without an active consent granting it (today it is shown to holders of `customer:read` for customers the institution already has a relationship with).
-3. Publish reason-code text once and share it across clients.
+1. Publish customer read APIs for Home, Activity, Financial Profile, Financial Confidence, Passport and Protection before enabling those screens in normal mode.
+2. Publish an institution/purpose/scope catalogue before enabling consent grant.
+3. Decide whether Admin's Customers screen should ever show Financial Confidence without an active consent granting it (today it is shown to holders of `customer:read` for customers the institution already has a relationship with).
+4. Publish reason-code text once and share it across clients.

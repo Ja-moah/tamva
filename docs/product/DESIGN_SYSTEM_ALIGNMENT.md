@@ -66,14 +66,27 @@ surfaces, layout, typography) is untouched.
 | Tokens location | `apps/mobile/src/constants/tokens.ts` | CSS variables in `apps/admin/src/styles/global.css` | Still two sources. |
 | Theme | light/dark via `ThemeContext` | light/dark via `ThemeProvider` | Equivalent. |
 
+## Mobile integration decision
+
+The existing customer visual system remains intact. Integration added only shared
+runtime states: demo disclosure, offline recovery, capability-unavailable
+messaging, and a live consent list. Backend capability state—not placeholder
+content—now decides what normal builds render. Demo fixtures live under
+`apps/mobile/src/demo` and are available only through explicitly labelled demo
+mode.
+
+Money and dates now pass through the locale-aware Mobile formatter. It preserves
+the record's ISO currency and never performs an unlicensed conversion.
+
 ## Recommendation (not implemented)
 
 Extract colour, type and radius tokens to one platform-neutral source (in
 `packages/brand`) that generates both the CSS variables and the React Native
-constants. Do this when mobile is wired, so the change lands with real screens.
+constants. Do this as a separate design-system change; Mobile API integration
+does not justify a wholesale visual refactor.
 
 ## Out of bounds
 
 - Drawing, redrawing or "approximating" the TAMVA logo or any partner mark.
 - Third-party marks without a documented licence/source.
-- Wholesale mobile refactor as part of admin integration.
+- Wholesale client refactors as part of API integration.
