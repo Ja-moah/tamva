@@ -12,7 +12,7 @@ from domains.customer import services
 from domains.passport.models import PassportSectionCode, PassportShare
 
 
-class MapSerializer(serializers.BaseSerializer):
+class MapSerializer(serializers.Serializer):  # type: ignore[type-arg]
     """Serializes an object through a read-model function, so the shape is owned
     by `services` and stays identical between list and detail responses."""
 
@@ -49,7 +49,7 @@ def _profile_history_item(snapshot: Any) -> dict[str, Any]:
 ProfileHistorySerializer = map_serializer("ProfileHistorySerializer", _profile_history_item)
 
 
-class ConnectionSerializer(serializers.ModelSerializer):
+class CustomerConnectionSerializer(serializers.ModelSerializer):
     institution_name = serializers.CharField(source="institution.name", read_only=True)
     provider = serializers.CharField(source="connector.provider", read_only=True)
     provider_name = serializers.CharField(source="connector.name", read_only=True)
@@ -110,7 +110,7 @@ class PassportGenerateSerializer(serializers.Serializer):
     institution_id = serializers.UUIDField()
 
 
-class PassportShareSerializer(serializers.ModelSerializer):
+class CustomerPassportShareSerializer(serializers.ModelSerializer):
     issuer_institution_id = serializers.UUIDField(
         source="snapshot.passport.institution_id", read_only=True
     )

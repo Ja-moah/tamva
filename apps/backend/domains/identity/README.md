@@ -10,3 +10,8 @@ client credentials. `CUSTOMER`, `PARTNER_USER`, and `PLATFORM_USER` are actor
 classifications only; access is determined by active memberships, roles,
 permissions, tenant context, and later valid consent.
 
+
+
+Customer/native clients authenticate with short-lived bearer access tokens and
+rotating refresh tokens (`tokens.py`, ADR 013); the Admin keeps cookie sessions.
+Both resolve to the same `User`.

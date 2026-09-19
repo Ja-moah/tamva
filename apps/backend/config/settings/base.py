@@ -194,6 +194,10 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "CaseStatusEnum": "domains.case.models.Case.Status",
         "CaseSourceEnum": "domains.case.models.Case.Source",
+        "ConnectionStatusEnum": "domains.connector.models.InstitutionConnection.Status",
+        "PassportShareStatusEnum": "domains.passport.models.PassportShare.Status",
+        "ConsentStatusEnum": "domains.consent.models.Consent.Status",
+        "PassportSectionCodeEnum": "domains.passport.models.PassportSectionCode",
         "ActiveDisabledStatusEnum": "domains.partner.models.PartnerEnvironment.Status",
     },
 }

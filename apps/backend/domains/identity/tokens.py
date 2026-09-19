@@ -1,7 +1,7 @@
 """Native-friendly authentication: short-lived access tokens and rotating
 refresh tokens, resolving to the same `User` as session auth.
 
-Design (see docs/adr/0009-customer-token-authentication.md):
+Design (see docs/adr/ADR-013-customer-token-authentication.md):
 - opaque random tokens, SHA-256 at rest, never logged;
 - access token 15 minutes, refresh token 30 days;
 - every refresh rotates the pair; reusing a spent refresh token revokes the

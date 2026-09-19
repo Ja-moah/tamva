@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
@@ -25,12 +26,12 @@ from domains.customer import services
 from domains.customer.api.serializers import (
     ActivitySerializer,
     ConfidenceHistorySerializer,
-    ConnectionSerializer,
     CreateConnectionSerializer,
     CreatePassportShareSerializer,
+    CustomerConnectionSerializer,
     CustomerGrantConsentSerializer,
+    CustomerPassportShareSerializer,
     PassportGenerateSerializer,
-    PassportShareSerializer,
     ProfileHistorySerializer,
 )
 from domains.customer.permissions import IsCustomerActor
@@ -62,7 +63,7 @@ def _api_error(exc: DjangoValidationError) -> DRFValidationError:
 
 class _CustomerViewSet(FilteredListMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     permission_classes = CUSTOMER
-    default_ordering = ("-created_at", "id")
+    default_ordering: Sequence[str] = ("-created_at", "id")
 
 
 # --------------------------------------------------------------------- home
@@ -144,7 +145,7 @@ class ProfileHistoryViewSet(_CustomerViewSet):
     queryset = FinancialProfileSnapshot.objects.none()
     filter_specs = PROFILE_FILTERS
     ordering_fields = {"as_of": "period_end"}
-    default_ordering = ("-period_end", "id")
+    default_ordering = ("-period_end", "-created_at", "id")
 
     def get_queryset(self) -> Any:
         return FinancialProfileSnapshot.objects.filter(
@@ -187,7 +188,7 @@ class ConfidenceHistoryViewSet(_CustomerViewSet):
     queryset = services.FinancialConfidenceSnapshot.objects.none()
     filter_specs = CONFIDENCE_FILTERS
     ordering_fields = {"as_of": "evaluated_at"}
-    default_ordering = ("-evaluated_at", "id")
+    default_ordering = ("-evaluated_at", "-created_at", "id")
 
     def get_queryset(self) -> Any:
         return services.confidence_queryset(self.request.user)
@@ -207,7 +208,7 @@ CONNECTION_FILTERS = (
     )
 )
 class ConnectionViewSet(mixins.RetrieveModelMixin, _CustomerViewSet):
-    serializer_class = ConnectionSerializer
+    serializer_class = CustomerConnectionSerializer
     queryset = InstitutionConnection.objects.none()
     filter_specs = CONNECTION_FILTERS
     ordering_fields = {"created": "created_at"}
@@ -215,7 +216,9 @@ class ConnectionViewSet(mixins.RetrieveModelMixin, _CustomerViewSet):
     def get_queryset(self) -> Any:
         return services.connections(self.request.user)
 
-    @extend_schema(request=CreateConnectionSerializer, responses={201: ConnectionSerializer})
+    @extend_schema(
+        request=CreateConnectionSerializer, responses={201: CustomerConnectionSerializer}
+    )
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Starts a connection. Provider authorization happens with the provider,
         so the connection is created PENDING_AUTHORIZATION; no credential is
@@ -258,14 +261,14 @@ class ConnectionViewSet(mixins.RetrieveModelMixin, _CustomerViewSet):
         except DjangoValidationError as exc:
             raise _api_error(exc) from exc
         return Response(
-            {"data": ConnectionSerializer(connection).data}, status=status.HTTP_201_CREATED
+            {"data": CustomerConnectionSerializer(connection).data}, status=status.HTTP_201_CREATED
         )
 
-    @extend_schema(request=None, responses=ConnectionSerializer)
+    @extend_schema(request=None, responses=CustomerConnectionSerializer)
     @action(detail=True, methods=["post"])
     def disconnect(self, request: Request, pk: str | None = None) -> Response:
         connection = revoke_connection(connection=self.get_object(), actor=request.user)
-        return Response({"data": ConnectionSerializer(connection).data})
+        return Response({"data": CustomerConnectionSerializer(connection).data})
 
 
 # ------------------------------------------------------------------ consent
@@ -399,7 +402,7 @@ class PassportShareViewSet(_CustomerViewSet):
     """Shares are recipient-specific, purpose-specific, scoped, time-limited and
     revocable. Creating one needs the customer's own consent to the recipient."""
 
-    serializer_class = PassportShareSerializer
+    serializer_class = CustomerPassportShareSerializer
     queryset = PassportShare.objects.none()
     filter_specs = SHARE_FILTERS
     ordering_fields = {"created": "created_at"}
@@ -441,14 +444,14 @@ class PassportShareViewSet(_CustomerViewSet):
             raise DRFValidationError({"detail": str(exc)}) from exc
         except DjangoValidationError as exc:
             raise _api_error(exc) from exc
-        payload = PassportShareSerializer(services.shares(request.user).get(pk=share.pk)).data | {
-            "token": token
-        }  # shown once; only its hash is stored
+        payload = CustomerPassportShareSerializer(
+            services.shares(request.user).get(pk=share.pk)
+        ).data | {"token": token}  # shown once; only its hash is stored
         response = Response({"data": payload}, status=status.HTTP_201_CREATED)
         response["Cache-Control"] = "no-store"
         return response
 
-    @extend_schema(request=None, responses=PassportShareSerializer)
+    @extend_schema(request=None, responses=CustomerPassportShareSerializer)
     @action(detail=True, methods=["post"])
     def revoke(self, request: Request, pk: str | None = None) -> Response:
         share = self.get_object()
@@ -460,7 +463,7 @@ class PassportShareViewSet(_CustomerViewSet):
             )
         except DjangoValidationError as exc:
             raise _api_error(exc) from exc
-        return Response({"data": PassportShareSerializer(revoked).data})
+        return Response({"data": CustomerPassportShareSerializer(revoked).data})
 
 
 # ----------------------------------------------------------------- security

@@ -48,8 +48,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           description: No response body
@@ -107,8 +107,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -171,10 +171,54 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '204':
+          description: No response body
+  /api/v1/auth/recovery/confirm/:
+    post:
+      operationId: api_v1_auth_recovery_confirm_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoveryConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RecoveryConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RecoveryConfirm'
+        required: true
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/recovery/request/:
+    post:
+      operationId: api_v1_auth_recovery_request_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoveryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RecoveryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RecoveryRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '202':
           description: No response body
   /api/v1/auth/refresh/:
     post:
@@ -182,8 +226,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -191,6 +235,99 @@ paths:
               schema:
                 $ref: '#/components/schemas/ActorContextEnvelope'
           description: ''
+  /api/v1/auth/token/:
+    post:
+      operationId: api_v1_auth_token_create
+      description: |-
+        Bearer sign-in for native clients: same credentials, same User, same audit
+        trail as session login, but the result is a short-lived access token plus a
+        rotating refresh token instead of a cookie.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenEnvelope'
+          description: ''
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: api_v1_auth_token_refresh_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenEnvelope'
+          description: ''
+  /api/v1/auth/token/revoke/:
+    post:
+      operationId: api_v1_auth_token_revoke_create
+      description: |-
+        Sign out: revokes the session (and so every token in its family). Accepts
+        the refresh token, or an authenticated bearer request, or both.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/token/revoke-all/:
+    post:
+      operationId: api_v1_auth_token_revoke_all_create
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/capabilities/:
     get:
       operationId: api_v1_capabilities_retrieve
@@ -200,8 +337,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -302,8 +439,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -329,8 +466,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Case'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '201':
           content:
@@ -354,8 +491,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -390,8 +527,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Case'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -426,8 +563,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Case'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -462,8 +599,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Case'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -498,8 +635,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Case'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -534,8 +671,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Case'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -563,8 +700,8 @@ paths:
               $ref: '#/components/schemas/BulkAssignCases'
         required: true
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           description: No response body
@@ -588,8 +725,8 @@ paths:
               $ref: '#/components/schemas/BulkTriageCases'
         required: true
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           description: No response body
@@ -616,8 +753,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -645,8 +782,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Consent'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '201':
           content:
@@ -672,8 +809,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -710,14 +847,757 @@ paths:
             schema:
               $ref: '#/components/schemas/Consent'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Consent'
+          description: ''
+  /api/v1/customer/activity/:
+    get:
+      operationId: api_v1_customer_activity_list
+      description: The customer's own canonical transactions. Never provider payloads.
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+      - in: query
+        name: connection
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: currency
+        schema:
+          type: string
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: direction
+        schema:
+          type: string
+          enum:
+          - CREDIT
+          - DEBIT
+      - in: query
+        name: institution
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          amount, occurred_at.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: 'Case-insensitive match across: counterparty_name, merchant_category.'
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - FAILED
+          - PENDING
+          - POSTED
+          - REVERSED
+      - in: query
+        name: type
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/customer/connections/:
+    get:
+      operationId: api_v1_customer_connections_list
+      parameters:
+      - in: query
+        name: institution
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          created.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - FAILED
+          - PAUSED
+          - REVOKED
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCustomerConnectionList'
+          description: ''
+    post:
+      operationId: api_v1_customer_connections_create
+      description: |-
+        Starts a connection. Provider authorization happens with the provider,
+        so the connection is created PENDING_AUTHORIZATION; no credential is
+        fabricated, and the customer must already have consented to this
+        institution, purpose and scope.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConnection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateConnection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateConnection'
+        required: true
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerConnection'
+          description: ''
+  /api/v1/customer/connections/{id}/:
+    get:
+      operationId: api_v1_customer_connections_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this institution connection.
+        required: true
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerConnection'
+          description: ''
+  /api/v1/customer/connections/{id}/disconnect/:
+    post:
+      operationId: api_v1_customer_connections_disconnect_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this institution connection.
+        required: true
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerConnection'
+          description: ''
+  /api/v1/customer/consent/catalogue/:
+    get:
+      operationId: api_v1_customer_consent_catalogue_retrieve
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/customer/consents/:
+    get:
+      operationId: api_v1_customer_consents_list
+      parameters:
+      - in: query
+        name: institution
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          granted.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - EXPIRED
+          - GRANTED
+          - REVOKED
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConsentList'
+          description: ''
+    post:
+      operationId: api_v1_customer_consents_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerGrantConsent'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CustomerGrantConsent'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CustomerGrantConsent'
+        required: true
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consent'
+          description: ''
+  /api/v1/customer/consents/{id}/:
+    get:
+      operationId: api_v1_customer_consents_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this consent.
+        required: true
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consent'
+          description: ''
+  /api/v1/customer/consents/{id}/revoke/:
+    post:
+      operationId: api_v1_customer_consents_revoke_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this consent.
+        required: true
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consent'
+          description: ''
+  /api/v1/customer/financial-confidence/current/:
+    get:
+      operationId: api_v1_customer_financial_confidence_current_retrieve
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/customer/financial-confidence/history/:
+    get:
+      operationId: api_v1_customer_financial_confidence_history_list
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: institution
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          as_of.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/customer/home/:
+    get:
+      operationId: api_v1_customer_home_retrieve
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/customer/passport/current/:
+    get:
+      operationId: api_v1_customer_passport_current_retrieve
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/customer/passport/generate/:
+    post:
+      operationId: api_v1_customer_passport_generate_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PassportGenerate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PassportGenerate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PassportGenerate'
+        required: true
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/customer/passport/shares/:
+    get:
+      operationId: api_v1_customer_passport_shares_list
+      description: |-
+        Shares are recipient-specific, purpose-specific, scoped, time-limited and
+        revocable. Creating one needs the customer's own consent to the recipient.
+      parameters:
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          created.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: recipient
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - EXPIRED
+          - REVOKED
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCustomerPassportShareList'
+          description: ''
+    post:
+      operationId: api_v1_customer_passport_shares_create
+      description: |-
+        Shares are recipient-specific, purpose-specific, scoped, time-limited and
+        revocable. Creating one needs the customer's own consent to the recipient.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePassportShare'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreatePassportShare'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreatePassportShare'
+        required: true
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/customer/passport/shares/{id}/revoke/:
+    post:
+      operationId: api_v1_customer_passport_shares_revoke_create
+      description: |-
+        Shares are recipient-specific, purpose-specific, scoped, time-limited and
+        revocable. Creating one needs the customer's own consent to the recipient.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this passport share.
+        required: true
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerPassportShare'
+          description: ''
+  /api/v1/customer/profile/current/:
+    get:
+      operationId: api_v1_customer_profile_current_retrieve
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/customer/profile/history/:
+    get:
+      operationId: api_v1_customer_profile_history_list
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: institution
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          as_of.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/customer/register/:
+    post:
+      operationId: api_v1_customer_register_create
+      description: |-
+        Creates a CUSTOMER identity: no institution membership, no roles, and only
+        the fields TAMVA needs (email, password, optional name, terms acceptance).
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerRegistration'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CustomerRegistration'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CustomerRegistration'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          description: No response body
+  /api/v1/customer/security/events/:
+    get:
+      operationId: api_v1_customer_security_events_list
+      description: Signals about the customer's own devices and locations (no producer
+        metadata).
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+          enum:
+          - ACCOUNT_ACCESS_ANOMALY
+          - AUTHENTICATION_FAILURE
+          - CONSENT_SECURITY_EVENT
+          - CREDENTIAL_EVENT
+          - NEW_DEVICE
+          - UNUSUAL_LOCATION
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          occurred_at.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: severity
+        schema:
+          type: string
+          enum:
+          - CRITICAL
+          - HIGH
+          - INFO
+          - WARNING
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSecurityEventList'
+          description: ''
+  /api/v1/customer/security/summary/:
+    get:
+      operationId: api_v1_customer_security_summary_retrieve
+      tags:
+      - api
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
           description: ''
   /api/v1/customers/:
     get:
@@ -777,8 +1657,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           description: No response body
@@ -797,8 +1677,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           description: No response body
@@ -822,8 +1702,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -849,8 +1729,8 @@ paths:
               $ref: '#/components/schemas/ExportRequest'
         required: true
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '202':
           content:
@@ -873,8 +1753,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -902,8 +1782,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -927,8 +1807,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           description: No response body
@@ -944,8 +1824,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -975,8 +1855,8 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedLocaleSettings'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1024,8 +1904,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1051,8 +1931,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Application'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '201':
           content:
@@ -1076,8 +1956,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1112,8 +1992,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Application'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1176,8 +2056,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1198,8 +2078,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1220,8 +2100,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '201':
           description: No response body
@@ -1250,8 +2130,8 @@ paths:
               $ref: '#/components/schemas/IssueCredential'
         required: true
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '201':
           description: No response body
@@ -1280,8 +2160,8 @@ paths:
               $ref: '#/components/schemas/CreateWebhook'
         required: true
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '201':
           content:
@@ -1295,8 +2175,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           description: No response body
@@ -1306,8 +2186,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1345,8 +2225,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           description: No response body
@@ -1407,8 +2287,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1464,8 +2344,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1489,8 +2369,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1504,8 +2384,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           description: No response body
@@ -1531,8 +2411,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1560,8 +2440,8 @@ paths:
               $ref: '#/components/schemas/NotificationPreference'
         required: true
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '201':
           content:
@@ -1633,8 +2513,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1657,8 +2537,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1692,8 +2572,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Notification'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1720,8 +2600,8 @@ paths:
               $ref: '#/components/schemas/BulkRead'
         required: true
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           description: No response body
@@ -1737,8 +2617,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           description: No response body
@@ -1758,8 +2638,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1782,8 +2662,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1810,8 +2690,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1835,8 +2715,8 @@ paths:
             schema:
               $ref: '#/components/schemas/PassportShare'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '201':
           content:
@@ -1869,8 +2749,8 @@ paths:
             schema:
               $ref: '#/components/schemas/PassportShare'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1903,8 +2783,8 @@ paths:
               $ref: '#/components/schemas/AccessPassportShare'
         required: true
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -1922,8 +2802,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           description: No response body
@@ -2006,8 +2886,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2033,8 +2913,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2062,8 +2942,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2089,8 +2969,8 @@ paths:
               $ref: '#/components/schemas/SavedView'
         required: true
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '201':
           content:
@@ -2113,8 +2993,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2147,8 +3027,8 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedSavedView'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2170,8 +3050,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '204':
           description: No response body
@@ -2230,8 +3110,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2307,8 +3187,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2334,8 +3214,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2393,8 +3273,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2426,8 +3306,8 @@ paths:
               $ref: '#/components/schemas/Observation'
         required: true
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2487,8 +3367,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2513,8 +3393,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2550,8 +3430,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Member'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2587,8 +3467,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Member'
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2602,8 +3482,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2619,8 +3499,8 @@ paths:
       tags:
       - api
       security:
+      - bearerAuth: []
       - cookieAuth: []
-      - basicAuth: []
       responses:
         '200':
           content:
@@ -2692,7 +3572,7 @@ components:
         sections:
           type: array
           items:
-            $ref: '#/components/schemas/SectionsEnum'
+            $ref: '#/components/schemas/PassportSectionCodeEnum'
       required:
       - token
     ActionTypeEnum:
@@ -3389,6 +4269,55 @@ components:
         * `GRANTED` - Granted
         * `EXPIRED` - Expired
         * `REVOKED` - Revoked
+    CreateConnection:
+      type: object
+      properties:
+        institution_id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          maxLength: 100
+        purpose_code:
+          type: string
+          maxLength: 100
+        scope_code:
+          type: string
+          maxLength: 100
+        external_reference:
+          type: string
+          maxLength: 200
+      required:
+      - external_reference
+      - institution_id
+      - provider
+      - purpose_code
+      - scope_code
+    CreatePassportShare:
+      type: object
+      properties:
+        issuer_institution_id:
+          type: string
+          format: uuid
+        recipient_institution_id:
+          type: string
+          format: uuid
+        purpose_code:
+          type: string
+          maxLength: 100
+        allowed_sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/PassportSectionCodeEnum'
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - allowed_sections
+      - expires_at
+      - issuer_institution_id
+      - purpose_code
+      - recipient_institution_id
     CreateWebhook:
       type: object
       properties:
@@ -3481,6 +4410,61 @@ components:
           type: string
       required:
       - csrf_token
+    CustomerConnection:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        institution_id:
+          type: string
+          format: uuid
+          readOnly: true
+        institution_name:
+          type: string
+          readOnly: true
+        provider:
+          type: string
+          readOnly: true
+        provider_name:
+          type: string
+          readOnly: true
+        purpose_code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        scope_code:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ConnectionStatusEnum'
+          readOnly: true
+        state:
+          type: string
+          readOnly: true
+        last_synced_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - institution_id
+      - institution_name
+      - last_synced_at
+      - provider
+      - provider_name
+      - purpose_code
+      - scope_code
+      - state
+      - status
     CustomerDevice:
       type: object
       properties:
@@ -3534,6 +4518,104 @@ components:
         * `TRUSTED` - Trusted
         * `SUSPICIOUS` - Suspicious
         * `BLOCKED` - Blocked
+    CustomerGrantConsent:
+      type: object
+      properties:
+        institution_id:
+          type: string
+          format: uuid
+        purpose_code:
+          type: string
+        scope_codes:
+          type: array
+          items:
+            type: string
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - expires_at
+      - institution_id
+      - purpose_code
+      - scope_codes
+    CustomerPassportShare:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        issuer_institution_id:
+          type: string
+          format: uuid
+          readOnly: true
+        issuer_institution_name:
+          type: string
+          readOnly: true
+        recipient_institution_id:
+          type: string
+          format: uuid
+          readOnly: true
+        recipient_institution_name:
+          type: string
+          readOnly: true
+        purpose_code:
+          type: string
+          readOnly: true
+        allowed_sections:
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PassportShareStatusEnum'
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+        revoked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - allowed_sections
+      - created_at
+      - expires_at
+      - id
+      - issuer_institution_id
+      - issuer_institution_name
+      - purpose_code
+      - recipient_institution_id
+      - recipient_institution_name
+      - revoked_at
+      - status
+    CustomerRegistration:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        accepted_terms:
+          type: boolean
+      required:
+      - accepted_terms
+      - email
+      - password
     DecisionEnum:
       enum:
       - ALLOW
@@ -4229,6 +5311,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Consent'
+    PaginatedCustomerConnectionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerConnection'
     PaginatedCustomerDeviceList:
       type: object
       required:
@@ -4252,6 +5357,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CustomerDevice'
+    PaginatedCustomerPassportShareList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerPassportShare'
     PaginatedExportJobList:
       type: object
       required:
@@ -4505,6 +5633,38 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SecurityEvent'
+    PassportGenerate:
+      type: object
+      properties:
+        institution_id:
+          type: string
+          format: uuid
+      required:
+      - institution_id
+    PassportSectionCodeEnum:
+      enum:
+      - IDENTITY
+      - FINANCIAL_SUMMARY
+      - INCOME_SUMMARY
+      - CASHFLOW_SUMMARY
+      - SAVINGS_SUMMARY
+      - ACCOUNT_COVERAGE
+      - PROFILE_COMPLETENESS
+      - SELECTED_TRUST_SIGNALS
+      - SELECTED_RISK_SUMMARY
+      - NETWORK_SUMMARY
+      type: string
+      description: |-
+        * `IDENTITY` - Identity
+        * `FINANCIAL_SUMMARY` - Financial summary
+        * `INCOME_SUMMARY` - Income summary
+        * `CASHFLOW_SUMMARY` - Cashflow summary
+        * `SAVINGS_SUMMARY` - Savings summary
+        * `ACCOUNT_COVERAGE` - Account coverage
+        * `PROFILE_COMPLETENESS` - Profile completeness
+        * `SELECTED_TRUST_SIGNALS` - Selected trust signals
+        * `SELECTED_RISK_SUMMARY` - Selected risk summary
+        * `NETWORK_SUMMARY` - Network summary
     PassportShare:
       type: object
       properties:
@@ -4675,6 +5835,35 @@ components:
       - cache
       - database
       - status
+    RecoveryConfirm:
+      type: object
+      properties:
+        token:
+          type: string
+          maxLength: 256
+        new_password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+      required:
+      - new_password
+      - token
+    RecoveryRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+      required:
+      - email
+    RefreshRequest:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+      required:
+      - refresh_token
     ResourceTypeEnum:
       enum:
       - RISK_EVENTS
@@ -4691,6 +5880,11 @@ components:
         * `NOTIFICATIONS` - Notifications
         * `SECURITY_EVENTS` - Security events
         * `AUDIT_EVENTS` - Audit events
+    RevokeRequest:
+      type: object
+      properties:
+        refresh_token:
+          type: string
     RiskEvent:
       type: object
       properties:
@@ -4899,30 +6093,6 @@ components:
       - name
       - resource_type
       - updated_at
-    SectionsEnum:
-      enum:
-      - IDENTITY
-      - FINANCIAL_SUMMARY
-      - INCOME_SUMMARY
-      - CASHFLOW_SUMMARY
-      - SAVINGS_SUMMARY
-      - ACCOUNT_COVERAGE
-      - PROFILE_COMPLETENESS
-      - SELECTED_TRUST_SIGNALS
-      - SELECTED_RISK_SUMMARY
-      - NETWORK_SUMMARY
-      type: string
-      description: |-
-        * `IDENTITY` - Identity
-        * `FINANCIAL_SUMMARY` - Financial summary
-        * `INCOME_SUMMARY` - Income summary
-        * `CASHFLOW_SUMMARY` - Cashflow summary
-        * `SAVINGS_SUMMARY` - Savings summary
-        * `ACCOUNT_COVERAGE` - Account coverage
-        * `PROFILE_COMPLETENESS` - Profile completeness
-        * `SELECTED_TRUST_SIGNALS` - Selected trust signals
-        * `SELECTED_RISK_SUMMARY` - Selected risk summary
-        * `NETWORK_SUMMARY` - Network summary
     SecurityEvent:
       type: object
       properties:
@@ -4979,6 +6149,52 @@ components:
         * `WARNING` - Warning
         * `HIGH` - High
         * `CRITICAL` - Critical
+    TokenEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TokenPair'
+      required:
+      - data
+    TokenPair:
+      type: object
+      properties:
+        token_type:
+          type: string
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        access_expires_at:
+          type: string
+          format: date-time
+        refresh_expires_at:
+          type: string
+          format: date-time
+        actor:
+          type: object
+          additionalProperties: {}
+      required:
+      - access_expires_at
+      - access_token
+      - actor
+      - refresh_expires_at
+      - refresh_token
+      - token_type
+    TokenRequest:
+      type: object
+      properties:
+        identifier:
+          type: string
+        password:
+          type: string
+          writeOnly: true
+        device_label:
+          type: string
+          maxLength: 100
+      required:
+      - identifier
+      - password
     TypeEnum:
       enum:
       - DEVICE
@@ -5044,9 +6260,11 @@ components:
       - url
       - verified_at
   securitySchemes:
-    basicAuth:
+    bearerAuth:
       type: http
-      scheme: basic
+      scheme: bearer
+      description: Short-lived access token from POST /api/v1/auth/token/. Rotate
+        it with POST /api/v1/auth/token/refresh/.
     cookieAuth:
       type: apiKey
       in: cookie
