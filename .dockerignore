@@ -13,3 +13,13 @@ tests
 node_modules
 **/node_modules
 **/.expo
+venv
+dist
+apps/admin/dist
+apps/mobile
+.env.*
+!.env.*.example
+.expo
+coverage
+apps/backend/tests
+apps/backend/requirements-dev.lock

@@ -46,7 +46,7 @@ jobs:
           node-version: "24"
           cache: pnpm
       - run: corepack enable
-      - run: pip install -r apps/backend/requirements.lock
+      - run: pip install -r apps/backend/requirements-dev.lock
       - run: pnpm install --frozen-lockfile
       - run: ruff check apps/backend
       - run: ruff format --check apps/backend

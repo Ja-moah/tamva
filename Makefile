@@ -7,7 +7,7 @@ RUN := $(COMPOSE) run --rm --user $(LOCAL_UID):$(LOCAL_GID) web
 TEST := $(COMPOSE) run --rm --user $(LOCAL_UID):$(LOCAL_GID) -e DJANGO_SETTINGS_MODULE=config.settings.test web
 INOTIFY_WATCH_LIMIT := $(shell cat /proc/sys/fs/inotify/max_user_watches 2>/dev/null || echo 0)
 
-.PHONY: help build up up-staging up-production down restart logs ps shell bash migrate migrations superuser test test-unit test-integration lint format format-check typecheck check db-shell django-shell clean bootstrap frontend-install frontend-dev frontend-build frontend-test frontend-typecheck admin admin-dev admin-build admin-test mobile mobile-start mobile-start-tunnel mobile-watch-check mobile-web mobile-android mobile-ios mobile-lint mobile-build mobile-build-android mobile-build-ios mobile-build-web schema clients-check
+.PHONY: help build up deploy-config deploy-staging deploy-production down restart logs ps shell bash migrate migrations superuser test test-unit test-integration lint format format-check typecheck check db-shell django-shell clean bootstrap frontend-install frontend-dev frontend-build frontend-test frontend-typecheck admin admin-dev admin-build admin-test mobile mobile-start mobile-start-tunnel mobile-watch-check mobile-web mobile-android mobile-ios mobile-lint mobile-build mobile-build-android mobile-build-ios mobile-build-web schema clients-check
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target>\n\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -18,11 +18,14 @@ build: ## Build application images
 up: ## Start all development services
 	$(COMPOSE) up -d
 
-up-staging: ## Start the staging services
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.staging.yml up -d
+deploy-config: ## Validate the deployment compose file against the staging example env
+	TAMVA_ENV_FILE=.env.staging.example $(COMPOSE) -f docker-compose.deploy.yml --env-file .env.staging.example config --quiet
 
-up-production: ## Start the production services
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml up -d
+deploy-staging: ## Build and start the staging stack (needs .env.staging)
+	TAMVA_ENV_FILE=.env.staging $(COMPOSE) -f docker-compose.deploy.yml --env-file .env.staging -p tamva-stg up -d --build
+
+deploy-production: ## Build and start the production stack (needs .env.production)
+	TAMVA_ENV_FILE=.env.production $(COMPOSE) -f docker-compose.deploy.yml --env-file .env.production -p tamva-prod up -d --build
 
 down: ## Stop development services
 	$(COMPOSE) down
