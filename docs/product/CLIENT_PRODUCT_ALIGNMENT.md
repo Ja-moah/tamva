@@ -11,21 +11,36 @@ things in the same words. This compares them without changing mobile.
 | User | Institution analyst, investigator, administrator | Individual customer |
 | Job | Review risk, work cases, manage access, see what a customer consented to | See own Financial Confidence, control consent, share a Passport |
 | Data reach | One institution (`X-Institution-ID`) | The customer's own data |
-| Backend status | Sample data only; API client and contracts now in place | Sample data (`constants/mock-data.ts`); only `/health/` is called |
+| Backend status | **Wired** to the real API (see `ADMIN_INTEGRATION_AUDIT.md`) | Sample data (`constants/mock-data.ts`); only `/health/` is called |
 
-Neither client is wired to real data yet, so neither can be called "ahead".
+The Admin now reads real data; the customer app does not yet. Integrating mobile is a separate task and was deliberately not done here.
 
-## Terminology
+## Canonical vocabulary
 
-| Concept | Backend / docs | Mobile | Admin | Decision |
-| --- | --- | --- | --- | --- |
-| 0–100 confidence in a person's verified finances | Financial Confidence (informational; not a credit or risk score) | Financial Confidence (`isBureauScore: false`) | "Trust Score" | Admin should say **Financial Confidence**. "Trust score" reads as a credit score, which TAMVA explicitly is not. |
-| Per-transaction assessment | Risk event: `score`, `decision`, `confidence`, reason codes | Risk tab (customer view) | Risk events | Keep "risk score" for events only; never reuse it for a person. |
-| Decision | ALLOW / CHALLENGE / HOLD / BLOCK | not shown | same four | Aligned. |
-| Case states | OPEN / TRIAGED / INVESTIGATING / ACTIONED / RESOLVED | — | NEW / UNDER_REVIEW / ESCALATED / RESOLVED | Admin adopts backend vocabulary (labels may be friendlier, values must match). |
-| Sharing a profile | Financial Passport (+ shares, revocable) | Financial Passport / Share flow | "Passport" tier names | Aligned in name; admin KYC tiers are not a backend concept. |
-| Permission the customer grants | Consent (revocable) | Consent tab | Consents list | Aligned. |
-| Alerts to a person | Notification (`channel, subject, body, status`) | Notifications screen | Notifications inbox | Shape aligned; admin's category/severity is extra (see audit). |
+The backend wins. These terms mean the same thing in both clients, the API and
+the docs.
+
+| Term | Meaning | Notes |
+| --- | --- | --- |
+| **Financial Profile** | A customer's computed picture of their finances from connected data | Per institution; never shown as raw transactions in Admin. |
+| **Financial Confidence** | 0–100, higher = stronger *verified* financial confidence | Informational; not a credit decision, not a risk score. Admin no longer says "Trust Score". |
+| **Risk Score** | 0–1000, higher = higher risk | Belongs to a risk *event*, never to a person. Never inverted or relabelled as confidence. |
+| **Risk Decision** | `ALLOW`, `CHALLENGE`, `HOLD`, `BLOCK` | Same four in both clients. |
+| **Case** | An investigation. `OPEN → TRIAGED → INVESTIGATING → ACTIONED → RESOLVED` | Admin uses these exact values; retired states (`NEW`, `UNDER_REVIEW`, `ESCALATED`) are guarded against by a test. "Escalate" is an action type, not a state. |
+| **Consent** | A revocable, purpose-bound permission a customer grants an institution | Customer controls it; Admin can only observe. |
+| **Connection** | A customer's data connection to an institution via a provider | Shown as health only; provider credentials are never exposed. |
+| **Notification** | A message to a person (`channel, subject, body, status`, plus category) | Admin has no per-item severity because the backend has none. |
+| **Security Event** | An observed device/location signal (`NEW_DEVICE`, `UNUSUAL_LOCATION`, …) | Dark-web, breach and account-takeover are not implemented and never appear as detections. |
+| **Trust Network** | The institution-scoped graph of customers, accounts, counterparties, cases and events | Never cross-institution. |
+| **Financial Passport** | A customer-controlled, revocable share of a profile snapshot | Admin sees share counts only with `passport:read`. |
+
+## Where the clients still differ from each other
+
+| Concept | Admin | Mobile | Action |
+| --- | --- | --- | --- |
+| Reason text for a decision | `lib/reason-codes.ts` (analyst tone, plus the raw code) | not built | One shared code → text source when mobile is wired; tone may differ, codes must not. |
+| Currency | Per-record, institution locale, never converted | Hard-coded `GH₵` in several screens | Mobile to adopt the same rule. |
+| Contracts | `@tamva/client-contracts` | Local types and mock data | Migrate mobile to the shared package when it is wired. |
 
 ## Shared contracts
 
@@ -59,12 +74,8 @@ Neither client is wired to real data yet, so neither can be called "ahead".
 | Team, Network, Analytics, Integrations | — | Institution-only; backend mostly missing. |
 | — | Passport, Consent | Customer-only controls the admin can only observe. |
 
-## Gaps to resolve before wiring both
+## Open items
 
-1. Rename "Trust Score" → "Financial Confidence" in admin copy.
-2. Settle the case-status vocabulary and publish it in OpenAPI enums.
-3. Decide whether the admin's Customers screen shows Financial Confidence at
-   all (it should only with an active consent granting it).
-4. One place for reason-code → human text, shared by both clients (mobile
-   explains a decision to the customer; admin to the analyst, with different
-   tone but the same code).
+1. Wire mobile to the API and to `@tamva/client-contracts`; remove hard-coded `GH₵`.
+2. Decide whether Admin's Customers screen should ever show Financial Confidence without an active consent granting it (today it is shown to holders of `customer:read` for customers the institution already has a relationship with).
+3. Publish reason-code text once and share it across clients.
