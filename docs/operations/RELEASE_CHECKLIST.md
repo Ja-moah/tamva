@@ -28,8 +28,16 @@ Frontends:
 
 - [ ] `pnpm install --frozen-lockfile`
 - [ ] Admin: typecheck, lint, tests, `build`, `verify:build`
-- [ ] Mobile: typecheck, lint, tests, `export:web`, `export:android`, `export:ios` with
-      `EXPO_PUBLIC_APP_ENV=production` and the real https API URL
+- [ ] Mobile quality gates:
+      - `pnpm --filter @tamva/mobile lint`
+      - `pnpm --filter @tamva/mobile typecheck`
+      - `cd apps/mobile && pnpm dlx expo-doctor` (network-backed checks may be skipped in offline CI)
+      - `pnpm --filter @tamva/mobile export:android`
+      - `pnpm --filter @tamva/mobile export:ios`
+      - `pnpm --filter @tamva/mobile export:web`
+- [ ] Mobile launch validation (do not stop at static checks):
+      - `cd apps/mobile && CI=1 pnpm exec expo start --web --port 19006`
+      - open `http://localhost:19006` and confirm bundle loading without native-module/runtime errors
 
 Containers:
 
@@ -50,6 +58,10 @@ Containers:
 - [ ] Wrong-tenant and wrong-customer requests are refused (403/404).
 - [ ] Logs are JSON, carry `request_id`, and contain no tokens, passwords or query strings.
 - [ ] Restore drill from the latest backup completed in the last month (BACKUP_AND_RESTORE).
+- [ ] Mobile staging internal-test builds are configured and triggered with EAS:
+      - Android installable APK: `cd apps/mobile && eas build --platform android --profile staging`
+      - iOS internal path: `cd apps/mobile && eas build --platform ios --profile staging`
+      - iOS real-device install still requires Apple Developer signing assets (certificates/profiles/TestFlight or ad-hoc); do not mark complete until Apple-side credentials are in place.
 
 ## 4. Production
 

@@ -12,7 +12,8 @@
     "staging": {
       "distribution": "internal",
       "channel": "staging",
-      "env": { "APP_VARIANT": "staging", "EXPO_PUBLIC_APP_ENV": "staging" }
+      "env": { "APP_VARIANT": "staging", "EXPO_PUBLIC_APP_ENV": "staging" },
+      "android": { "buildType": "apk" }
     },
     "production": {
       "distribution": "store",
