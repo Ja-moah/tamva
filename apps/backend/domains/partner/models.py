@@ -11,6 +11,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from packages.common.models import TimeStampedModel, UUIDModel
+from packages.common.outbound import outbound_url_problem
 
 
 class Institution(UUIDModel, TimeStampedModel):
@@ -221,12 +222,12 @@ class WebhookEndpoint(UUIDModel, TimeStampedModel):
         indexes = [models.Index(fields=["environment", "status"])]
 
     def clean(self) -> None:
-        if (
-            self.environment_id
-            and self.environment.kind == PartnerEnvironment.Kind.PRODUCTION
-            and not self.url.lower().startswith("https://")
-        ):
-            raise ValidationError({"url": "Production webhook endpoints must use HTTPS."})
+        if self.environment_id:
+            problem = outbound_url_problem(
+                self.url, require_https=self.environment.kind == PartnerEnvironment.Kind.PRODUCTION
+            )
+            if problem:
+                raise ValidationError({"url": problem})
         if not self.event_types:
             raise ValidationError({"event_types": "At least one webhook event type is required."})
 

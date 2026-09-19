@@ -24,6 +24,9 @@ SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_HSTS_SECONDS", "31536000"))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("DJANGO_HSTS_INCLUDE_SUBDOMAINS", True)
 # Preload is effectively irreversible; only enable it deliberately.
 SECURE_HSTS_PRELOAD = env_bool("DJANGO_HSTS_PRELOAD", False)
+# security.W021 (HSTS preload) is a deliberate, documented opt-in; see DJANGO_HSTS_PRELOAD.
+if not SECURE_HSTS_PRELOAD:
+    SILENCED_SYSTEM_CHECKS = ["security.W021"]
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
