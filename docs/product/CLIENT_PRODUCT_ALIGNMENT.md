@@ -92,7 +92,7 @@ navigation model or information density.
 
 ## Open items
 
-1. Customer provider catalogue and provider-authorization completion (connections are created pending).
+1. (Post-launch) Customer provider catalogue and provider-authorization completion (connections are created pending).
 2. Publish reason-code text once and share it across clients.
 3. Decide whether Admin's Customers screen should ever show Financial Confidence without an active consent granting it.
 4. Mobile has no component-level UI tests, and the bespoke demo-mode layouts are not maintained against the live screens.

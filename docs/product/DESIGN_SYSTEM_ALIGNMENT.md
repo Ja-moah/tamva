@@ -61,7 +61,7 @@ diverge from the tokens. Layouts, glass surfaces and typography are unchanged.
 
 | Aspect | Mobile | Admin | Alignment |
 | --- | --- | --- | --- |
-| Typeface | Plus Jakarta Sans (5 weights) | Plus Jakarta Sans + JetBrains Mono, from Google Fonts CDN | Same family. Admin should self-host (hardening). |
+| Typeface | Plus Jakarta Sans (5 weights) | Plus Jakarta Sans + JetBrains Mono, self-hosted (`@fontsource-variable`) | Same family; no third-party font CDN. |
 | Primary | Teal (`#1A7F64` / dark `#20A880`) | Same teal via `--brand-primary` | **Aligned.** |
 | Accent | — | Restrained gold | Admin-only institutional accent. |
 | Surfaces | Solid `background/surface/surfaceElevated` | Translucent glass with backdrop blur | Different on purpose: dense operations console vs. personal app. |

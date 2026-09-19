@@ -178,8 +178,9 @@ For subsequent work, the common lifecycle is:
 
 Staging and production use separate settings and secret files. Copy
 `.env.staging.example` or `.env.production.example`, fill in the deployment
-values, and use `make up-staging` or `make up-production`. See the [deployment
-runbook](docs/runbooks/deployment.md) for the release sequence.
+values, and use `make deploy-staging` or `make deploy-production` (Docker Compose behind
+Caddy on a single host). Start with [docs/operations/DEPLOYMENT.md](docs/operations/DEPLOYMENT.md);
+nothing is deployed by this repository automatically.
 
 ```bash
 make up
