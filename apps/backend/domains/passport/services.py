@@ -398,6 +398,21 @@ def access_passport_share(
         _deny("wrong_recipient")
         raise PermissionDenied("Share does not belong to the requesting institution.")
 
+    # Consent is re-checked on every read, not just when the share was created: revoking
+    # or letting the underlying consent lapse must end access immediately.
+    try:
+        require_consent_access(
+            customer_id=share.snapshot.passport.customer_id,
+            institution_id=share.recipient_institution_id,
+            purpose_code=share.purpose_code,
+            scope_code=CONSENT_SCOPE_CODE,
+        )
+    except PermissionDenied:
+        _deny("consent_not_active")
+        raise PermissionDenied(
+            "The customer's consent for this share is no longer active."
+        ) from None
+
     sections_to_return = requested if requested is not None else list(share.allowed_sections)
     if not set(sections_to_return) <= set(share.allowed_sections):
         _deny("scope_not_granted")
