@@ -2,6 +2,9 @@ from uuid import UUID
 
 from django.contrib.auth import login, logout
 from django.core.exceptions import PermissionDenied
+from django.middleware.csrf import get_token
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.authentication import SessionAuthentication
@@ -164,3 +167,33 @@ class MeView(APIView):
     def get(self, request: Request) -> Response:
         context = build_actor_context(request.user, _institution_id(request))
         return Response({"data": _context_payload(context)})
+
+
+@method_decorator(ensure_csrf_cookie, name="dispatch")
+class CsrfView(APIView):
+    """Hands a CSRF token to clients that cannot read cookies (native apps).
+
+    Session auth requires unsafe requests to echo the token in `X-CSRFToken`.
+    Browsers can read the `csrftoken` cookie; React Native cannot, so it asks
+    here after sign-in (the token rotates on login) and whenever a request is
+    refused. The token is also set as a cookie, so both halves agree. It grants
+    nothing by itself: it is only useful together with the session cookie.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes: list[type] = []
+
+    @extend_schema(
+        responses=inline_serializer(
+            name="CsrfEnvelope",
+            fields={
+                "data": inline_serializer(
+                    name="CsrfToken", fields={"csrf_token": serializers.CharField()}
+                )
+            },
+        )
+    )
+    def get(self, request: Request) -> Response:
+        response = Response({"data": {"csrf_token": get_token(request)}})
+        response["Cache-Control"] = "no-store"
+        return response

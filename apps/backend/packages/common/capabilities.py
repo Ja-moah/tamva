@@ -56,4 +56,21 @@ CAPABILITIES: dict[str, CapabilityState] = {
     "geographic_risk": CapabilityState.NOT_AVAILABLE,
     "quiet_hours": CapabilityState.NOT_AVAILABLE,
     "scheduled_reports": CapabilityState.NOT_AVAILABLE,
+    # Customer (mobile) surface. Only authentication, notifications and consent
+    # have customer-facing endpoints today; everything else is computed in the
+    # backend but has no customer read API yet.
+    "customer_authentication": CapabilityState.AVAILABLE,
+    "customer_notifications": CapabilityState.AVAILABLE,
+    # List and revoke exist; granting needs an institution/purpose/scope catalog.
+    "customer_consent": CapabilityState.PARTIAL,
+    "customer_registration": CapabilityState.NOT_AVAILABLE,
+    "customer_account_recovery": CapabilityState.NOT_AVAILABLE,
+    "customer_home": CapabilityState.NOT_AVAILABLE,
+    "customer_activity": CapabilityState.NOT_AVAILABLE,
+    "customer_financial_profile": CapabilityState.NOT_AVAILABLE,
+    "customer_financial_confidence": CapabilityState.NOT_AVAILABLE,
+    "customer_connections": CapabilityState.NOT_AVAILABLE,
+    "customer_passport": CapabilityState.NOT_AVAILABLE,
+    "customer_protection": CapabilityState.NOT_AVAILABLE,
+    "customer_payments": CapabilityState.NOT_AVAILABLE,
 }

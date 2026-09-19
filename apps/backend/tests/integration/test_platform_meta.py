@@ -76,3 +76,29 @@ def test_access_catalog_sync_is_idempotent_and_authoritative():
     viewer.permissions.add(Permission.objects.get(code="case:manage"))
     sync_access_catalog()
     assert "case:manage" not in {p.code for p in viewer.permissions.all()}
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_customer_surface_capabilities_reflect_what_customers_can_actually_do(
+    api_client, normalisation_context
+):
+    api_client.force_authenticate(user=normalisation_context[0])
+    data = api_client.get("/api/v1/capabilities/").data["data"]
+
+    assert data["customer_authentication"] == "AVAILABLE"
+    assert data["customer_notifications"] == "AVAILABLE"
+    assert data["customer_consent"] == "PARTIAL"  # list + revoke; no institution/purpose catalog
+    for missing in (
+        "customer_registration",
+        "customer_account_recovery",
+        "customer_home",
+        "customer_activity",
+        "customer_financial_profile",
+        "customer_financial_confidence",
+        "customer_connections",
+        "customer_passport",
+        "customer_protection",
+        "customer_payments",
+    ):
+        assert data[missing] == "NOT_AVAILABLE"
