@@ -36,23 +36,26 @@ palette (mint/emerald on near-black, consistent with the teal decision below) an
 the tagline written as "People. Data. Trust. Opportunity." — the sidebar still
 uses bullets; align it once the brand owner confirms the punctuation.
 
-## Palette decision (applied)
+## Canonical palette (applied)
 
-Deep teal is the TAMVA primary in both clients; gold is a restrained
-institutional accent in Admin, not a second primary.
+Source of truth: `packages/brand/tokens/colors.ts`. **Deep teal / dark green is the TAMVA identity in
+every client**; gold is an institutional accent only.
 
-| Token (Admin, `styles/global.css`) | Light | Dark | Mirrors |
+| Role | Light | Dark | Use |
 | --- | --- | --- | --- |
-| `--brand-primary` | `#1a7f64` | `#20a880` | mobile `teal600` / dark `primary` |
-| `--brand-primary-hover` | `#146350` | `#2dc298` | mobile `teal700` / dark link |
-| `--brand-primary-subtle`, `--brand-primary-border` | teal at 12% / 40% | teal at 16% / 50% | |
-| `--brand-on-primary` | `#ffffff` | `#072b23` | |
+| Primary | `#1A7F64` (teal 600) | `#20A880` | Primary actions, active navigation, focus, brand surfaces |
+| Primary hover | `#146350` | `#2DC298` | |
+| Secondary | `#059669` (emerald 600); mint `#6EE7B7` for highlights | `#10B981` | Trust and positive emphasis |
+| Accent | `#C68A00` (gold) | `#C68A00` | Eyebrow labels, small tags, institutional highlights. Never a primary. |
+| Info | `#1570EF` | `#2E90FA` | Informational |
+| Warning | `#DC6803` | `#F79009` | |
+| Danger / risk | `#D92D20` | `#F04438` | |
+| Success | `#059652` | `#12B76A` | |
+| Neutral | white, `#F7F8FA` … `#111827` | dark surfaces | Surfaces and text |
 
-Used for primary buttons, the active navigation item, focus rings and the time-window control.
-Gold (`--accent-gold*`) is kept only for eyebrow labels, small tags and highlights.
-Emerald (`--accent-emerald*`) remains trust/success; amber = warning; red = risk; the
-existing decision colours are unchanged. The rest of the approved design (glass
-surfaces, layout, typography) is untouched.
+Admin maps the roles to CSS variables (`--brand-primary*`, `--accent-gold*`, `--accent-emerald*`); Mobile
+takes its primitives and dark primary from the same file. A drift test in each app fails if its values
+diverge from the tokens. Layouts, glass surfaces and typography are unchanged.
 
 ## Comparison
 
@@ -66,7 +69,7 @@ surfaces, layout, typography) is untouched.
 | Tokens location | `apps/mobile/src/constants/tokens.ts` | CSS variables in `apps/admin/src/styles/global.css` | Still two sources. |
 | Theme | light/dark via `ThemeContext` | light/dark via `ThemeProvider` | Equivalent. |
 
-## Mobile integration decision
+## Mobile integration
 
 The existing customer visual system remains intact. Integration added only shared
 runtime states: demo disclosure, offline recovery, capability-unavailable

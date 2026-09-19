@@ -11,7 +11,7 @@ things in the same words. This compares them without changing mobile.
 | User | Institution analyst, investigator, administrator | Individual customer |
 | Job | Review risk, work cases, manage access, see what a customer consented to | See own Financial Confidence, control consent, share a Passport |
 | Data reach | One institution (`X-Institution-ID`) | The customer's own data |
-| Backend status | **Wired** to the real API (see `ADMIN_INTEGRATION_AUDIT.md`) | Authentication and notifications are live; consent list/revoke is live; unsupported areas are capability-gated (see `MOBILE_INTEGRATION_AUDIT.md`) |
+| Backend status | **Wired** to the real API (see `ADMIN_INTEGRATION_AUDIT.md`) | **Wired** to the customer API: auth, registration, recovery, Home, Activity, Profile, Confidence, Passport, Consent (grant/revoke), Connections (list/disconnect), Protection, Notifications (see `MOBILE_INTEGRATION_AUDIT.md`) |
 
 Both clients now use the shared API boundary. That does not imply feature parity: the Mobile audit records which customer capabilities have a real endpoint and which remain unavailable.
 
@@ -64,15 +64,15 @@ the docs.
 
 | Concept | Backend term | Admin presentation | Mobile presentation | Status |
 | --- | --- | --- | --- | --- |
-| Financial Profile | `FinancialProfileSnapshot` | Counts and completeness, no raw data | Profile tab (design kept) | Mobile: no customer API → unavailable |
-| Financial Confidence | `FinancialConfidenceSnapshot` (0–100) | Per-customer value, bands | Confidence screen (design kept) | Mobile: no customer API → unavailable |
+| Financial Profile | `FinancialProfileSnapshot` | Counts and completeness, no raw data | Profile tab (design kept) | Mobile live |
+| Financial Confidence | `FinancialConfidenceSnapshot` (0–100) | Per-customer value, bands | Confidence screen (design kept) | Mobile live |
 | Risk | `RiskEvent` score 0–1000, decision | Risk events table and drawer | Not shown as a customer "score" | Intentional difference |
-| Connections | `InstitutionConnection` | Health list, no credentials | Connected accounts | Mobile: no customer API → unavailable |
-| Consent | `Consent` | Read-only counts | Consent & data sharing: list + revoke | Live, partial (no grant catalogue) |
+| Connections | `InstitutionConnection` | Health list, no credentials | Connected accounts | Mobile live |
+| Consent | `Consent` | Read-only counts | Consent & data sharing: list + revoke | Live in both (customer grants and revokes) |
 | Notifications | `Notification` | Own inbox + preferences | Notification centre + preferences | Live in both |
 | Security | `SecurityEvent`, devices, locations | Security tab | Protection | Admin live; Mobile: no customer API |
 | Trust Network | institution graph | Entities and relationships | Not customer-facing | Intentional difference |
-| Financial Passport | `FinancialPassport`, shares | Share counts (`passport:read`) | Passport tab | Mobile: no customer API → unavailable |
+| Financial Passport | `FinancialPassport`, shares | Share counts (`passport:read`) | Passport tab | Mobile live |
 
 ## Navigation
 
@@ -92,7 +92,7 @@ navigation model or information density.
 
 ## Open items
 
-1. Publish customer read APIs for Home, Activity, Financial Profile, Financial Confidence, Passport and Protection before enabling those screens in normal mode.
-2. Publish an institution/purpose/scope catalogue before enabling consent grant.
-3. Decide whether Admin's Customers screen should ever show Financial Confidence without an active consent granting it (today it is shown to holders of `customer:read` for customers the institution already has a relationship with).
-4. Publish reason-code text once and share it across clients.
+1. Customer provider catalogue and provider-authorization completion (connections are created pending).
+2. Publish reason-code text once and share it across clients.
+3. Decide whether Admin's Customers screen should ever show Financial Confidence without an active consent granting it.
+4. Mobile has no component-level UI tests, and the bespoke demo-mode layouts are not maintained against the live screens.

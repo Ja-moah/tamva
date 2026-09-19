@@ -7,12 +7,15 @@ shown as real that the backend cannot serve.**
 
 ## Headline
 
-The backend was built institution-first. Only four customer-facing surfaces exist today:
-**authentication, notifications (and preferences), consent (list + revoke) and the capability manifest.**
-Everything else the Mobile design shows — Home dashboard, Activity, Financial Profile, Financial
-Confidence, Passport, Protection, connections, and the Send/Receive/Save flows — was driven entirely by
-bundled sample data. Those screens are now capability-gated: outside an explicit demo mode they show an
-honest "Not available yet" state and no figures. The approved designs are preserved, not deleted.
+The customer platform APIs now exist (`/api/v1/customer/*`, bearer-token auth, registration and
+recovery), and Mobile is wired to them. Every primary screen reads real backend data. Two areas remain
+partial by design: **connections** (a customer can list and disconnect, and a connection is *created
+pending provider authorization*, but there is no customer-facing provider catalogue, so Mobile does not
+offer "add account" yet) and **protection** (only new-device and unusual-location signals exist). Send /
+Receive / Save stay unavailable: TAMVA is not a bank or wallet.
+
+The live screens are built from the app's design-system components and tokens; the earlier bespoke
+sample-data layouts (cards, sheets, flows) are preserved and shown only in explicit demo mode.
 
 ## Product boundary
 
@@ -31,29 +34,25 @@ reset onboarding) are also demo-mode only. Without demo mode there is no path ar
 ## Screen inventory
 
 Classification: **READY** live and complete · **PARTIAL** live with named gaps · **BACKEND_GAP** needs an
-API that does not exist · **UI_GAP** backend exists, client work remains · **V2** outside current scope.
+API that does not exist · **V2** outside current scope.
 
-| Route | Screen | Data source (normal mode) | Backend domain / endpoint | Capability | Class | Loading | Empty | Error | Offline |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `/` | Gatekeeper | onboarding flag + session | `GET /me/` | `customer_authentication` | READY | spinner | – | retry on startup failure | retry, never "signed out" |
-| `/onboarding` | Onboarding | local; illustration labelled "Example financial view" | – | – | READY | – | – | – | works offline |
-| `/(auth)`, `/(auth)/sign-in` | Sign in | `POST /auth/login/` → `/me/` → customer policy | identity | `customer_authentication` | READY | button loading | – | plain-language, no field leak | connectivity message |
-| `/(auth)/sign-up` | Create account | **none** (was a fake success modal) | none | `customer_registration` NOT_AVAILABLE | BACKEND_GAP | – | – | – | – |
-| `/(auth)/forgot-password` | Reset password | **none** (was a fake success) | none | `customer_account_recovery` NOT_AVAILABLE | BACKEND_GAP | – | – | – | – |
-| `/(tabs)` | Home | real notifications + consent counts; "still to come" list | notifications, consent | `customer_home` NOT_AVAILABLE | PARTIAL | spinner | "all caught up" | retry text | pull-to-refresh |
-| `/(tabs)/activity` | Activity | none | none (canonical transactions have no customer API) | `customer_activity` | BACKEND_GAP | gate | unavailable state | – | – |
-| `/(tabs)/profile` | Financial Profile | none | profile snapshot has no customer API | `customer_financial_profile` | BACKEND_GAP | gate | unavailable state | – | – |
-| `/(tabs)/passport` | Financial Passport | none | passport endpoints are institution-staff (`passport:read/manage`) | `customer_passport` | BACKEND_GAP | gate | unavailable state | – | – |
-| `/(tabs)/more` | More hub | capability manifest | `GET /capabilities/` | – | READY | – | – | – | – |
-| `/(tabs)/consent` | Consent & data sharing | `GET /consents/`, `POST /consents/{id}/revoke/` | consent | `customer_consent` PARTIAL | PARTIAL | spinner | empty state | retry | pull-to-refresh |
-| `/(tabs)/protection` | Protection | none | security events/devices have no customer API | `customer_protection` | BACKEND_GAP | gate | unavailable state | – | – |
-| `/(tabs)/risk`, `/confidence` | Financial Confidence | none | confidence exists in the backend, no customer API | `customer_financial_confidence` | BACKEND_GAP | gate | unavailable state | – | – |
-| `/accounts` | Connected accounts | none | connections have no customer API | `customer_connections` | BACKEND_GAP | gate | unavailable state | – | – |
-| `/notifications` | Notification centre | `GET /notifications/`, read, bulk-read | notifications | `customer_notifications` | READY | spinner | "all caught up" | retry | pull-to-refresh |
-| `/settings` | Settings | preferences `GET/POST /notification-preferences/`, `/meta/version/`, sign out | notifications, meta | – | READY | inline | – | retry | – |
-| `/help` | Help | static text (no support channel invented) | – | – | READY | – | – | – | works offline |
-| `/send`, `/receive`, `/save` | Send / Receive / Save | none | no payments domain | `customer_payments` | V2 (out of boundary) | – | unavailable state | – | – |
-| `/design-system` | Design reference | local | – | – | non-product | – | – | – | – |
+| Route | Screen | Backend | Capability | Class |
+| --- | --- | --- | --- | --- |
+| `/`, `/onboarding`, `/(auth)` | Gatekeeper, onboarding | session restore + `GET /me/` | `customer_authentication` | READY |
+| `/(auth)/sign-in` | Sign in | `POST /auth/token/` (bearer pair) | `customer_authentication` | READY |
+| `/(auth)/sign-up` | Create account | `POST /customer/register/` | `customer_registration` | READY |
+| `/(auth)/forgot-password`, `/reset-password` | Recovery | `POST /auth/recovery/request/`, `/confirm/` | `customer_account_recovery` | READY |
+| `/(tabs)` | Home | `GET /customer/home/` | `customer_home` | READY |
+| `/(tabs)/activity` | Activity (search, direction filter, paging) | `GET /customer/activity/` | `customer_activity` | READY |
+| `/(tabs)/profile` | Financial Profile | `GET /customer/profile/current/` | `customer_financial_profile` | READY |
+| `/(tabs)/risk`, `/confidence` | Financial Confidence (+ history) | `GET /customer/financial-confidence/*` | `customer_financial_confidence` | READY |
+| `/(tabs)/passport`, `/passport-share` | Passport: view, generate, share, revoke | `/customer/passport/*` | `customer_passport` | READY |
+| `/(tabs)/consent`, `/consent-grant` | Consent & data sharing: list, grant (catalogue), revoke | `/customer/consent/catalogue/`, `/consents` | `customer_consent` | READY |
+| `/accounts` | Connected accounts: list, disconnect | `/customer/connections/` | `customer_connections` PARTIAL | PARTIAL |
+| `/(tabs)/protection` | Protection summary | `GET /customer/security/summary/` | `customer_protection` PARTIAL | PARTIAL |
+| `/notifications` | Notification centre | `/notifications/` | `customer_notifications` | READY |
+| `/settings`, `/help`, `/(tabs)/more` | Settings, Help, More hub | preferences, `/meta/version/`, capabilities | – | READY |
+| `/send`, `/receive`, `/save` | Send / Receive / Save | none | `customer_payments` NOT_AVAILABLE | V2 (out of boundary) |
 
 The capability manifest (`GET /api/v1/capabilities/`, authenticated) now reports the customer surface
 explicitly (`customer_*`). A screen renders live data only when **both** the backend reports the capability
@@ -71,28 +70,27 @@ gates its own content (not the navigator), so an unavailable screen never remove
 
 ## API boundary
 
-- `src/api/client.ts` is the only HTTP transport; it is unit-tested.
-- Versioned calls use `/api/v1`, send `X-API-Version` and a fresh `X-Request-ID`, include cookies, and parse shared Zod contracts from `@tamva/client-contracts` (`customer.ts`, plus shared notification/capability/actor schemas).
-- Unsafe calls need a CSRF token. Native code cannot read cookies, so the backend gained `GET /auth/csrf/`; the client fetches it, caches it, refreshes it after sign-in (it rotates) and retries once on a CSRF refusal.
-- GET retries cover connectivity failures and 502/503/504 only, with backoff. Mutations are never retried automatically. Bulk mark-read is idempotent.
+- `src/api/client.ts` is the only HTTP transport; it is unit-tested (bearer header, single-flight refresh, retry rules, session end vs. connectivity loss).
+- Versioned calls use `/api/v1`, send `X-API-Version` and a fresh `X-Request-ID`, use `Authorization: Bearer`, send no cookies, and parse shared Zod contracts from `@tamva/client-contracts` (`customer.ts`, plus shared notification/capability/actor schemas).
+- Bearer requests need no CSRF token. (`GET /auth/csrf/` still exists for browser clients.)
+- GET retries cover connectivity failures and 502/503/504 only, with backoff. Mutations are never retried automatically.
 - Timeouts, offline failures and the backend error envelope become one `ApiError`; `describeError` produces customer-safe text and never repeats server detail. Request IDs are kept for diagnosis.
 - No `X-Institution-ID`: customer resources are scoped to the signed-in customer by the backend.
 
-## Authentication and storage
+## Authentication and storage (ADR-013)
 
-The backend's cookie session is authoritative and there is no token API. Startup calls `GET /me/`; only
-an **active `CUSTOMER`** enters the customer routes. Institution staff are told to use the Admin console,
-and a suspended/deactivated account is refused even if a session cookie exists. A 401 anywhere returns
-the app to sign-in and clears cached data. An offline or failing start shows a retry screen; it does not
-pretend the customer signed out (and no longer spins forever).
+One identity system, two transports. Admin keeps cookie sessions; Mobile uses a **15-minute bearer access
+token and a rotating 30-day refresh token** (`POST /auth/token/`, `/refresh/`, `/revoke/`). Refresh
+rotates the pair; presenting a spent refresh token revokes the whole session (reuse detection); logout,
+password reset and suspension end sessions. Both resolve to the same `User` and the same ownership/RBAC
+checks. Only an **active `CUSTOMER`** enters the customer routes.
 
-No password, token, consent or financial record is persisted by application code. On native, SecureStore
-holds only a non-secret last-user hint (`userId`, email, time). On web nothing is persisted; the browser
-cookie is the whole session. The session cookie itself lives in the platform's cookie store.
-
-**Weakness recorded, not hidden:** cookie sessions plus CSRF work but are the least natural fit for native
-apps (cookie-jar persistence differs by platform, and there is no refresh flow). A mobile-appropriate
-session design is a V1 decision (see gaps).
+Client behaviour: the access token lives in memory only; on any 401 the client performs one
+single-flight refresh and one retry, and a refused refresh ends the session and clears storage, while a
+connectivity failure keeps the tokens. On native the refresh token is stored **only in SecureStore**
+(Keychain/Keystore) with a non-secret last-user hint; nothing is in AsyncStorage. On the web nothing is
+persisted, so a reload signs out (deliberate: no refresh token in web storage). Registration collects
+email, password, optional name and terms acceptance only.
 
 ## Vocabulary
 
@@ -130,38 +128,21 @@ Not done (needs devices/tooling): screen-reader pass on real devices, dynamic-ty
 audit of the unavailable state in dark mode, Android back-button audit beyond the notification detail
 view, focus rings on web, and an automated component-test setup (only pure-logic tests run today).
 
-## Backend gap register
+## What remains (deliberately deferred)
 
-**CRITICAL FOR V1** (the app cannot be a real product without these)
-1. Customer registration / onboarding, and account recovery.
-2. A native-appropriate session design (token or hardened cookie + refresh) — decision, then implementation.
-3. Customer read model for **Financial Confidence** (score, band, components, completeness, as-of, policy version).
-4. Customer read model for **Financial Profile** (snapshot, cash-flow, completeness).
-5. **Connections**: list/status and a provider/institution catalogue to connect.
-6. **Consent grant catalogue**: institutions, purposes and scopes a customer may grant (list/revoke exists).
-7. **Customer-facing Passport**: read own snapshot, create / list / revoke shares. Existing endpoints are institution-permissioned and a customer has no membership.
-8. **Customer Home** read model composing the above.
-
-**USEFUL V1**
-9. Activity: canonical transactions and ledger-backed summaries with search, date/type/account filters and pagination.
-10. Customer Protection read model (own device/location security events, passport-share and consent activity).
-11. Notification target/deep-link, category catalogue and an unread-count endpoint.
-12. Financial Confidence history.
-
-**V1.x**
-13. Balance summary semantics (what "available" means, per currency).
-14. Push-token registration for the `PUSH` channel; quiet hours.
-15. A support/contact channel to show in Help.
-
-**V2 / out of boundary**
-16. Payments: Send, Receive, Save. TAMVA is not a bank or wallet; decide whether these designs are retired.
-17. FX conversion (needs an approved rate provider), dark-web/breach monitoring, production account-takeover detection.
-
-## Small backend changes made for truthful wiring
-
-- `GET /api/v1/auth/csrf/` and `X-API-Version` on every response.
-- Customer capability entries in `/capabilities/`.
-- `institution_name` and `purpose_name` on consent rows (a consent screen cannot show a bare UUID).
+- **Provider catalogue and authorization completion.** A customer-started connection is created
+  `PENDING_AUTHORIZATION`; nothing completes it yet, and customers cannot discover provider codes, so Mobile
+  does not offer "add account". Needs a provider/institution catalogue and an OAuth-style completion step.
+- **Protection breadth:** only new-device and unusual-location signals exist. Dark-web, breach and
+  account-takeover detection are not built and are stated as such in the UI.
+- **Balances:** TAMVA holds no provider-authoritative balance, so Home shows observed 30-day money in/out per
+  currency and no balance or "available funds".
+- **Financial Confidence / Profile per institution:** shown per institution; a single blended number is not invented.
+- **Push notifications, MFA, email verification, device management** are not built.
+- **Send / Receive / Save:** out of product boundary; routes remain and say so.
+- **Web sessions** do not survive a reload by design.
+- **Not verified on devices:** screen-reader, dynamic-type and contrast passes; no component-level UI tests
+  (only pure-logic tests run in Mobile).
 
 ## Security and privacy
 
