@@ -1,443 +1,110 @@
-import {
-  Bell,
-  Mail,
-  MessageSquare,
-  Moon,
-  Save,
-  Shield,
-  Sparkles,
-  Trash2,
-} from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
 
-import { StatusBadge } from "../components/feedback/status-badge";
+import { CapabilityGate } from "../components/data/gates";
+import { PageHeader, Section } from "../components/data/page";
+import { QueryBoundary } from "../components/data/states";
 import { Button } from "../components/ui/button";
-import { DeleteConfirmationModal } from "../components/ui/delete-confirmation-modal";
+import { dialogField } from "../components/ui/action-dialog";
 import { useToast } from "../components/ui/toast";
+import { LOCALE_KEY, useLocaleSettings } from "../features/locale/use-locale";
+import { listNotificationPreferences, setNotificationPreference } from "../features/notifications/api";
+import { useSession } from "../features/session/use-session";
+import { ApiError, apiRequest } from "../lib/api";
+import { humanize } from "../lib/format";
+import { localeSettingsSchema } from "@tamva/client-contracts";
+
+const CHANNELS = ["IN_APP", "EMAIL", "SMS", "PUSH"];
+// Categories the backend emits today; a preference row is created on first toggle.
+const CATEGORIES = ["CASE"];
+
+function NotificationPreferences() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const prefs = useQuery({ queryKey: ["notifications", "preferences"], queryFn: ({ signal }) => listNotificationPreferences(signal) });
+  const save = useMutation({
+    mutationFn: setNotificationPreference,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications", "preferences"] }),
+    onError: (error) => toast({ title: "Couldn't save preference", description: error instanceof ApiError ? error.message : undefined, type: "error" }),
+  });
+  return (
+    <Section title="Notification preferences" description="Choose how you're told about each kind of event. Some mandatory notices can't be turned off.">
+      <QueryBoundary query={prefs}>
+        {(page) => {
+          const enabled = (category: string, channel: string) => page.results.find((p) => p.category === category && p.channel === channel)?.enabled ?? true;
+          const categories = [...new Set([...CATEGORIES, ...page.results.map((p) => p.category)])];
+          return (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[420px] text-left text-xs">
+                <caption className="sr-only">Notification preferences by category and channel</caption>
+                <thead><tr className="border-b border-[var(--border-default)]"><th scope="col" className="py-2 pr-3 text-[10px] uppercase text-[var(--text-muted)]">Category</th>{CHANNELS.map((c) => <th key={c} scope="col" className="px-2 py-2 text-center font-bold">{humanize(c)}</th>)}</tr></thead>
+                <tbody className="divide-y divide-[var(--border-subtle)]">
+                  {categories.map((category) => (
+                    <tr key={category}>
+                      <th scope="row" className="py-2 pr-3 text-left font-semibold">{humanize(category)}</th>
+                      {CHANNELS.map((channel) => (
+                        <td key={channel} className="px-2 py-2 text-center">
+                          <input type="checkbox" className="size-4 cursor-pointer accent-[var(--accent-emerald)]" aria-label={`${humanize(category)} via ${humanize(channel)}`} checked={enabled(category, channel)} disabled={save.isPending} onChange={(e) => save.mutate({ category, channel, enabled: e.target.checked })} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }}
+      </QueryBoundary>
+    </Section>
+  );
+}
+
+function LocaleSettingsCard() {
+  const { can } = useSession();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const settings = useLocaleSettings();
+  const canEdit = can("institution:manage");
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const save = useMutation({
+    mutationFn: (body: Record<string, string>) => apiRequest({ method: "PATCH", path: "/institution/locale/", body, schema: localeSettingsSchema }),
+    onSuccess: () => {
+      setDraft({});
+      toast({ title: "Regional settings saved", type: "success" });
+      return queryClient.invalidateQueries({ queryKey: LOCALE_KEY });
+    },
+  });
+  const error = save.error instanceof ApiError ? JSON.stringify(save.error.details) : null;
+  return (
+    <Section title="Regional settings" description="Country, currency, time zone and language used to present dates and amounts. Original transaction amounts and currencies are never converted.">
+      <QueryBoundary query={settings}>
+        {(s) => {
+          const value = (key: "country_code" | "default_currency" | "timezone" | "locale") => draft[key] ?? s[key];
+          return (
+            <form onSubmit={(e) => { e.preventDefault(); save.mutate(draft); }} className="grid gap-3 sm:grid-cols-2">
+              {s.is_default ? <p className="col-span-full text-xs text-[var(--text-muted)]">Showing platform defaults; nothing has been chosen for this institution yet.</p> : null}
+              {([["country_code", "Country (ISO 3166)"], ["default_currency", "Default currency (ISO 4217)"], ["timezone", "Time zone (IANA)"], ["locale", "Language / locale (BCP 47)"]] as const).map(([key, label]) => (
+                <label key={key} className="block text-xs font-bold">{label}
+                  <input value={value(key)} disabled={!canEdit} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} className={dialogField} />
+                </label>
+              ))}
+              {error ? <p role="alert" className="col-span-full text-xs text-[var(--risk-high-text)]">{error}</p> : null}
+              {canEdit ? <div className="col-span-full"><Button type="submit" variant="primary" disabled={Object.keys(draft).length === 0} loading={save.isPending}>Save regional settings</Button></div> : <p className="col-span-full text-xs text-[var(--text-muted)]">Only an institution administrator can change these.</p>}
+            </form>
+          );
+        }}
+      </QueryBoundary>
+    </Section>
+  );
+}
 
 export function SettingsPage() {
-  const { toast } = useToast();
-
-  // Notification Preferences State
-  const [preferences, setPreferences] = useState({
-    securityAlerts: true,
-    transactionAlerts: true,
-    consentPassport: true,
-    financialInsights: false,
-  });
-
-  // Delivery Channels State
-  const [channels, setChannels] = useState({
-    inApp: true,
-    email: true,
-    sms: true,
-  });
-
-  // Quiet Hours State
-  const [quietHours, setQuietHours] = useState({
-    enabled: true,
-    startTime: "22:00",
-    endTime: "07:00",
-  });
-
-  // Clear confirmation modal state
-  const [clearModalOpen, setClearModalOpen] = useState(false);
-
-  const handleTogglePreference = (key: keyof typeof preferences) => {
-    setPreferences((prev) => {
-      const updated = { ...prev, [key]: !prev[key] };
-      toast({
-        title: "Preference Updated",
-        description: `Notification settings updated for ${key}.`,
-        type: "info",
-      });
-      return updated;
-    });
-  };
-
-  const handleToggleChannel = (key: keyof typeof channels) => {
-    setChannels((prev) => {
-      const updated = { ...prev, [key]: !prev[key] };
-      toast({
-        title: "Channel Configured",
-        description: `${key.toUpperCase()} notifications ${updated[key] ? "enabled" : "disabled"}.`,
-        type: "info",
-      });
-      return updated;
-    });
-  };
-
-  const handleSaveSettings = () => {
-    toast({
-      title: "Settings Saved",
-      description: "Institutional alert preferences synchronized with PostgreSQL 17 policy vault.",
-      type: "success",
-    });
-  };
-
-  const handleConfirmClearAll = () => {
-    toast({
-      title: "All Notifications Cleared",
-      description: "Purged all 5 cached alerts and logs across all delivery rails.",
-      type: "warning",
-    });
-  };
-
   return (
-    <div className="space-y-6 max-w-4xl">
-      {/* Clear Confirmation Dialog */}
-      <DeleteConfirmationModal
-        open={clearModalOpen}
-        onClose={() => setClearModalOpen(false)}
-        onConfirm={handleConfirmClearAll}
-        title="Clear All Notifications"
-        itemCount={5}
-        isBulk={true}
-      />
-
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-mono text-[var(--accent-gold)] uppercase tracking-wider font-bold">
-            <Shield className="size-3.5" />
-            <span>Operational Governance</span>
-          </div>
-          <h1 className="text-2xl font-extrabold text-[var(--text-primary)] tracking-tight mt-1">
-            Notification Settings
-          </h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-0.5 font-medium">
-            Configure institutional alert dispatching, multi-channel gateways, and quiet hours.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <Link
-            to="/notifications"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer shadow-xs"
-          >
-            <Bell className="size-3.5" />
-            <span>Back to Alerts</span>
-          </Link>
-
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleSaveSettings}
-            className="text-xs font-bold gap-1.5 rounded-xl cursor-pointer shadow-md bg-slate-900 text-white dark:bg-white dark:text-slate-900"
-          >
-            <Save className="size-3.5" />
-            <span>Save Preferences</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Highlight Brand Card */}
-      <div className="rounded-2xl border border-[var(--accent-gold-border)] bg-[var(--accent-gold-subtle)] p-5 flex items-start gap-4">
-        <div className="size-10 rounded-xl bg-[var(--accent-gold)] text-black font-extrabold flex items-center justify-center shrink-0 shadow-xs">
-          <Sparkles className="size-5" />
-        </div>
-        <div>
-          <h2 className="text-base font-bold text-[var(--text-primary)]">
-            Timely Alerts. A Safer Financial Ecosystem.
-          </h2>
-          <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed font-medium">
-            TAMVA routes high-severity risk signals across Ghana&apos;s commercial banks, Mobile Money Operators (MTN, Telecel, AirtelTigo), and GhIPSS rails in real time.
-          </p>
-        </div>
-      </div>
-
-      {/* Notification Preferences */}
-      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-5 space-y-4 shadow-xs">
-        <div>
-          <h2 className="text-base font-bold text-[var(--text-primary)]">
-            Notification Preferences
-          </h2>
-          <p className="text-xs text-[var(--text-muted)] mt-0.5">
-            Choose what category of events you want to be alerted on.
-          </p>
-        </div>
-
-        <div className="divide-y divide-[var(--border-subtle)]">
-          {/* Security Alerts */}
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-[var(--text-primary)]">
-                  Security Alerts
-                </span>
-                <StatusBadge tone="danger" size="sm">
-                  Crucial
-                </StatusBadge>
-              </div>
-              <p className="text-xs text-[var(--text-secondary)] font-medium">
-                Suspicious activity, account takeovers, new device sign-ins, and high-risk flags.
-              </p>
-            </div>
-            <button
-              onClick={() => handleTogglePreference("securityAlerts")}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                preferences.securityAlerts ? "bg-slate-900 dark:bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
-              }`}
-              role="switch"
-              aria-checked={preferences.securityAlerts}
-            >
-              <span
-                className={`pointer-events-none inline-block size-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                  preferences.securityAlerts ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Transaction Alerts */}
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-[var(--text-primary)]">
-                  Transaction Alerts
-                </span>
-                <StatusBadge tone="warning" size="sm">
-                  Recommended
-                </StatusBadge>
-              </div>
-              <p className="text-xs text-[var(--text-secondary)] font-medium">
-                Incoming/outgoing transfers, large amount anomalies, and high velocity breaches.
-              </p>
-            </div>
-            <button
-              onClick={() => handleTogglePreference("transactionAlerts")}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                preferences.transactionAlerts ? "bg-slate-900 dark:bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
-              }`}
-              role="switch"
-              aria-checked={preferences.transactionAlerts}
-            >
-              <span
-                className={`pointer-events-none inline-block size-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                  preferences.transactionAlerts ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Consent & Passport */}
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <span className="text-sm font-bold text-[var(--text-primary)]">
-                Consent &amp; Passport Sharing
-              </span>
-              <p className="text-xs text-[var(--text-secondary)] font-medium">
-                Data-sharing requests, consent renewals, and Financial Passport verifications.
-              </p>
-            </div>
-            <button
-              onClick={() => handleTogglePreference("consentPassport")}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                preferences.consentPassport ? "bg-slate-900 dark:bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
-              }`}
-              role="switch"
-              aria-checked={preferences.consentPassport}
-            >
-              <span
-                className={`pointer-events-none inline-block size-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                  preferences.consentPassport ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Financial Insights */}
-          <div className="py-3.5 flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <span className="text-sm font-bold text-[var(--text-primary)]">
-                Financial Insights &amp; Digests
-              </span>
-              <p className="text-xs text-[var(--text-secondary)] font-medium">
-                Weekly risk analytics summaries, network clustering trends, and ecosystem updates.
-              </p>
-            </div>
-            <button
-              onClick={() => handleTogglePreference("financialInsights")}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                preferences.financialInsights ? "bg-slate-900 dark:bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
-              }`}
-              role="switch"
-              aria-checked={preferences.financialInsights}
-            >
-              <span
-                className={`pointer-events-none inline-block size-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                  preferences.financialInsights ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Delivery Channels */}
-      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-5 space-y-4 shadow-xs">
-        <div>
-          <h2 className="text-base font-bold text-[var(--text-primary)]">
-            Delivery Channels
-          </h2>
-          <p className="text-xs text-[var(--text-muted)] mt-0.5">
-            Choose how institutional operators receive real-time notifications.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* In-App */}
-          <div
-            onClick={() => handleToggleChannel("inApp")}
-            className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col justify-between gap-3 ${
-              channels.inApp
-                ? "border-[var(--accent-gold)] bg-[var(--bg-canvas)]"
-                : "border-[var(--border-default)] bg-[var(--bg-surface-subtle)] opacity-70"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="size-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
-                <Bell className="size-4" />
-              </div>
-              <span className="text-xs font-mono font-bold text-[var(--accent-emerald)]">
-                {channels.inApp ? "Enabled" : "Disabled"}
-              </span>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-[var(--text-primary)]">In-App Banner</p>
-              <p className="text-xs text-[var(--text-muted)] mt-0.5">Real-time web &amp; mobile stream</p>
-            </div>
-          </div>
-
-          {/* Email */}
-          <div
-            onClick={() => handleToggleChannel("email")}
-            className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col justify-between gap-3 ${
-              channels.email
-                ? "border-[var(--accent-gold)] bg-[var(--bg-canvas)]"
-                : "border-[var(--border-default)] bg-[var(--bg-surface-subtle)] opacity-70"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="size-8 rounded-lg bg-purple-500/10 text-purple-600 flex items-center justify-center">
-                <Mail className="size-4" />
-              </div>
-              <span className="text-xs font-mono font-bold text-[var(--accent-emerald)]">
-                {channels.email ? "Enabled" : "Disabled"}
-              </span>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-[var(--text-primary)]">Email Dispatch</p>
-              <p className="text-xs text-[var(--text-muted)] mt-0.5">Encrypted institutional SMTP</p>
-            </div>
-          </div>
-
-          {/* SMS */}
-          <div
-            onClick={() => handleToggleChannel("sms")}
-            className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col justify-between gap-3 ${
-              channels.sms
-                ? "border-[var(--accent-gold)] bg-[var(--bg-canvas)]"
-                : "border-[var(--border-default)] bg-[var(--bg-surface-subtle)] opacity-70"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="size-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                <MessageSquare className="size-4" />
-              </div>
-              <span className="text-xs font-mono font-bold text-[var(--accent-emerald)]">
-                {channels.sms ? "Enabled" : "Disabled"}
-              </span>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-[var(--text-primary)]">SMS Gateway</p>
-              <p className="text-xs text-[var(--text-muted)] mt-0.5">MTN / Telecel / AT Direct Rail</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quiet Hours */}
-      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-5 space-y-4 shadow-xs">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center">
-              <Moon className="size-4.5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-[var(--text-primary)]">Quiet Hours</h2>
-              <p className="text-xs text-[var(--text-muted)]">
-                Pause non-critical notifications during designated off-peak hours.
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setQuietHours((prev) => ({ ...prev, enabled: !prev.enabled }))}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-              quietHours.enabled ? "bg-slate-900 dark:bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
-            }`}
-            role="switch"
-            aria-checked={quietHours.enabled}
-          >
-            <span
-              className={`pointer-events-none inline-block size-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                quietHours.enabled ? "translate-x-5" : "translate-x-0"
-              }`}
-            />
-          </button>
-        </div>
-
-        {quietHours.enabled && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[var(--border-subtle)]">
-            <div>
-              <label className="block text-xs font-mono text-[var(--text-muted)] uppercase mb-1">
-                Start Time
-              </label>
-              <input
-                type="time"
-                value={quietHours.startTime}
-                onChange={(e) => setQuietHours((prev) => ({ ...prev, startTime: e.target.value }))}
-                className="w-full px-3.5 py-2 text-sm rounded-xl border border-[var(--border-default)] bg-[var(--bg-canvas)] text-[var(--text-primary)] font-mono font-bold"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-mono text-[var(--text-muted)] uppercase mb-1">
-                End Time
-              </label>
-              <input
-                type="time"
-                value={quietHours.endTime}
-                onChange={(e) => setQuietHours((prev) => ({ ...prev, endTime: e.target.value }))}
-                className="w-full px-3.5 py-2 text-sm rounded-xl border border-[var(--border-default)] bg-[var(--bg-canvas)] text-[var(--text-primary)] font-mono font-bold"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Purge & Clean Actions */}
-      <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-bold text-rose-700 dark:text-rose-400">
-            Clear Local Alert History
-          </h2>
-          <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-medium">
-            Permanently clear all cached notifications. Backend compliance audit trail remains preserved.
-          </p>
-        </div>
-
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => setClearModalOpen(true)}
-          className="text-xs font-bold gap-1.5 rounded-xl cursor-pointer shadow-xs shrink-0"
-        >
-          <Trash2 className="size-3.5" />
-          <span>Clear All Notifications</span>
-        </Button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader eyebrow="Settings" title="Settings" description="Your notification preferences and your institution's regional settings." />
+      <NotificationPreferences />
+      <LocaleSettingsCard />
+      <CapabilityGate code="quiet_hours" title="Quiet hours" unavailable={<>Scheduled do-not-disturb windows aren't supported by the notification service yet.</>}><span /></CapabilityGate>
     </div>
   );
 }
