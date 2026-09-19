@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Any
 
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -322,3 +323,97 @@ def resolve_case(
         payload={"case_id": str(case.id), "outcome": outcome},
     )
     return resolution
+
+
+BULK_LIMIT = 100
+
+
+def _bulk_outcome(case_id: Any, outcome: str, code: str = "", message: str = "") -> dict[str, Any]:
+    return {"id": str(case_id), "outcome": outcome, "code": code, "message": message}
+
+
+def _bulk_cases(institution: Institution, case_ids: Iterable[Any]) -> tuple[dict[str, Case], list]:
+    ids = list(dict.fromkeys(str(pk) for pk in case_ids))
+    if len(ids) > BULK_LIMIT:
+        raise ValidationError(f"At most {BULK_LIMIT} cases per bulk request.")
+    found = {str(c.id): c for c in Case.objects.filter(institution=institution, id__in=ids)}
+    return found, ids
+
+
+def bulk_assign_cases(
+    *,
+    institution: Institution,
+    actor: User,
+    case_ids: Iterable[Any],
+    assignee: User | None,
+    note: str = "",
+) -> list[dict[str, Any]]:
+    """Assign many cases. Each case is validated and applied independently, so
+    one bad target never blocks or half-applies the others."""
+    found, ids = _bulk_cases(institution, case_ids)
+    results: list[dict[str, Any]] = []
+    for case_id in ids:
+        case = found.get(case_id)
+        if case is None:
+            results.append(_bulk_outcome(case_id, "NOT_FOUND", "not_found", "Case not found."))
+            continue
+        try:
+            with transaction.atomic():
+                assign_case(
+                    case=case,
+                    assignee=assignee,
+                    assigned_by=actor,
+                    institution=institution,
+                    note=note,
+                )
+        except (PermissionDenied, ValidationError) as exc:
+            results.append(_bulk_outcome(case_id, "FAILED", "rejected", str(exc)))
+        else:
+            results.append(_bulk_outcome(case_id, "SUCCESS"))
+    _audit_bulk("CASE_BULK_ASSIGN", institution, actor, results)
+    return results
+
+
+def bulk_triage_cases(
+    *, institution: Institution, actor: User, case_ids: Iterable[Any], note: str = ""
+) -> list[dict[str, Any]]:
+    """Move OPEN cases to TRIAGED. Only this workflow-safe transition is bulk;
+    resolving, blocking or actioning cases stays a per-case decision."""
+    found, ids = _bulk_cases(institution, case_ids)
+    results: list[dict[str, Any]] = []
+    for case_id in ids:
+        case = found.get(case_id)
+        if case is None:
+            results.append(_bulk_outcome(case_id, "NOT_FOUND", "not_found", "Case not found."))
+            continue
+        try:
+            with transaction.atomic():
+                transition_case_status(
+                    case=case,
+                    new_status=Case.Status.TRIAGED,
+                    institution=institution,
+                    actor=actor,
+                    note=note,
+                )
+        except (PermissionDenied, ValidationError) as exc:
+            results.append(_bulk_outcome(case_id, "FAILED", "invalid_transition", str(exc)))
+        else:
+            results.append(_bulk_outcome(case_id, "SUCCESS"))
+    _audit_bulk("CASE_BULK_TRIAGE", institution, actor, results)
+    return results
+
+
+def _audit_bulk(
+    action: str, institution: Institution, actor: User, results: list[dict[str, Any]]
+) -> None:
+    AuditEvent.objects.create(
+        actor=actor,
+        institution=institution,
+        action=action,
+        outcome=AuditEvent.Outcome.SUCCESS,
+        metadata={
+            "requested": len(results),
+            "succeeded": sum(1 for r in results if r["outcome"] == "SUCCESS"),
+            "failed": sum(1 for r in results if r["outcome"] != "SUCCESS"),
+        },
+    )

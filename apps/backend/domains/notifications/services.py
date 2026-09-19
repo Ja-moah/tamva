@@ -5,7 +5,7 @@ import json
 from string import Template
 from typing import Any
 
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
@@ -216,3 +216,23 @@ def mark_notification_read(*, notification: Notification, recipient: User) -> No
         notification.read_at = timezone.now()
         notification.save(update_fields=["read_at", "updated_at"])
     return notification
+
+
+BULK_READ_LIMIT = 200
+
+
+def bulk_mark_notifications_read(*, recipient: User, notification_ids: list[Any]) -> dict[str, int]:
+    """Mark the recipient's own notifications read. Ids that are not theirs are
+    counted as not found, never as an error that reveals another user's data."""
+    ids = list(dict.fromkeys(str(pk) for pk in notification_ids))
+    if len(ids) > BULK_READ_LIMIT:
+        raise ValidationError(f"At most {BULK_READ_LIMIT} notifications per request.")
+    owned = Notification.objects.filter(recipient=recipient, id__in=ids)
+    updated = owned.filter(read_at__isnull=True).update(read_at=timezone.now())
+    matched = owned.count()
+    return {
+        "requested": len(ids),
+        "marked_read": updated,
+        "already_read": matched - updated,
+        "not_found": len(ids) - matched,
+    }

@@ -35,4 +35,25 @@ CAPABILITIES: dict[str, CapabilityState] = {
     "cross_institution_graph": CapabilityState.NOT_AVAILABLE,
     "merchant_intelligence": CapabilityState.NOT_AVAILABLE,
     "account_takeover_detection": CapabilityState.NOT_AVAILABLE,
+    # Institutional operations surface (Admin).
+    "admin_overview": CapabilityState.AVAILABLE,
+    "customer_directory": CapabilityState.AVAILABLE,
+    "trust_network": CapabilityState.AVAILABLE,
+    "audit_trail": CapabilityState.AVAILABLE,
+    "saved_views": CapabilityState.AVAILABLE,
+    "data_export": CapabilityState.AVAILABLE,
+    # Bulk is limited to case assign, case triage and notification mark-read.
+    "bulk_operations": CapabilityState.PARTIAL,
+    "team_management": CapabilityState.PARTIAL,
+    "team_invitations": CapabilityState.NOT_AVAILABLE,
+    # Credentials and webhooks are managed; request logs and usage metering are not.
+    "partner_integrations": CapabilityState.PARTIAL,
+    "api_usage_metrics": CapabilityState.NOT_AVAILABLE,
+    # Nothing here is derived from data TAMVA records or licenses.
+    "currency_conversion": CapabilityState.NOT_AVAILABLE,
+    "fraud_prevented_value": CapabilityState.NOT_AVAILABLE,
+    "institution_comparison": CapabilityState.NOT_AVAILABLE,
+    "geographic_risk": CapabilityState.NOT_AVAILABLE,
+    "quiet_hours": CapabilityState.NOT_AVAILABLE,
+    "scheduled_reports": CapabilityState.NOT_AVAILABLE,
 }

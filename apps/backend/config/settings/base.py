@@ -47,6 +47,7 @@ DOMAIN_APPS = [
     "domains.graph.apps.GraphConfig",
     "domains.audit.apps.AuditConfig",
     "domains.notifications.apps.NotificationsConfig",
+    "domains.operations.apps.OperationsConfig",
     "packages.events.apps.EventsConfig",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + DOMAIN_APPS
@@ -104,6 +105,19 @@ USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Generated export artifacts. Never served directly: downloads go through an
+# authenticated, audited endpoint. Point default storage at a private bucket in
+# production; this local path is only the development/test default.
+MEDIA_ROOT = BASE_DIR / "media"
+EXPORT_RETENTION_HOURS = int(os.getenv("EXPORT_RETENTION_HOURS", "24"))
+EXPORT_MAX_ROWS = int(os.getenv("EXPORT_MAX_ROWS", "50000"))
+EXPORT_LINK_TTL_SECONDS = int(os.getenv("EXPORT_LINK_TTL_SECONDS", "300"))
+
+# Safe deployment metadata surfaced by GET /api/v1/meta/version/.
+APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
+APP_RELEASE = os.getenv("APP_RELEASE", "")
+APP_ENVIRONMENT = os.getenv("APP_ENVIRONMENT", "development")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
@@ -120,13 +134,55 @@ REST_FRAMEWORK = {
         "risk_evaluation": os.getenv("THROTTLE_RATE_RISK_EVALUATION", "60/min"),
         "passport_share_access": os.getenv("THROTTLE_RATE_PASSPORT_ACCESS", "30/min"),
         "security_observation": os.getenv("THROTTLE_RATE_SECURITY_OBSERVATION", "120/min"),
+        "export": os.getenv("THROTTLE_RATE_EXPORT", "10/min"),
+        "bulk": os.getenv("THROTTLE_RATE_BULK", "20/min"),
     },
 }
+_API_DESCRIPTION = """\
+Financial identity and trust infrastructure.
+
+**Authentication.** Cookie session: `POST /api/v1/auth/login/` with
+`{identifier, password}`. Unsafe methods must echo the `csrftoken` cookie in the
+`X-CSRFToken` header.
+
+**Tenancy.** Institution-scoped endpoints require `X-Institution-ID: <uuid>`;
+the caller must be an active member. Authorization is decided by the backend
+from the caller's roles (see `GET /api/v1/me/`), never by the client.
+
+**Tracing.** Send `X-Request-ID` (any string up to 128 chars) or one is
+generated. It is echoed on every response and in every error envelope.
+
+**Idempotency.** Bulk mutations accept `Idempotency-Key`. The same key with the
+same body replays the original response (`Idempotent-Replay: true`); the same key
+with a different body is a `409`.
+
+**Pagination.** List endpoints return `{count, next, previous, results}` and
+accept `page` and `page_size` (max 100).
+
+**Filtering and sorting.** Filters are query parameters documented per endpoint.
+Unknown parameters are rejected with `400`, not ignored. `ordering` takes a
+comma-separated allow-listed field list; prefix `-` for descending.
+
+**Errors.** `{"error": {"code", "message", "request_id", "details"}}`.
+
+**Rate limits.** Sensitive scopes (auth, credential operations, bulk, export,
+risk evaluation, passport access, security observation) are throttled and
+answer `429` with `Retry-After`. Limits are deployment configuration.
+
+**Scores.** Financial Confidence is 0-100 (higher = stronger verified financial
+confidence). Risk Score is 0-1000 (higher = higher risk). They are unrelated.
+"""
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "TAMVA API",
-    "DESCRIPTION": "Financial Identity & Trust Infrastructure",
+    "DESCRIPTION": _API_DESCRIPTION,
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "ENUM_NAME_OVERRIDES": {
+        "CaseStatusEnum": "domains.case.models.Case.Status",
+        "CaseSourceEnum": "domains.case.models.Case.Source",
+        "ActiveDisabledStatusEnum": "domains.partner.models.PartnerEnvironment.Status",
+    },
 }
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
@@ -142,10 +198,14 @@ CELERY_TASK_REJECT_ON_WORKER_LOST = True
 CELERY_TASK_TRACK_STARTED = True
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_BEAT_SCHEDULE = {
+    "purge-expired-exports": {
+        "task": "domains.operations.tasks.purge_expired_exports",
+        "schedule": 3600.0,
+    },
     "dispatch-pending-outbox-events": {
         "task": "packages.events.tasks.dispatch_pending_outbox_events",
         "schedule": float(os.getenv("OUTBOX_DISPATCH_INTERVAL_SECONDS", "15")),
-    }
+    },
 }
 
 LOGGING = {

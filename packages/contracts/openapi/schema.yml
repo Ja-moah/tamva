@@ -2,8 +2,120 @@ openapi: 3.0.3
 info:
   title: TAMVA API
   version: 1.0.0
-  description: Financial Identity & Trust Infrastructure
+  description: |
+    Financial identity and trust infrastructure.
+
+    **Authentication.** Cookie session: `POST /api/v1/auth/login/` with
+    `{identifier, password}`. Unsafe methods must echo the `csrftoken` cookie in the
+    `X-CSRFToken` header.
+
+    **Tenancy.** Institution-scoped endpoints require `X-Institution-ID: <uuid>`;
+    the caller must be an active member. Authorization is decided by the backend
+    from the caller's roles (see `GET /api/v1/me/`), never by the client.
+
+    **Tracing.** Send `X-Request-ID` (any string up to 128 chars) or one is
+    generated. It is echoed on every response and in every error envelope.
+
+    **Idempotency.** Bulk mutations accept `Idempotency-Key`. The same key with the
+    same body replays the original response (`Idempotent-Replay: true`); the same key
+    with a different body is a `409`.
+
+    **Pagination.** List endpoints return `{count, next, previous, results}` and
+    accept `page` and `page_size` (max 100).
+
+    **Filtering and sorting.** Filters are query parameters documented per endpoint.
+    Unknown parameters are rejected with `400`, not ignored. `ordering` takes a
+    comma-separated allow-listed field list; prefix `-` for descending.
+
+    **Errors.** `{"error": {"code", "message", "request_id", "details"}}`.
+
+    **Rate limits.** Sensitive scopes (auth, credential operations, bulk, export,
+    risk evaluation, passport access, security observation) are throttled and
+    answer `429` with `Retry-After`. Limits are deployment configuration.
+
+    **Scores.** Financial Confidence is 0-100 (higher = stronger verified financial
+    confidence). Risk Score is 0-1000 (higher = higher risk). They are unrelated.
 paths:
+  /api/v1/analytics/summary/:
+    get:
+      operationId: api_v1_analytics_summary_retrieve
+      parameters:
+      - in: query
+        name: days
+        schema:
+          type: integer
+        description: Window in days, 1-366 (default 30).
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/audit/events/:
+    get:
+      operationId: api_v1_audit_events_list
+      description: |-
+        Append-only trail, read-only here. Only events tagged with the active
+        institution are visible; platform-level events are not.
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+      - in: query
+        name: actor
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          action, created_at, outcome.'
+      - in: query
+        name: outcome
+        schema:
+          type: string
+          enum:
+          - FAILURE
+          - SUCCESS
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditEventList'
+          description: ''
   /api/v1/auth/login/:
     post:
       operationId: api_v1_auth_login_create
@@ -78,7 +190,45 @@ paths:
   /api/v1/cases/:
     get:
       operationId: api_v1_cases_list
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
       parameters:
+      - in: query
+        name: assignee
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: case_type
+        schema:
+          type: string
+      - in: query
+        name: customer
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: customer_id
+        schema:
+          type: string
+          format: uuid
+        description: Alias of `customer`.
+      - in: query
+        name: opened_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: opened_to
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          closed_at, opened_at, priority, reference, status.'
       - name: page
         required: false
         in: query
@@ -91,6 +241,42 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: priority
+        schema:
+          type: string
+          enum:
+          - CRITICAL
+          - HIGH
+          - LOW
+          - MEDIUM
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: 'Case-insensitive match across: reference, case_type.'
+      - in: query
+        name: source
+        schema:
+          type: string
+          enum:
+          - AUTOMATIC
+          - MANUAL
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIONED
+          - INVESTIGATING
+          - OPEN
+          - RESOLVED
+          - TRIAGED
+      - in: query
+        name: unassigned
+        schema:
+          type: boolean
+        description: true = no assignee.
       tags:
       - api
       security:
@@ -105,6 +291,8 @@ paths:
           description: ''
     post:
       operationId: api_v1_cases_create
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
       tags:
       - api
       requestBody:
@@ -131,6 +319,8 @@ paths:
   /api/v1/cases/{id}/:
     get:
       operationId: api_v1_cases_retrieve
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
       parameters:
       - in: path
         name: id
@@ -154,6 +344,8 @@ paths:
   /api/v1/cases/{id}/actions/:
     post:
       operationId: api_v1_cases_actions_create
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
       parameters:
       - in: path
         name: id
@@ -188,6 +380,8 @@ paths:
   /api/v1/cases/{id}/assign/:
     post:
       operationId: api_v1_cases_assign_create
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
       parameters:
       - in: path
         name: id
@@ -222,6 +416,8 @@ paths:
   /api/v1/cases/{id}/notes/:
     post:
       operationId: api_v1_cases_notes_create
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
       parameters:
       - in: path
         name: id
@@ -256,6 +452,8 @@ paths:
   /api/v1/cases/{id}/resolve/:
     post:
       operationId: api_v1_cases_resolve_create
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
       parameters:
       - in: path
         name: id
@@ -290,6 +488,8 @@ paths:
   /api/v1/cases/{id}/transition/:
     post:
       operationId: api_v1_cases_transition_create
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
       parameters:
       - in: path
         name: id
@@ -321,6 +521,56 @@ paths:
               schema:
                 $ref: '#/components/schemas/Case'
           description: ''
+  /api/v1/cases/bulk-assign/:
+    post:
+      operationId: api_v1_cases_bulk_assign_create
+      description: Assign up to 100 cases. Each case is applied independently and
+        reported in `data.results`. Send `Idempotency-Key` to make retries safe.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkAssignCases'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BulkAssignCases'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BulkAssignCases'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/cases/bulk-triage/:
+    post:
+      operationId: api_v1_cases_bulk_triage_create
+      description: Move up to 100 OPEN cases to TRIAGED; other transitions are not
+        bulk.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkTriageCases'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BulkTriageCases'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BulkTriageCases'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/consents/:
     get:
       operationId: api_v1_consents_list
@@ -447,6 +697,587 @@ paths:
               schema:
                 $ref: '#/components/schemas/Consent'
           description: ''
+  /api/v1/customers/:
+    get:
+      operationId: customers_list
+      description: Consent-scoped customer summaries. No raw transactions or balances.
+      parameters:
+      - in: query
+        name: connection_state
+        schema:
+          type: string
+          enum:
+          - CONNECTED
+          - NOT_CONNECTED
+      - in: query
+        name: consent_state
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - NONE
+      - in: query
+        name: financial_confidence_band
+        schema:
+          type: string
+        description: Policy-defined band name.
+      - in: query
+        name: latest_decision
+        schema:
+          type: string
+          enum:
+          - ALLOW
+          - BLOCK
+          - CHALLENGE
+          - HOLD
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          financial_confidence, last_login, latest_risk_score, name, open_cases, profile_completeness.'
+      - in: query
+        name: profile_completeness_max
+        schema:
+          type: number
+          format: double
+      - in: query
+        name: profile_completeness_min
+        schema:
+          type: number
+          format: double
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: 'Case-insensitive match across: email, username, first_name,
+          last_name.'
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/customers/{id}/:
+    get:
+      operationId: customers_retrieve
+      description: Consent-scoped customer summaries. No raw transactions or balances.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/exports/:
+    get:
+      operationId: api_v1_exports_list
+      description: Export jobs are private to the actor who requested them.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedExportJobList'
+          description: ''
+    post:
+      operationId: api_v1_exports_create
+      description: Export jobs are private to the actor who requested them.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJob'
+          description: ''
+  /api/v1/exports/{id}/:
+    get:
+      operationId: api_v1_exports_retrieve
+      description: Export jobs are private to the actor who requested them.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this export job.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJob'
+          description: ''
+  /api/v1/exports/{id}/download/:
+    get:
+      operationId: api_v1_exports_download_retrieve
+      description: Export jobs are private to the actor who requested them.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this export job.
+        required: true
+      - in: query
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/v1/exports/{id}/download-link/:
+    post:
+      operationId: api_v1_exports_download_link_create
+      description: Export jobs are private to the actor who requested them.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this export job.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/institution/locale/:
+    get:
+      operationId: api_v1_institution_locale_retrieve
+      description: |-
+        Country/currency/timezone/locale for the active institution.
+
+        Presentation defaults only: it never converts or restates financial records.
+        Institutions with no stored settings report the Ghana-first defaults and
+        `is_default: true`, so a client can tell defaults from a deliberate choice.
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocaleSettings'
+          description: ''
+    patch:
+      operationId: api_v1_institution_locale_partial_update
+      description: |-
+        Country/currency/timezone/locale for the active institution.
+
+        Presentation defaults only: it never converts or restates financial records.
+        Institutions with no stored settings report the Ghana-first defaults and
+        `is_default: true`, so a client can tell defaults from a deliberate choice.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLocaleSettings'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLocaleSettings'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLocaleSettings'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocaleSettings'
+          description: ''
+  /api/v1/integrations/applications/:
+    get:
+      operationId: api_v1_integrations_applications_list
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
+      parameters:
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          created, name, status.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: 'Case-insensitive match across: name, slug.'
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - REVOKED
+          - SUSPENDED
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedApplicationList'
+          description: ''
+    post:
+      operationId: api_v1_integrations_applications_create
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Application'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Application'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Application'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+          description: ''
+  /api/v1/integrations/applications/{id}/:
+    get:
+      operationId: api_v1_integrations_applications_retrieve
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this partner application.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+          description: ''
+  /api/v1/integrations/applications/{id}/environments/:
+    post:
+      operationId: api_v1_integrations_applications_environments_create
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this partner application.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Application'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Application'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Application'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+          description: ''
+  /api/v1/integrations/connections/:
+    get:
+      operationId: api_v1_integrations_connections_list
+      description: 'Connection health only: no credential references, no external
+        account ids.'
+      parameters:
+      - in: query
+        name: customer
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          created, last_synced_at, provider, status.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: provider
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - FAILED
+          - PAUSED
+          - REVOKED
+      - in: query
+        name: synced_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: synced_to
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConnectionList'
+          description: ''
+  /api/v1/integrations/credentials/{credential_id}/revoke/:
+    post:
+      operationId: api_v1_integrations_credentials_revoke_create
+      parameters:
+      - in: path
+        name: credential_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Credential'
+          description: ''
+  /api/v1/integrations/credentials/{credential_id}/rotate/:
+    post:
+      operationId: api_v1_integrations_credentials_rotate_create
+      parameters:
+      - in: path
+        name: credential_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          description: No response body
+  /api/v1/integrations/environments/{environment_id}/credentials/:
+    post:
+      operationId: api_v1_integrations_environments_credentials_create
+      parameters:
+      - in: path
+        name: environment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueCredential'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IssueCredential'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IssueCredential'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          description: No response body
+  /api/v1/integrations/environments/{environment_id}/webhooks/:
+    post:
+      operationId: api_v1_integrations_environments_webhooks_create
+      parameters:
+      - in: path
+        name: environment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWebhook'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateWebhook'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateWebhook'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+          description: ''
+  /api/v1/integrations/scopes/:
+    get:
+      operationId: api_v1_integrations_scopes_retrieve
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/me/:
     get:
       operationId: api_v1_me_retrieve
@@ -462,6 +1293,200 @@ paths:
               schema:
                 $ref: '#/components/schemas/ActorContextEnvelope'
           description: ''
+  /api/v1/meta/version/:
+    get:
+      operationId: api_v1_meta_version_retrieve
+      description: |-
+        Safe, unauthenticated deployment metadata so clients can label the
+        environment truthfully. Never returns hostnames, settings or secrets.
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+          description: ''
+  /api/v1/network/customers/{customer_id}/metrics/:
+    get:
+      operationId: api_v1_network_customers_metrics_retrieve
+      parameters:
+      - in: path
+        name: customer_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/network/edges/:
+    get:
+      operationId: api_v1_network_edges_list
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
+      parameters:
+      - in: query
+        name: edge_type
+        schema:
+          type: string
+          enum:
+          - ACCOUNT_TRANSACTED_WITH_COUNTERPARTY
+          - CASE_RELATES_TO_CUSTOMER
+          - CASE_RELATES_TO_RISK_EVENT
+          - CUSTOMER_CONNECTED_TO_INSTITUTION
+          - CUSTOMER_OWNS_ACCOUNT
+      - in: query
+        name: last_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: last_to
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          edge_type, last_occurred_at, occurrence_count.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: source
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: target
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGraphEdgeList'
+          description: ''
+  /api/v1/network/nodes/:
+    get:
+      operationId: api_v1_network_nodes_list
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
+      parameters:
+      - in: query
+        name: node_type
+        schema:
+          type: string
+          enum:
+          - ACCOUNT
+          - CASE
+          - COUNTERPARTY
+          - CUSTOMER
+          - INSTITUTION
+          - RISK_EVENT
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          created, label, node_type.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: reference
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: 'Case-insensitive match across: label.'
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGraphNodeList'
+          description: ''
+  /api/v1/network/nodes/{id}/:
+    get:
+      operationId: api_v1_network_nodes_retrieve
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this graph node.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphNode'
+          description: ''
+  /api/v1/network/summary/:
+    get:
+      operationId: api_v1_network_summary_retrieve
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/notification-preferences/:
     get:
       operationId: api_v1_notification_preferences_list
@@ -527,6 +1552,35 @@ paths:
       operationId: api_v1_notifications_list
       description: 'Customer-facing: a recipient only ever sees their own notifications.'
       parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+      - in: query
+        name: channel
+        schema:
+          type: string
+          enum:
+          - EMAIL
+          - IN_APP
+          - PUSH
+          - SMS
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          channel, created_at, state.'
       - name: page
         required: false
         in: query
@@ -539,6 +1593,21 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: state
+        schema:
+          type: string
+          enum:
+          - FAILED
+          - PENDING
+          - SENDING
+          - SENT
+          - SKIPPED
+      - in: query
+        name: unread
+        schema:
+          type: boolean
+        description: true = not yet read.
       tags:
       - api
       security:
@@ -610,6 +1679,47 @@ paths:
               schema:
                 $ref: '#/components/schemas/Notification'
           description: ''
+  /api/v1/notifications/bulk-read/:
+    post:
+      operationId: api_v1_notifications_bulk_read_create
+      description: 'Customer-facing: a recipient only ever sees their own notifications.'
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkRead'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BulkRead'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BulkRead'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/overview/:
+    get:
+      operationId: api_v1_overview_retrieve
+      parameters:
+      - in: query
+        name: days
+        schema:
+          type: integer
+        description: Window in days, 1-366 (default 30).
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/passport/customers/{customer_id}/:
     get:
       operationId: api_v1_passport_customers_retrieve
@@ -781,6 +1891,20 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/resources/:
+    get:
+      operationId: api_v1_resources_retrieve
+      description: |-
+        What a client may filter, sort and export for each resource *for this
+        actor*: drives filter bars, column pickers and saved-view forms.
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/risk/events/:
     get:
       operationId: api_v1_risk_events_list
@@ -789,6 +1913,42 @@ paths:
         pipeline (domains.risk.services.evaluate_risk); this surface only
         retrieves already-computed, immutable results.
       parameters:
+      - in: query
+        name: customer
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: customer_id
+        schema:
+          type: string
+          format: uuid
+        description: Alias of `customer`.
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: decision
+        schema:
+          type: string
+          enum:
+          - ALLOW
+          - BLOCK
+          - CHALLENGE
+          - HOLD
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          confidence, decision, evaluated_at, score.'
       - name: page
         required: false
         in: query
@@ -801,6 +1961,26 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: reason_code
+        schema:
+          type: string
+      - in: query
+        name: score_max
+        schema:
+          type: number
+          format: double
+      - in: query
+        name: score_min
+        schema:
+          type: number
+          format: double
+        description: Risk score, 0-1000.
+      - in: query
+        name: severity
+        schema:
+          type: string
+        description: Reason severity.
       tags:
       - api
       security:
@@ -840,6 +2020,366 @@ paths:
               schema:
                 $ref: '#/components/schemas/RiskEventDetail'
           description: ''
+  /api/v1/saved-views/:
+    get:
+      operationId: api_v1_saved_views_list
+      description: Private to their owner within one institution.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSavedViewList'
+          description: ''
+    post:
+      operationId: api_v1_saved_views_create
+      description: Private to their owner within one institution.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavedView'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SavedView'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SavedView'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedView'
+          description: ''
+  /api/v1/saved-views/{id}/:
+    get:
+      operationId: api_v1_saved_views_retrieve
+      description: Private to their owner within one institution.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this saved view.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedView'
+          description: ''
+    patch:
+      operationId: api_v1_saved_views_partial_update
+      description: Private to their owner within one institution.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this saved view.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSavedView'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSavedView'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSavedView'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedView'
+          description: ''
+    delete:
+      operationId: api_v1_saved_views_destroy
+      description: Private to their owner within one institution.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this saved view.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/security/devices/:
+    get:
+      operationId: api_v1_security_devices_list
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
+      parameters:
+      - in: query
+        name: customer
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: last_seen_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: last_seen_to
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          first_seen_at, last_seen_at, observation_count.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: source
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - BLOCKED
+          - SUSPICIOUS
+          - TRUSTED
+          - UNKNOWN
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCustomerDeviceList'
+          description: ''
+  /api/v1/security/events/:
+    get:
+      operationId: api_v1_security_events_list
+      description: |-
+        Read-only. Events are produced by backend services from evidence;
+        dark-web, breach and account-takeover detections do not exist yet
+        (see `/capabilities/`) and are never synthesized here.
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+          enum:
+          - ACCOUNT_ACCESS_ANOMALY
+          - AUTHENTICATION_FAILURE
+          - CONSENT_SECURITY_EVENT
+          - CREDENTIAL_EVENT
+          - NEW_DEVICE
+          - UNUSUAL_LOCATION
+      - in: query
+        name: customer
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          category, occurred_at, severity.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: severity
+        schema:
+          type: string
+          enum:
+          - CRITICAL
+          - HIGH
+          - INFO
+          - WARNING
+      - in: query
+        name: source
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSecurityEventList'
+          description: ''
+  /api/v1/security/events/{id}/:
+    get:
+      operationId: api_v1_security_events_retrieve
+      description: |-
+        Read-only. Events are produced by backend services from evidence;
+        dark-web, breach and account-takeover detections do not exist yet
+        (see `/capabilities/`) and are never synthesized here.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this security event.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityEvent'
+          description: ''
+  /api/v1/security/locations/:
+    get:
+      operationId: api_v1_security_locations_list
+      description: Applies the declared filters to `list` (DRF calls `filter_queryset`
+        there).
+      parameters:
+      - in: query
+        name: country_code
+        schema:
+          type: string
+      - in: query
+        name: customer
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          confidence, observed_at.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: source
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLocationObservationList'
+          description: ''
   /api/v1/security/observations/:
     post:
       operationId: api_v1_security_observations_create
@@ -878,6 +2418,195 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ObservationCreated'
+          description: ''
+  /api/v1/team/members/:
+    get:
+      operationId: api_v1_team_members_list
+      description: |-
+        Membership and RBAC for the active institution. Authorization is decided
+        here, by the backend; the roles offered are the catalog roles only.
+      parameters:
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Comma-separated sort fields; prefix `-` for descending. Allowed:
+          email, joined, last_login, status.'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: role
+        schema:
+          type: string
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: 'Case-insensitive match across: user__email, user__first_name,
+          user__last_name, user__username.'
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - ENDED
+          - SUSPENDED
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMemberList'
+          description: ''
+  /api/v1/team/members/{id}/:
+    get:
+      operationId: api_v1_team_members_retrieve
+      description: |-
+        Membership and RBAC for the active institution. Authorization is decided
+        here, by the backend; the roles offered are the catalog roles only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this institution membership.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+          description: ''
+  /api/v1/team/members/{id}/roles/:
+    post:
+      operationId: api_v1_team_members_roles_create
+      description: |-
+        Membership and RBAC for the active institution. Authorization is decided
+        here, by the backend; the roles offered are the catalog roles only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this institution membership.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Member'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Member'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Member'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+          description: ''
+  /api/v1/team/members/{id}/status/:
+    post:
+      operationId: api_v1_team_members_status_create
+      description: |-
+        Membership and RBAC for the active institution. Authorization is decided
+        here, by the backend; the roles offered are the catalog roles only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this institution membership.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Member'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Member'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Member'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+          description: ''
+  /api/v1/team/permissions/:
+    get:
+      operationId: api_v1_team_permissions_list
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Permission'
+          description: ''
+  /api/v1/team/roles/:
+    get:
+      operationId: api_v1_team_roles_list
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
           description: ''
   /health/:
     get:
@@ -964,6 +2693,14 @@ components:
         * `RECOMMEND_BLOCK` - Recommend block
         * `RECOMMEND_ALLOW` - Recommend allow
         * `OTHER` - Other
+    ActiveDisabledStatusEnum:
+      enum:
+      - ACTIVE
+      - DISABLED
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `DISABLED` - Disabled
     ActorContext:
       type: object
       properties:
@@ -1036,6 +2773,142 @@ components:
       - email
       - id
       - status
+    Application:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ApplicationStatusEnum'
+          readOnly: true
+        environments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Environment'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - description
+      - environments
+      - id
+      - name
+      - slug
+      - status
+    ApplicationStatusEnum:
+      enum:
+      - ACTIVE
+      - SUSPENDED
+      - REVOKED
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `SUSPENDED` - Suspended
+        * `REVOKED` - Revoked
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        actor_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        action:
+          type: string
+          readOnly: true
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/AuditEventOutcomeEnum'
+          readOnly: true
+        metadata:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action
+      - actor_id
+      - created_at
+      - id
+      - metadata
+      - outcome
+    AuditEventOutcomeEnum:
+      enum:
+      - SUCCESS
+      - FAILURE
+      type: string
+      description: |-
+        * `SUCCESS` - Success
+        * `FAILURE` - Failure
+    BulkAssignCases:
+      type: object
+      properties:
+        case_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 100
+          minItems: 1
+        assignee_id:
+          type: string
+          format: uuid
+          nullable: true
+        note:
+          type: string
+          default: ''
+          maxLength: 2000
+      required:
+      - case_ids
+    BulkRead:
+      type: object
+      properties:
+        notification_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 200
+          minItems: 1
+      required:
+      - notification_ids
+    BulkTriageCases:
+      type: object
+      properties:
+        case_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 100
+          minItems: 1
+        note:
+          type: string
+          default: ''
+          maxLength: 2000
+      required:
+      - case_ids
     CapabilitiesResponse:
       type: object
       properties:
@@ -1068,11 +2941,11 @@ components:
           readOnly: true
         status:
           allOf:
-          - $ref: '#/components/schemas/StatusC7dEnum'
+          - $ref: '#/components/schemas/CaseStatusEnum'
           readOnly: true
         source:
           allOf:
-          - $ref: '#/components/schemas/Source03cEnum'
+          - $ref: '#/components/schemas/CaseSourceEnum'
           readOnly: true
         current_assignee_id:
           type: string
@@ -1173,11 +3046,11 @@ components:
           readOnly: true
         status:
           allOf:
-          - $ref: '#/components/schemas/StatusC7dEnum'
+          - $ref: '#/components/schemas/CaseStatusEnum'
           readOnly: true
         source:
           allOf:
-          - $ref: '#/components/schemas/Source03cEnum'
+          - $ref: '#/components/schemas/CaseSourceEnum'
           readOnly: true
         current_assignee_id:
           type: string
@@ -1261,7 +3134,7 @@ components:
       properties:
         outcome:
           allOf:
-          - $ref: '#/components/schemas/OutcomeEnum'
+          - $ref: '#/components/schemas/CaseResolutionOutcomeEnum'
           readOnly: true
         reason:
           type: string
@@ -1279,6 +3152,44 @@ components:
       - reason
       - resolved_at
       - resolved_by_id
+    CaseResolutionOutcomeEnum:
+      enum:
+      - CONFIRMED_RISK
+      - CLEARED
+      - FALSE_POSITIVE
+      - CUSTOMER_VERIFIED
+      - POLICY_EXCEPTION
+      - OTHER
+      type: string
+      description: |-
+        * `CONFIRMED_RISK` - Confirmed risk
+        * `CLEARED` - Cleared
+        * `FALSE_POSITIVE` - False positive
+        * `CUSTOMER_VERIFIED` - Customer verified
+        * `POLICY_EXCEPTION` - Policy exception
+        * `OTHER` - Other
+    CaseSourceEnum:
+      enum:
+      - AUTOMATIC
+      - MANUAL
+      type: string
+      description: |-
+        * `AUTOMATIC` - Automatic
+        * `MANUAL` - Manual
+    CaseStatusEnum:
+      enum:
+      - OPEN
+      - TRIAGED
+      - INVESTIGATING
+      - ACTIONED
+      - RESOLVED
+      type: string
+      description: |-
+        * `OPEN` - Open
+        * `TRIAGED` - Triaged
+        * `INVESTIGATING` - Investigating
+        * `ACTIONED` - Actioned
+        * `RESOLVED` - Resolved
     CaseStatusEvent:
       type: object
       properties:
@@ -1306,6 +3217,22 @@ components:
       - note
       - occurred_at
       - previous_status
+    CategoryEnum:
+      enum:
+      - AUTHENTICATION_FAILURE
+      - NEW_DEVICE
+      - UNUSUAL_LOCATION
+      - CREDENTIAL_EVENT
+      - CONSENT_SECURITY_EVENT
+      - ACCOUNT_ACCESS_ANOMALY
+      type: string
+      description: |-
+        * `AUTHENTICATION_FAILURE` - Authentication failure
+        * `NEW_DEVICE` - New device
+        * `UNUSUAL_LOCATION` - Unusual location
+        * `CREDENTIAL_EVENT` - Credential event
+        * `CONSENT_SECURITY_EVENT` - Consent security event
+        * `ACCOUNT_ACCESS_ANOMALY` - Account access anomaly
     ChannelEnum:
       enum:
       - IN_APP
@@ -1318,6 +3245,65 @@ components:
         * `EMAIL` - Email
         * `SMS` - SMS
         * `PUSH` - Push
+    Connection:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        provider:
+          type: string
+          readOnly: true
+        provider_name:
+          type: string
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          readOnly: true
+        purpose_code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        scope_code:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ConnectionStatusEnum'
+          readOnly: true
+        last_synced_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - customer_id
+      - id
+      - last_synced_at
+      - provider
+      - provider_name
+      - purpose_code
+      - scope_code
+      - status
+    ConnectionStatusEnum:
+      enum:
+      - ACTIVE
+      - PAUSED
+      - REVOKED
+      - FAILED
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `PAUSED` - Paused
+        * `REVOKED` - Revoked
+        * `FAILED` - Failed
     Consent:
       type: object
       properties:
@@ -1373,6 +3359,137 @@ components:
         * `GRANTED` - Granted
         * `EXPIRED` - Expired
         * `REVOKED` - Revoked
+    CreateWebhook:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          maxLength: 500
+        event_types:
+          type: array
+          items:
+            type: string
+          maxItems: 50
+          minItems: 1
+      required:
+      - event_types
+      - url
+    Credential:
+      type: object
+      description: |-
+        Credential metadata only. The secret is never stored in plaintext and is
+        returned exactly once, by the issue/rotate response.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        client_id:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/CredentialStatusEnum'
+          readOnly: true
+        scopes:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        revoked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        last_used_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - client_id
+      - created_at
+      - expires_at
+      - id
+      - last_used_at
+      - name
+      - revoked_at
+      - scopes
+      - status
+    CredentialStatusEnum:
+      enum:
+      - ACTIVE
+      - REVOKED
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `REVOKED` - Revoked
+    CustomerDevice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          readOnly: true
+        device_ref:
+          type: string
+          readOnly: true
+        source:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/CustomerDeviceStatusEnum'
+          readOnly: true
+        first_seen_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_seen_at:
+          type: string
+          format: date-time
+          readOnly: true
+        observation_count:
+          type: integer
+          readOnly: true
+      required:
+      - customer_id
+      - device_ref
+      - first_seen_at
+      - id
+      - last_seen_at
+      - observation_count
+      - source
+      - status
+    CustomerDeviceStatusEnum:
+      enum:
+      - UNKNOWN
+      - TRUSTED
+      - SUSPICIOUS
+      - BLOCKED
+      type: string
+      description: |-
+        * `UNKNOWN` - Unknown
+        * `TRUSTED` - Trusted
+        * `SUSPICIOUS` - Suspicious
+        * `BLOCKED` - Blocked
     DecisionEnum:
       enum:
       - ALLOW
@@ -1396,6 +3513,232 @@ components:
           pattern: ^[A-Za-z0-9._:-]{8,128}$
       required:
       - opaque_device_id
+    EdgeTypeEnum:
+      enum:
+      - CUSTOMER_OWNS_ACCOUNT
+      - CUSTOMER_CONNECTED_TO_INSTITUTION
+      - ACCOUNT_TRANSACTED_WITH_COUNTERPARTY
+      - CASE_RELATES_TO_CUSTOMER
+      - CASE_RELATES_TO_RISK_EVENT
+      type: string
+      description: |-
+        * `CUSTOMER_OWNS_ACCOUNT` - Customer owns account
+        * `CUSTOMER_CONNECTED_TO_INSTITUTION` - Customer connected to institution
+        * `ACCOUNT_TRANSACTED_WITH_COUNTERPARTY` - Account transacted with counterparty
+        * `CASE_RELATES_TO_CUSTOMER` - Case relates to customer
+        * `CASE_RELATES_TO_RISK_EVENT` - Case relates to risk event
+    Environment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/KindEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ActiveDisabledStatusEnum'
+          readOnly: true
+        credentials:
+          type: array
+          items:
+            $ref: '#/components/schemas/Credential'
+          readOnly: true
+        webhooks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Webhook'
+          readOnly: true
+      required:
+      - credentials
+      - id
+      - kind
+      - status
+      - webhooks
+    ExportJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        resource_type:
+          allOf:
+          - $ref: '#/components/schemas/ResourceTypeEnum'
+          readOnly: true
+        format:
+          allOf:
+          - $ref: '#/components/schemas/FormatEnum'
+          readOnly: true
+        filters:
+          readOnly: true
+        ordering:
+          type: string
+          readOnly: true
+        columns:
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ExportJobStatusEnum'
+          readOnly: true
+        row_count:
+          type: integer
+          readOnly: true
+        error_code:
+          type: string
+          readOnly: true
+        artifact_size:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - artifact_size
+      - columns
+      - completed_at
+      - created_at
+      - error_code
+      - expires_at
+      - filters
+      - format
+      - id
+      - ordering
+      - resource_type
+      - row_count
+      - status
+    ExportJobStatusEnum:
+      enum:
+      - PENDING
+      - RUNNING
+      - COMPLETED
+      - FAILED
+      - EXPIRED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `RUNNING` - Running
+        * `COMPLETED` - Completed
+        * `FAILED` - Failed
+        * `EXPIRED` - Expired
+    ExportRequest:
+      type: object
+      properties:
+        resource_type:
+          $ref: '#/components/schemas/ResourceTypeEnum'
+        format:
+          allOf:
+          - $ref: '#/components/schemas/FormatEnum'
+          default: CSV
+        filters:
+          type: object
+          additionalProperties: {}
+        ordering:
+          type: string
+          default: ''
+          maxLength: 200
+        columns:
+          type: array
+          items:
+            type: string
+            maxLength: 100
+          maxItems: 50
+        selected_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 1000
+      required:
+      - resource_type
+    FormatEnum:
+      enum:
+      - CSV
+      - XLSX
+      type: string
+      description: |-
+        * `CSV` - CSV
+        * `XLSX` - XLSX
+    GraphEdge:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        edge_type:
+          allOf:
+          - $ref: '#/components/schemas/EdgeTypeEnum'
+          readOnly: true
+        source_id:
+          type: string
+          format: uuid
+          readOnly: true
+        target_id:
+          type: string
+          format: uuid
+          readOnly: true
+        occurrence_count:
+          type: integer
+          readOnly: true
+        first_occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - edge_type
+      - first_occurred_at
+      - id
+      - last_occurred_at
+      - occurrence_count
+      - source_id
+      - target_id
+    GraphNode:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        node_type:
+          allOf:
+          - $ref: '#/components/schemas/NodeTypeEnum'
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        reference_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - label
+      - node_type
+      - reference_id
     HealthResponse:
       type: object
       properties:
@@ -1406,6 +3749,35 @@ components:
       required:
       - database
       - status
+    IssueCredential:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 150
+        scopes:
+          type: array
+          items:
+            type: string
+          maxItems: 50
+          minItems: 1
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - name
+      - scopes
+    KindEnum:
+      enum:
+      - SANDBOX
+      - STAGING
+      - PRODUCTION
+      type: string
+      description: |-
+        * `SANDBOX` - Sandbox
+        * `STAGING` - Staging
+        * `PRODUCTION` - Production
     LivenessResponse:
       type: object
       properties:
@@ -1413,6 +3785,62 @@ components:
           type: string
       required:
       - status
+    LocaleSettings:
+      type: object
+      properties:
+        country_code:
+          type: string
+          maxLength: 2
+        default_currency:
+          type: string
+          maxLength: 3
+        timezone:
+          type: string
+          maxLength: 64
+        locale:
+          type: string
+          maxLength: 20
+    LocationObservation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          readOnly: true
+        source:
+          type: string
+          readOnly: true
+        country_code:
+          type: string
+          readOnly: true
+        region:
+          type: string
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        confidence:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,4})?$
+          readOnly: true
+        observed_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - city
+      - confidence
+      - country_code
+      - customer_id
+      - id
+      - observed_at
+      - region
+      - source
     LocationPayload:
       type: object
       description: |-
@@ -1446,12 +3874,89 @@ components:
       required:
       - identifier
       - password
+    Member:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user_id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        actor_type:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/MemberStatusEnum'
+          readOnly: true
+        roles:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - actor_type
+      - created_at
+      - email
+      - id
+      - last_login
+      - name
+      - roles
+      - status
+      - user_id
+    MemberStatusEnum:
+      enum:
+      - ACTIVE
+      - SUSPENDED
+      - ENDED
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `SUSPENDED` - Suspended
+        * `ENDED` - Ended
+    NodeTypeEnum:
+      enum:
+      - CUSTOMER
+      - INSTITUTION
+      - ACCOUNT
+      - COUNTERPARTY
+      - CASE
+      - RISK_EVENT
+      type: string
+      description: |-
+        * `CUSTOMER` - Customer
+        * `INSTITUTION` - Institution
+        * `ACCOUNT` - Account
+        * `COUNTERPARTY` - Counterparty
+        * `CASE` - Case
+        * `RISK_EVENT` - Risk event
     Notification:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          readOnly: true
+        category:
+          type: string
           readOnly: true
         channel:
           allOf:
@@ -1478,6 +3983,7 @@ components:
           readOnly: true
       required:
       - body
+      - category
       - channel
       - created_at
       - id
@@ -1564,22 +4070,52 @@ components:
             type: string
       required:
       - data
-    OutcomeEnum:
-      enum:
-      - CONFIRMED_RISK
-      - CLEARED
-      - FALSE_POSITIVE
-      - CUSTOMER_VERIFIED
-      - POLICY_EXCEPTION
-      - OTHER
-      type: string
-      description: |-
-        * `CONFIRMED_RISK` - Confirmed risk
-        * `CLEARED` - Cleared
-        * `FALSE_POSITIVE` - False positive
-        * `CUSTOMER_VERIFIED` - Customer verified
-        * `POLICY_EXCEPTION` - Policy exception
-        * `OTHER` - Other
+    PaginatedApplicationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Application'
+    PaginatedAuditEventList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEvent'
     PaginatedCaseList:
       type: object
       required:
@@ -1603,6 +4139,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Case'
+    PaginatedConnectionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Connection'
     PaginatedConsentList:
       type: object
       required:
@@ -1626,6 +4185,144 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Consent'
+    PaginatedCustomerDeviceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerDevice'
+    PaginatedExportJobList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportJob'
+    PaginatedGraphEdgeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphEdge'
+    PaginatedGraphNodeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphNode'
+    PaginatedLocationObservationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationObservation'
+    PaginatedMemberList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Member'
     PaginatedNotificationList:
       type: object
       required:
@@ -1718,6 +4415,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RiskEvent'
+    PaginatedSavedViewList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SavedView'
+    PaginatedSecurityEventList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SecurityEvent'
     PassportShare:
       type: object
       properties:
@@ -1799,6 +4542,70 @@ components:
       - is_current
       - schema_version
       - sections
+    PatchedLocaleSettings:
+      type: object
+      properties:
+        country_code:
+          type: string
+          maxLength: 2
+        default_currency:
+          type: string
+          maxLength: 3
+        timezone:
+          type: string
+          maxLength: 64
+        locale:
+          type: string
+          maxLength: 20
+    PatchedSavedView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        resource_type:
+          $ref: '#/components/schemas/ResourceTypeEnum'
+        name:
+          type: string
+          maxLength: 100
+        filters:
+          type: object
+          additionalProperties:
+            type: string
+        ordering:
+          type: string
+          maxLength: 200
+        visible_columns:
+          type: array
+          items:
+            type: string
+            maxLength: 100
+          maxItems: 50
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    Permission:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+      required:
+      - code
+      - description
+      - name
     PriorityEnum:
       enum:
       - LOW
@@ -1824,6 +4631,22 @@ components:
       - cache
       - database
       - status
+    ResourceTypeEnum:
+      enum:
+      - RISK_EVENTS
+      - CASES
+      - CUSTOMERS
+      - NOTIFICATIONS
+      - SECURITY_EVENTS
+      - AUDIT_EVENTS
+      type: string
+      description: |-
+        * `RISK_EVENTS` - Risk events
+        * `CASES` - Cases
+        * `CUSTOMERS` - Customers
+        * `NOTIFICATIONS` - Notifications
+        * `SECURITY_EVENTS` - Security events
+        * `AUDIT_EVENTS` - Audit events
     RiskEvent:
       type: object
       properties:
@@ -1971,6 +4794,67 @@ components:
         * `MODEL` - Model
         * `POLICY` - Policy
         * `EVIDENCE` - Evidence
+    Role:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        permissions:
+          type: array
+          items:
+            type: string
+          readOnly: true
+      required:
+      - code
+      - description
+      - name
+      - permissions
+    SavedView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        resource_type:
+          $ref: '#/components/schemas/ResourceTypeEnum'
+        name:
+          type: string
+          maxLength: 100
+        filters:
+          type: object
+          additionalProperties:
+            type: string
+        ordering:
+          type: string
+          maxLength: 200
+        visible_columns:
+          type: array
+          items:
+            type: string
+            maxLength: 100
+          maxItems: 50
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+      - resource_type
+      - updated_at
     SectionsEnum:
       enum:
       - IDENTITY
@@ -1995,28 +4879,62 @@ components:
         * `SELECTED_TRUST_SIGNALS` - Selected trust signals
         * `SELECTED_RISK_SUMMARY` - Selected risk summary
         * `NETWORK_SUMMARY` - Network summary
-    Source03cEnum:
+    SecurityEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          readOnly: true
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          readOnly: true
+        source:
+          type: string
+          readOnly: true
+        occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+        provenance_type:
+          type: string
+          readOnly: true
+        provenance_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - category
+      - customer_id
+      - id
+      - occurred_at
+      - provenance_id
+      - provenance_type
+      - severity
+      - source
+    SeverityEnum:
       enum:
-      - AUTOMATIC
-      - MANUAL
+      - INFO
+      - WARNING
+      - HIGH
+      - CRITICAL
       type: string
       description: |-
-        * `AUTOMATIC` - Automatic
-        * `MANUAL` - Manual
-    StatusC7dEnum:
-      enum:
-      - OPEN
-      - TRIAGED
-      - INVESTIGATING
-      - ACTIONED
-      - RESOLVED
-      type: string
-      description: |-
-        * `OPEN` - Open
-        * `TRIAGED` - Triaged
-        * `INVESTIGATING` - Investigating
-        * `ACTIONED` - Actioned
-        * `RESOLVED` - Resolved
+        * `INFO` - Info
+        * `WARNING` - Warning
+        * `HIGH` - High
+        * `CRITICAL` - Critical
     TypeEnum:
       enum:
       - DEVICE
@@ -2025,6 +4943,62 @@ components:
       description: |-
         * `DEVICE` - DEVICE
         * `LOCATION` - LOCATION
+    VersionInfo:
+      type: object
+      properties:
+        api_version:
+          type: string
+        application_version:
+          type: string
+        environment:
+          type: string
+        release:
+          type: string
+      required:
+      - api_version
+      - application_version
+      - environment
+      - release
+    VersionResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/VersionInfo'
+      required:
+      - data
+    Webhook:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        event_types:
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ActiveDisabledStatusEnum'
+          readOnly: true
+        verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - event_types
+      - id
+      - status
+      - url
+      - verified_at
   securitySchemes:
     basicAuth:
       type: http
