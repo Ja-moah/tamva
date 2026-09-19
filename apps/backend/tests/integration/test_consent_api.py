@@ -73,3 +73,18 @@ def test_customer_cannot_read_another_customers_consent_by_id_guessing(
 
     response = api_client.get(f"/api/v1/consents/{consent.id}/")
     assert response.status_code == 404
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_consent_list_names_the_institution_and_purpose_for_display(
+    api_client, normalisation_context
+) -> None:
+    api_client.force_authenticate(user=normalisation_context[0])
+
+    response = api_client.get("/api/v1/consents/")
+
+    row = response.data["results"][0]
+    assert row["institution_name"] == "Normalisation Bank"
+    assert row["purpose_name"] == "Canonical mapping"
+    assert row["status"] == "GRANTED"

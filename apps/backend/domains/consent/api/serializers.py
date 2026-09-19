@@ -9,7 +9,9 @@ from domains.partner.models import Institution
 
 
 class ConsentSerializer(serializers.ModelSerializer):
+    institution_name = serializers.CharField(source="institution.name", read_only=True)
     purpose_code = serializers.CharField(source="purpose.code", read_only=True)
+    purpose_name = serializers.CharField(source="purpose.name", read_only=True)
     scope_codes = serializers.SerializerMethodField()
 
     class Meta:
@@ -17,7 +19,9 @@ class ConsentSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "institution_id",
+            "institution_name",
             "purpose_code",
+            "purpose_name",
             "scope_codes",
             "status",
             "granted_at",

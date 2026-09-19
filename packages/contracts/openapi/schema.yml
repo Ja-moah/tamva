@@ -3337,7 +3337,13 @@ components:
           type: string
           format: uuid
           readOnly: true
+        institution_name:
+          type: string
+          readOnly: true
         purpose_code:
+          type: string
+          readOnly: true
+        purpose_name:
           type: string
           readOnly: true
         scope_codes:
@@ -3367,7 +3373,9 @@ components:
       - granted_at
       - id
       - institution_id
+      - institution_name
       - purpose_code
+      - purpose_name
       - revoked_at
       - scope_codes
       - status
