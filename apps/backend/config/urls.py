@@ -40,3 +40,8 @@ if settings.API_DOCS_ENABLED:
         path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
         path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
     ]
+
+handler400 = "packages.common.error_pages.bad_request"
+handler403 = "packages.common.error_pages.permission_denied"
+handler404 = "packages.common.error_pages.not_found"
+handler500 = "packages.common.error_pages.server_error"

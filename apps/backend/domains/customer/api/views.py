@@ -53,6 +53,7 @@ from packages.common.filtering import (
     SearchSpec,
     filter_parameters,
 )
+from packages.common.throttling import CUSTOMER_THROTTLES
 
 CUSTOMER = [IsAuthenticated, IsCustomerActor]
 
@@ -63,6 +64,7 @@ def _api_error(exc: DjangoValidationError) -> DRFValidationError:
 
 class _CustomerViewSet(FilteredListMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     permission_classes = CUSTOMER
+    throttle_classes = CUSTOMER_THROTTLES
     default_ordering: Sequence[str] = ("-created_at", "id")
 
 
@@ -364,6 +366,7 @@ class PassportCurrentView(APIView):
 
 class PassportGenerateView(APIView):
     permission_classes = CUSTOMER
+    throttle_classes = CUSTOMER_THROTTLES
 
     @extend_schema(request=PassportGenerateSerializer, responses=OpenApiTypes.OBJECT)
     def post(self, request: Request) -> Response:

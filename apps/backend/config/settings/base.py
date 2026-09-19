@@ -156,7 +156,12 @@ REST_FRAMEWORK: dict[str, Any] = {
     "EXCEPTION_HANDLER": "packages.common.exceptions.api_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_PAGINATION_CLASS": "packages.common.pagination.DefaultPagination",
-    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.ScopedRateThrottle",
+        # Backstops: a ceiling per signed-in user and per anonymous client IP.
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.AnonRateThrottle",
+    ],
     # Rates are configuration, not code: override per-environment via env vars.
     "DEFAULT_THROTTLE_RATES": {
         "auth": os.getenv("THROTTLE_RATE_AUTH", "20/min"),
@@ -169,6 +174,9 @@ REST_FRAMEWORK: dict[str, Any] = {
         "registration": os.getenv("THROTTLE_RATE_REGISTRATION", "10/hour"),
         "recovery": os.getenv("THROTTLE_RATE_RECOVERY", "10/hour"),
         "bulk": os.getenv("THROTTLE_RATE_BULK", "20/min"),
+        "customer_write": os.getenv("THROTTLE_RATE_CUSTOMER_WRITE", "30/min"),
+        "user": os.getenv("THROTTLE_RATE_USER", "600/min"),
+        "anon": os.getenv("THROTTLE_RATE_ANON", "120/min"),
     },
 }
 _API_DESCRIPTION = """\
