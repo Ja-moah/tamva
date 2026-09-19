@@ -7,8 +7,8 @@ import {
   Building2,
   ChevronDown,
   CircleGauge,
-  Coins,
   Cpu,
+  LogOut,
   Menu,
   Network,
   Radio,
@@ -19,92 +19,83 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { useUnreadNotificationCount } from "../../features/notifications/use-notifications";
+import { useSession } from "../../features/session/use-session";
 import { useSystemHealth } from "../../features/system/use-system-health";
 import { ThemeToggle } from "../../lib/theme";
 import { cn } from "../../lib/utils/cn";
-import { SampleDataBanner } from "./sample-data-banner";
-import { CurrencyConverterUnavailable } from "../features/currency-converter-unavailable";
+import { TamvaMark } from "../brand/tamva-logo";
 import { NetworkStatusBanner } from "../feedback/network-status-banner";
 import { StatusBadge } from "../feedback/status-badge";
 import { CommandMenu } from "../navigation/command-menu";
 import { AdinkraWatermark } from "../ui/adinkra-pattern";
-import { TamvaMark } from "../brand/tamva-logo";
-import { BrandLogo, type BrandType } from "../ui/brand-logo";
-import { Button } from "../ui/button";
 import { useToast } from "../ui/toast";
 
+/** `permission` only decides whether the link is shown; every API call is re-checked server-side. */
 const operationsNav = [
-  { label: "Overview", to: "/", icon: CircleGauge, count: null },
-  { label: "Risk Events", to: "/risk-events", icon: Activity, count: "12" },
-  { label: "Cases", to: "/cases", icon: BriefcaseBusiness, count: "3" },
-  { label: "Customers", to: "/customers", icon: Users, count: null },
-  { label: "Trust Network", to: "/network", icon: Network, count: "7 Rails" },
-  { label: "Analytics & Insights", to: "/analytics", icon: BarChart3, count: null },
+  { label: "Overview", to: "/", icon: CircleGauge, permission: "overview:read" },
+  { label: "Risk Events", to: "/risk-events", icon: Activity, permission: "risk:read" },
+  { label: "Cases", to: "/cases", icon: BriefcaseBusiness, permission: "case:read" },
+  { label: "Customers", to: "/customers", icon: Users, permission: "customer:read" },
+  { label: "Trust Network", to: "/network", icon: Network, permission: "network:read" },
+  { label: "Analytics & Insights", to: "/analytics", icon: BarChart3, permission: "analytics:read" },
 ] as const;
 
 const governanceNav = [
-  { label: "Team & Access", to: "/team", icon: UserCheck, count: "24" },
-  { label: "Security & Governance", to: "/security", icon: ShieldCheck, count: "98%" },
-  { label: "Alerts & Notifications", to: "/notifications", icon: Bell, count: "5" },
-  { label: "Settings", to: "/settings", icon: Settings, count: null },
+  { label: "Team & Access", to: "/team", icon: UserCheck, permission: "team:read" },
+  { label: "Security & Governance", to: "/security", icon: ShieldCheck, permission: "security:read" },
+  { label: "Alerts & Notifications", to: "/notifications", icon: Bell, permission: null },
+  { label: "Settings", to: "/settings", icon: Settings, permission: null },
 ] as const;
 
 const developerNav = [
-  { label: "API & Integrations", to: "/integrations", icon: Cpu, count: "v1" },
+  { label: "API & Integrations", to: "/integrations", icon: Cpu, permission: "partner:read" },
 ] as const;
 
-export interface InstitutionScope {
-  id: string;
-  name: string;
-  type: string;
-  code: string;
-  brand: BrandType;
-}
+type NavItem = { label: string; to: string; icon: typeof CircleGauge; permission: string | null };
 
-const institutions: InstitutionScope[] = [
-  { id: "all", name: "Global Platform Scope", type: "System-wide", code: "TAMVA-ROOT", brand: "apex" },
-  { id: "momo-1", name: "MTN Mobile Money", type: "Mobile Money Operator", code: "MOMO-GH", brand: "mtn" },
-  { id: "momo-2", name: "Telecel Cash", type: "Mobile Money Operator", code: "TELE-GH", brand: "telecel" },
-  { id: "momo-3", name: "AirtelTigo Money", type: "Mobile Money Operator", code: "AT-GH", brand: "airteltigo" },
-  { id: "inst-1", name: "Apex Bank PLC", type: "Tier 1 Commercial", code: "APEX-GH", brand: "apex" },
-  { id: "inst-2", name: "Zenith Digital Trust", type: "FinTech Rail", code: "ZNTH-AF", brand: "zenith" },
-  { id: "inst-3", name: "Ecobank Payment Gateway", type: "Regional Hub (PAPSS)", code: "ECO-REG", brand: "ecobank" },
-];
+const initials = (value: string) =>
+  value
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join("");
 
 export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
-  const [converterModalOpen, setConverterModalOpen] = useState(false);
   const [tenantOpen, setTenantOpen] = useState(false);
-  const [selectedTenant, setSelectedTenant] = useState<InstitutionScope>(institutions[0]);
-  const [environment, setEnvironment] = useState<"Production" | "Sandbox">("Production");
 
+  const session = useSession();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const health = useSystemHealth();
+  const unread = useUnreadNotificationCount();
   const { toast } = useToast();
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  const environment = session.version?.environment ?? null;
   const isConnected = health.data?.status === "ok" && health.data.database === "ok";
+  const visible = (items: readonly NavItem[]) =>
+    items.filter((item) => item.permission === null || session.can(item.permission));
 
-  const handleSelectTenant = (inst: InstitutionScope) => {
-    setSelectedTenant(inst);
+  const handleSelectTenant = (institutionId: string, name: string) => {
     setTenantOpen(false);
-    toast({
-      title: "Active Tenant Scope Changed",
-      description: `Operations scoped to: ${inst.name} (${inst.code})`,
-      type: "info",
-    });
-  };
-
-  const handleToggleEnvironment = () => {
-    const nextEnv = environment === "Production" ? "Sandbox" : "Production";
-    setEnvironment(nextEnv);
-    toast({
-      title: `Switched to ${nextEnv}`,
-      description: `System environment is now operating in ${nextEnv} profile.`,
-      type: nextEnv === "Production" ? "success" : "info",
-    });
+    if (institutionId === session.institutionId) return;
+    session.selectInstitution(institutionId);
+    toast({ title: "Institution changed", description: `Now working in ${name}.`, type: "info" });
   };
 
   return (
@@ -117,23 +108,6 @@ export function AppShell() {
 
       {/* Global Command Palette */}
       <CommandMenu open={commandOpen} onClose={() => setCommandOpen(false)} />
-
-      {/* Quick Currency Converter Modal */}
-      {converterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-2xl">
-            <div className="relative">
-              <button
-                onClick={() => setConverterModalOpen(false)}
-                className="absolute top-4 right-4 z-10 p-2 rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-surface-elevated)] hover:text-[var(--text-primary)] cursor-pointer"
-              >
-                <X className="size-5" />
-              </button>
-              <CurrencyConverterUnavailable />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Sidebar Navigation */}
       <aside
@@ -155,9 +129,11 @@ export function AppShell() {
                 <span className="text-xl font-extrabold tracking-tight text-[var(--text-primary)]">
                   TAMVA
                 </span>
-                <span className="rounded-md border border-[var(--accent-gold-border)] bg-[var(--accent-gold-subtle)] px-1.5 py-0.2 font-mono text-[10px] font-bold text-[var(--accent-gold-text)] dark:text-[var(--accent-gold)]">
-                  {environment}
-                </span>
+                {environment ? (
+                  <span className="rounded-md border border-[var(--accent-gold-border)] bg-[var(--accent-gold-subtle)] px-1.5 py-0.2 font-mono text-[10px] font-bold uppercase text-[var(--accent-gold-text)] dark:text-[var(--accent-gold)]">
+                    {environment}
+                  </span>
+                ) : null}
               </div>
               <span className="block text-[11px] font-bold text-[var(--text-muted)] tracking-wider uppercase mt-0.5">
                 People &bull; Data &bull; Trust &bull; Opportunity
@@ -181,7 +157,7 @@ export function AppShell() {
           >
             <span className="flex items-center gap-2.5">
               <Search className="size-3.5 text-[var(--accent-gold)] group-hover:scale-110 transition-transform" />
-              <span className="font-semibold text-xs">Search for cases, entities...</span>
+              <span className="font-semibold text-xs">Go to…</span>
             </span>
             <kbd className="rounded border border-[var(--border-default)] bg-[var(--bg-surface)] px-1.5 py-0.2 font-mono text-[10px] font-bold text-[var(--text-muted)]">
               ⌘K
@@ -194,7 +170,7 @@ export function AppShell() {
           <p className="px-3 py-1 font-mono text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
             Operations Center
           </p>
-          {operationsNav.map(({ icon: Icon, label, to, count }) => {
+          {visible(operationsNav).map(({ icon: Icon, label, to }) => {
             const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
             return (
               <Link
@@ -219,18 +195,6 @@ export function AppShell() {
                   />
                   <span>{label}</span>
                 </div>
-                {count ? (
-                  <span
-                    className={cn(
-                      "rounded-md px-2 py-0.2 font-mono text-[10px] font-bold",
-                      active
-                        ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900"
-                        : "bg-[var(--bg-surface-elevated)] text-[var(--accent-gold)] border border-[var(--border-default)]",
-                    )}
-                  >
-                    {count}
-                  </span>
-                ) : null}
               </Link>
             );
           })}
@@ -240,7 +204,7 @@ export function AppShell() {
             <p className="px-3 py-1 font-mono text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
               Governance &amp; Access
             </p>
-            {governanceNav.map(({ icon: Icon, label, to, count }) => {
+            {visible(governanceNav).map(({ icon: Icon, label, to }) => {
               const active = pathname.startsWith(to);
               return (
                 <Link
@@ -265,18 +229,6 @@ export function AppShell() {
                     />
                     <span>{label}</span>
                   </div>
-                  {count ? (
-                    <span
-                      className={cn(
-                        "rounded-md px-2 py-0.2 font-mono text-[10px] font-bold",
-                        active
-                          ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900"
-                          : "bg-[var(--bg-surface-elevated)] text-[var(--accent-gold)] border border-[var(--border-default)]",
-                      )}
-                    >
-                      {count}
-                    </span>
-                  ) : null}
                 </Link>
               );
             })}
@@ -287,7 +239,7 @@ export function AppShell() {
             <p className="px-3 py-1 font-mono text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
               Developer &amp; Contracts
             </p>
-            {developerNav.map(({ icon: Icon, label, to, count }) => {
+            {visible(developerNav).map(({ icon: Icon, label, to }) => {
               const active = pathname.startsWith(to);
               return (
                 <Link
@@ -312,18 +264,6 @@ export function AppShell() {
                     />
                     <span>{label}</span>
                   </div>
-                  {count ? (
-                    <span
-                      className={cn(
-                        "rounded-md px-2 py-0.2 font-mono text-[10px] font-bold",
-                        active
-                          ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900"
-                          : "bg-[var(--bg-surface-elevated)] text-[var(--accent-gold)] border border-[var(--border-default)]",
-                      )}
-                    >
-                      {count}
-                    </span>
-                  ) : null}
                 </Link>
               );
             })}
@@ -335,19 +275,21 @@ export function AppShell() {
           <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-subtle)] p-3 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-2 text-xs font-bold text-[var(--text-primary)]">
-                <Radio className="size-3.5 text-[var(--accent-emerald)] animate-pulse" />
+                <Radio className={cn("size-3.5", isConnected ? "text-[var(--accent-emerald)] animate-pulse" : "text-[var(--text-muted)]")} aria-hidden />
                 Backend Node
               </span>
               <StatusBadge
-                tone={isConnected ? "success" : "warning"}
+                tone={isConnected ? "success" : health.isError ? "danger" : "warning"}
                 pulse={isConnected}
                 size="sm"
               >
-                {isConnected ? "Healthy (18ms)" : "Connecting"}
+                {isConnected ? "Healthy" : health.isError ? "Unreachable" : "Checking"}
               </StatusBadge>
             </div>
             <p className="mt-1 text-[11px] text-[var(--text-muted)] font-mono font-medium">
-              Django 5.2 · PG17 · Redis
+              {session.version
+                ? `API ${session.version.api_version} · app ${session.version.application_version}`
+                : "Version unavailable"}
             </p>
           </div>
         </div>
@@ -375,60 +317,55 @@ export function AppShell() {
               <Menu className="size-5" />
             </button>
 
-            {/* Institution & MoMo Scope Switcher Dropdown */}
+            {/* Institution switcher: memberships come from the backend (/me/). */}
             <div className="relative">
-              <button
-                onClick={() => setTenantOpen(!tenantOpen)}
-                className="flex items-center gap-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-subtle)] px-3 py-1.5 text-left hover:border-[var(--border-strong)] hover:bg-[var(--bg-surface-hover)] transition-all cursor-pointer shadow-xs"
-              >
-                {selectedTenant.id === "all" ? (
-                  <Building2 className="size-4 text-[var(--accent-gold)] shrink-0" />
-                ) : (
-                  <BrandLogo brand={selectedTenant.brand} size="sm" />
-                )}
-                <div className="min-w-0">
+              {session.memberships.length > 1 ? (
+                <button
+                  onClick={() => setTenantOpen(!tenantOpen)}
+                  aria-haspopup="listbox"
+                  aria-expanded={tenantOpen}
+                  className="flex items-center gap-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-subtle)] px-3 py-1.5 text-left hover:border-[var(--border-strong)] hover:bg-[var(--bg-surface-hover)] transition-all cursor-pointer shadow-xs"
+                >
+                  <Building2 className="size-4 text-[var(--accent-gold)] shrink-0" aria-hidden />
                   <p className="text-xs font-bold text-[var(--text-primary)] truncate max-w-[140px] sm:max-w-xs">
-                    {selectedTenant.name}
+                    {session.institutionName}
+                  </p>
+                  <ChevronDown className="size-3.5 text-[var(--text-muted)] ml-0.5 shrink-0" aria-hidden />
+                </button>
+              ) : (
+                <div className="flex items-center gap-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-subtle)] px-3 py-1.5">
+                  <Building2 className="size-4 text-[var(--accent-gold)] shrink-0" aria-hidden />
+                  <p className="text-xs font-bold text-[var(--text-primary)] truncate max-w-[140px] sm:max-w-xs">
+                    {session.institutionName}
                   </p>
                 </div>
-                <ChevronDown className="size-3.5 text-[var(--text-muted)] ml-0.5 shrink-0" />
-              </button>
+              )}
 
               {tenantOpen ? (
                 <>
+                  <div className="fixed inset-0 z-20" onClick={() => setTenantOpen(false)} aria-hidden="true" />
                   <div
-                    className="fixed inset-0 z-20"
-                    onClick={() => setTenantOpen(false)}
-                    aria-hidden="true"
-                  />
-                  <div className="absolute left-0 mt-2 z-30 w-80 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-2 shadow-xl animate-in fade-in zoom-in-98 ios-glass max-h-[80vh] overflow-y-auto">
+                    role="listbox"
+                    aria-label="Switch institution"
+                    className="absolute left-0 mt-2 z-30 w-80 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-2 shadow-xl animate-in fade-in zoom-in-98 ios-glass max-h-[80vh] overflow-y-auto"
+                  >
                     <p className="px-3 py-1.5 text-[10px] font-mono font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
-                      Switch Active Tenant &amp; Rail Scope
+                      Your institutions
                     </p>
-                    {institutions.map((inst) => (
+                    {session.memberships.map((membership) => (
                       <button
-                        key={inst.id}
-                        onClick={() => handleSelectTenant(inst)}
+                        key={membership.institution_id}
+                        role="option"
+                        aria-selected={membership.institution_id === session.institutionId}
+                        onClick={() => handleSelectTenant(membership.institution_id, membership.institution_name)}
                         className={cn(
-                          "w-full text-left px-3 py-2 rounded-xl text-xs flex items-center gap-2.5 transition-colors cursor-pointer",
-                          selectedTenant.id === inst.id
+                          "w-full text-left px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer",
+                          membership.institution_id === session.institutionId
                             ? "bg-[var(--accent-gold-subtle)] text-[var(--accent-gold-text)] dark:text-[var(--accent-gold)] font-bold border border-[var(--accent-gold-border)]"
                             : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)] font-medium",
                         )}
                       >
-                        {inst.id === "all" ? (
-                          <div className="size-6 rounded-md bg-[var(--bg-canvas)] border border-[var(--border-default)] flex items-center justify-center shrink-0">
-                            <Building2 className="size-3.5 text-[var(--accent-gold)]" />
-                          </div>
-                        ) : (
-                          <BrandLogo brand={inst.brand} size="sm" />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <span className="font-bold text-xs block truncate">{inst.name}</span>
-                          <span className="text-[10px] text-[var(--text-muted)] font-mono block">
-                            {inst.type} &bull; {inst.code}
-                          </span>
-                        </div>
+                        {membership.institution_name}
                       </button>
                     ))}
                   </div>
@@ -436,34 +373,26 @@ export function AppShell() {
               ) : null}
             </div>
 
-            {/* Environment Switcher */}
-            <button
-              onClick={handleToggleEnvironment}
-              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[11px] font-mono font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
-            >
+            {/* Environment: reported by the backend, never toggled locally. */}
+            {environment ? (
               <span
-                className={cn(
-                  "size-2 rounded-full",
-                  environment === "Production" ? "bg-emerald-500" : "bg-blue-500",
-                )}
-              />
-              <span>{environment}</span>
-            </button>
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[11px] font-mono font-bold uppercase text-[var(--text-secondary)]"
+                title={`API ${session.version?.api_version} · app ${session.version?.application_version}`}
+              >
+                <span
+                  className={cn(
+                    "size-2 rounded-full",
+                    environment === "production" ? "bg-emerald-500" : "bg-blue-500",
+                  )}
+                  aria-hidden
+                />
+                {environment}
+              </span>
+            ) : null}
           </div>
 
           {/* Right Header Controls */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Quick Live Currency Converter Header Action */}
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setConverterModalOpen(true)}
-              className="hidden md:inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl text-amber-500 border border-amber-500/20 hover:bg-amber-500/10 cursor-pointer"
-            >
-              <Coins className="size-3.5 text-amber-500" />
-              <span>FX Converter</span>
-            </Button>
-
             {/* Theme Toggle */}
             <ThemeToggle />
 
@@ -471,33 +400,48 @@ export function AppShell() {
             <Link
               to="/notifications"
               className="relative p-2 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
-              aria-label="Notifications"
+              aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
             >
               <Bell className="size-4" />
-              <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-[var(--accent-gold)] ring-2 ring-[var(--bg-surface)]" />
+              {unread > 0 ? (
+                <span
+                  className="absolute top-1.5 right-1.5 size-2 rounded-full bg-[var(--accent-gold)] ring-2 ring-[var(--bg-surface)]"
+                  aria-hidden
+                />
+              ) : null}
             </Link>
 
             <div className="hidden h-6 w-px bg-[var(--border-default)] sm:block" />
 
-            {/* Operator Badge */}
+            {/* Operator: the signed-in user and their roles, from /me/. */}
             <div className="flex items-center gap-2">
-              <span className="grid size-8 place-items-center rounded-xl bg-[var(--accent-gold-subtle)] border border-[var(--accent-gold-border)] text-xs font-extrabold text-[var(--accent-gold-text)] dark:text-[var(--accent-gold)] select-none shadow-xs">
-                RA
+              <span
+                className="grid size-8 place-items-center rounded-xl bg-[var(--accent-gold-subtle)] border border-[var(--accent-gold-border)] text-xs font-extrabold text-[var(--accent-gold-text)] dark:text-[var(--accent-gold)] select-none shadow-xs"
+                aria-hidden
+              >
+                {initials(session.actor?.user.email ?? "?")}
               </span>
               <div className="hidden xl:block text-left">
-                <p className="text-xs font-extrabold text-[var(--text-primary)] leading-tight">
-                  Risk Analyst
+                <p className="text-xs font-extrabold text-[var(--text-primary)] leading-tight max-w-[160px] truncate">
+                  {session.actor?.user.email}
                 </p>
-                <p className="text-[10px] text-[var(--accent-emerald)] font-mono font-bold">
-                  Partner Bank Ghana
+                <p className="text-[10px] text-[var(--accent-emerald)] font-mono font-bold max-w-[160px] truncate">
+                  {session.actor?.roles.join(", ") || "No role assigned"}
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={() => void session.logout()}
+                className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+                aria-label="Sign out"
+              >
+                <LogOut className="size-4" aria-hidden />
+              </button>
             </div>
           </div>
         </header>
 
         {/* Main Content Area */}
-        <SampleDataBanner />
         <main className="flex-1 mx-auto w-full max-w-[1600px] p-5 sm:p-7">
           <Outlet />
         </main>

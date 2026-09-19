@@ -1,7 +1,8 @@
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 import { lazy } from "react";
 
-import { AppShell } from "../components/layout/app-shell";
+import { PermissionGate } from "../components/data/gates";
+import { RootGate } from "./root-gate";
 
 const OverviewPage = lazy(() =>
   import("../routes/overview-page").then((module) => ({ default: module.OverviewPage })),
@@ -37,54 +38,65 @@ const IntegrationsPage = lazy(() =>
   import("../routes/integrations-page").then((module) => ({ default: module.IntegrationsPage })),
 );
 
-const rootRoute = createRootRoute({ component: AppShell });
+const rootRoute = createRootRoute({ component: RootGate });
+
+/** Wraps a page so an actor without the permission sees an unauthorized state. */
+function guarded(Page: React.ComponentType, permission: string | null, what: string) {
+  return function GuardedPage() {
+    return (
+      <PermissionGate permission={permission} what={what}>
+        <Page />
+      </PermissionGate>
+    );
+  };
+}
 
 const overviewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: OverviewPage,
+  component: guarded(OverviewPage, "overview:read", "The overview"),
 });
 
 const riskRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/risk-events",
-  component: RiskPage,
+  component: guarded(RiskPage, "risk:read", "Risk events"),
 });
 
 const caseRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/cases",
-  component: CasesPage,
+  component: guarded(CasesPage, "case:read", "Cases"),
 });
 
 const customerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/customers",
-  component: CustomersPage,
+  component: guarded(CustomersPage, "customer:read", "Customers"),
 });
 
 const networkRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/network",
-  component: NetworkPage,
+  component: guarded(NetworkPage, "network:read", "The trust network"),
 });
 
 const analyticsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/analytics",
-  component: AnalyticsPage,
+  component: guarded(AnalyticsPage, "analytics:read", "Analytics"),
 });
 
 const teamRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/team",
-  component: TeamPage,
+  component: guarded(TeamPage, "team:read", "Team & access"),
 });
 
 const securityRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/security",
-  component: SecurityPage,
+  component: guarded(SecurityPage, "security:read", "Security"),
 });
 
 const notificationsRoute = createRoute({
@@ -102,7 +114,7 @@ const settingsRoute = createRoute({
 const integrationsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/integrations",
-  component: IntegrationsPage,
+  component: guarded(IntegrationsPage, "partner:read", "Integrations"),
 });
 
 const routeTree = rootRoute.addChildren([

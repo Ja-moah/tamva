@@ -13,7 +13,11 @@ export function useCapabilities() {
 
 // Unknown or not-yet-loaded capabilities are treated as unavailable so a screen
 // never presents live data the backend has not said it can serve.
+export function useCapabilityState(code: string): { state: CapabilityState; isLoading: boolean } {
+  const { data, isPending } = useCapabilities();
+  return { state: data?.[code] ?? "NOT_AVAILABLE", isLoading: isPending };
+}
+
 export function useCapability(code: string): CapabilityState {
-  const { data } = useCapabilities();
-  return data?.[code] ?? "NOT_AVAILABLE";
+  return useCapabilityState(code).state;
 }

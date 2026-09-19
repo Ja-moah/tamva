@@ -2,15 +2,24 @@ import {
   actorContextEnvelopeSchema,
   capabilitiesResponseSchema,
   healthResponseSchema,
+  versionSchema,
   type ActorContext,
   type CapabilitiesResponse,
   type HealthResponse,
   type LoginRequest,
+  type VersionInfo,
 } from "@tamva/client-contracts";
 
 import { apiRequest } from "./client";
 
-export { ApiError, apiRequest, getActiveInstitution, setActiveInstitution } from "./client";
+export {
+  ApiError,
+  apiBlob,
+  apiRequest,
+  getActiveInstitution,
+  setActiveInstitution,
+  setUnauthenticatedHandler,
+} from "./client";
 
 export function getSystemHealth(signal?: AbortSignal): Promise<HealthResponse> {
   return apiRequest({ path: "/health/", unversioned: true, schema: healthResponseSchema, signal });
@@ -37,5 +46,10 @@ export async function getMe(signal?: AbortSignal): Promise<ActorContext> {
 
 export async function getCapabilities(signal?: AbortSignal): Promise<CapabilitiesResponse["data"]> {
   const envelope = await apiRequest({ path: "/capabilities/", schema: capabilitiesResponseSchema, signal });
+  return envelope.data;
+}
+
+export async function getVersion(signal?: AbortSignal): Promise<VersionInfo> {
+  const envelope = await apiRequest({ path: "/meta/version/", schema: versionSchema, signal });
   return envelope.data;
 }

@@ -21,6 +21,17 @@ export function getActiveInstitution(): string | null {
   return activeInstitutionId;
 }
 
+// Called when an authenticated call comes back 401 (an expired or revoked
+// session), so the app can return to the login screen from anywhere.
+let unauthenticatedHandler: (() => void) | null = null;
+
+export function setUnauthenticatedHandler(handler: (() => void) | null): void {
+  unauthenticatedHandler = handler;
+}
+
+// Endpoints whose 401 is an expected answer, not an expired session.
+const SESSION_PROBE_PATHS = new Set(["/auth/login/", "/me/"]);
+
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
@@ -69,6 +80,8 @@ export interface RequestOptions<S extends z.ZodType> {
   /** Response schema; omit for 204 responses. */
   schema?: S;
   signal?: AbortSignal;
+  /** Makes a retried mutation safe: the backend replays the first result for the same key. */
+  idempotencyKey?: string;
   /** Override the ambient institution for this call only. */
   institutionId?: string | null;
 }
@@ -117,6 +130,7 @@ export async function apiRequest<S extends z.ZodType>(options: RequestOptions<S>
   };
   if (institutionId) headers[HEADER_INSTITUTION_ID] = institutionId;
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
   if (!SAFE_METHODS.has(method)) {
     const token = csrfToken();
     if (token) headers["X-CSRFToken"] = token;
@@ -130,7 +144,31 @@ export async function apiRequest<S extends z.ZodType>(options: RequestOptions<S>
     signal: options.signal,
   });
 
-  if (!response.ok) throw await toApiError(response, requestId);
+  if (!response.ok) {
+    if (response.status === 401 && !SESSION_PROBE_PATHS.has(options.path)) unauthenticatedHandler?.();
+    throw await toApiError(response, requestId);
+  }
   if (!options.schema || response.status === 204) return undefined as z.infer<S>;
   return options.schema.parse(await response.json());
+}
+
+/** Fetch a binary file (e.g. an export) with the same auth, tenant and tracing headers. */
+export async function apiBlob(
+  path: string,
+  query?: Record<string, string>,
+): Promise<{ blob: Blob; filename: string | null }> {
+  const requestId = newRequestId();
+  const headers: Record<string, string> = { [HEADER_REQUEST_ID]: requestId };
+  if (activeInstitutionId) headers[HEADER_INSTITUTION_ID] = activeInstitutionId;
+  const response = await fetch(buildUrl(path, false, query), {
+    headers,
+    credentials: "include",
+  });
+  if (!response.ok) {
+    if (response.status === 401) unauthenticatedHandler?.();
+    throw await toApiError(response, requestId);
+  }
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const match = disposition.match(/filename="?([^";]+)"?/);
+  return { blob: await response.blob(), filename: match ? match[1] : null };
 }

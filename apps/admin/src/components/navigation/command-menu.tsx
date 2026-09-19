@@ -1,17 +1,23 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
   Activity,
+  BarChart3,
+  Bell,
   BriefcaseBusiness,
   CircleGauge,
-  Coins,
+  Cpu,
   ExternalLink,
   Network,
   Search,
-  Smartphone,
+  Settings,
+  ShieldCheck,
+  UserCheck,
   Users,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+
+import { useSession } from "../../features/session/use-session";
 
 interface CommandMenuProps {
   open: boolean;
@@ -21,13 +27,10 @@ interface CommandMenuProps {
 export function CommandMenu({ open, onClose }: CommandMenuProps) {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const { can } = useSession();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        onClose();
-      }
       if (e.key === "Escape" && open) {
         onClose();
       }
@@ -38,80 +41,33 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
 
   if (!open) return null;
 
+  const go = (to: string) => () => {
+    void navigate({ to });
+    onClose();
+  };
   const quickNav = [
+    { title: "Overview", desc: "Risk decisions, cases, confidence and connection health", icon: CircleGauge, permission: "overview:read", action: go("/") },
+    { title: "Risk events", desc: "Every evaluation, with decision and reason codes", icon: Activity, permission: "risk:read", action: go("/risk-events") },
+    { title: "Cases", desc: "Investigation queue and workflow", icon: BriefcaseBusiness, permission: "case:read", action: go("/cases") },
+    { title: "Customers", desc: "Consent-scoped customer summaries", icon: Users, permission: "customer:read", action: go("/customers") },
+    { title: "Trust network", desc: "Entities and relationships in your institution", icon: Network, permission: "network:read", action: go("/network") },
+    { title: "Analytics & insights", desc: "Aggregates over your own records", icon: BarChart3, permission: "analytics:read", action: go("/analytics") },
+    { title: "Team & access", desc: "Members, roles and permissions", icon: UserCheck, permission: "team:read", action: go("/team") },
+    { title: "Security & governance", desc: "Security events, devices, locations, audit trail", icon: ShieldCheck, permission: "security:read", action: go("/security") },
+    { title: "Notifications", desc: "Alerts addressed to you", icon: Bell, permission: null, action: go("/notifications") },
+    { title: "Settings", desc: "Notification and regional settings", icon: Settings, permission: null, action: go("/settings") },
+    { title: "API & integrations", desc: "Applications, credentials, webhooks, connections", icon: Cpu, permission: "partner:read", action: go("/integrations") },
     {
-      title: "System Overview",
-      desc: "Live operational telemetry, risk volume & domain contracts",
-      icon: CircleGauge,
-      action: () => {
-        navigate({ to: "/" });
-        onClose();
-      },
-    },
-    {
-      title: "Mobile Money & Telco Rails",
-      desc: "MTN MoMo, Telecel Cash, and AirtelTigo Money network mesh",
-      icon: Smartphone,
-      action: () => {
-        navigate({ to: "/network" });
-        onClose();
-      },
-    },
-    {
-      title: "Live African Currency Converter",
-      desc: "Instant GHS, USD, EUR, GBP, NGN, KES, XOF FX exchange matrix",
-      icon: Coins,
-      action: () => {
-        navigate({ to: "/" });
-        onClose();
-      },
-    },
-    {
-      title: "Risk Events & Rules Engine",
-      desc: "Real-time fraud decisions, anomaly alerts & reason codes",
-      icon: Activity,
-      action: () => {
-        navigate({ to: "/risk-events" });
-        onClose();
-      },
-    },
-    {
-      title: "Case Management & Alerts",
-      desc: "Investigator queue, evidence review & SAR filing workflows",
-      icon: BriefcaseBusiness,
-      action: () => {
-        navigate({ to: "/cases" });
-        onClose();
-      },
-    },
-    {
-      title: "Customer Financial Passports",
-      desc: "Ghana Card biometric hashes, KYC tier boundaries & consent",
-      icon: Users,
-      action: () => {
-        navigate({ to: "/customers" });
-        onClose();
-      },
-    },
-    {
-      title: "Trust Network Rails",
-      desc: "Inter-institution nodes, PAPSS routing & settlement health",
-      icon: Network,
-      action: () => {
-        navigate({ to: "/network" });
-        onClose();
-      },
-    },
-    {
-      title: "OpenAPI / Swagger Explorer",
-      desc: "Authoritative Django backend endpoint contracts",
+      title: "API reference",
+      desc: "OpenAPI documentation for the TAMVA API",
       icon: ExternalLink,
+      permission: null,
       action: () => {
-        window.open("/api/docs/", "_blank");
+        window.open("/api/docs/", "_blank", "noopener");
         onClose();
       },
     },
-  ];
+  ].filter((item) => item.permission === null || can(item.permission));
 
   const filtered = quickNav.filter(
     (item) =>
@@ -120,7 +76,7 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
   );
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-20">
+    <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-20" role="dialog" aria-modal="true" aria-label="Go to a page">
       <div
         className="fixed inset-0 bg-black/50 dark:bg-black/75 backdrop-blur-xs transition-opacity"
         onClick={onClose}
@@ -132,7 +88,8 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
           <input
             type="text"
             className="w-full bg-transparent px-3.5 py-4 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none"
-            placeholder="Type a command or search (e.g. MoMo, Currency, Risk, KYC)..."
+            placeholder="Go to… (e.g. cases, team, integrations)"
+            aria-label="Go to a page"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
@@ -151,15 +108,12 @@ export function CommandMenu({ open, onClose }: CommandMenuProps) {
 
         <div className="max-h-80 overflow-y-auto p-2.5 space-y-1">
           <p className="px-3 py-1.5 text-xs font-mono font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-            Operations &amp; Navigation
+            Go to
           </p>
           {filtered.length === 0 ? (
             <div className="p-6 text-center">
               <p className="text-sm font-semibold text-[var(--text-secondary)]">
-                No matching operations found
-              </p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">
-                Try searching for &quot;MoMo&quot;, &quot;Currency&quot;, &quot;Risk&quot;, or &quot;Passport&quot;
+                No matching pages
               </p>
             </div>
           ) : (
