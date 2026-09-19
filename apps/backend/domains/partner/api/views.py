@@ -449,9 +449,10 @@ class ConnectionViewSet(FilteredListMixin, mixins.ListModelMixin, viewsets.Gener
         ).select_related("connector")
 
 
-# One source of truth: the model's own field defaults.
+# One source of truth: an unsaved instance carries the model's own field defaults.
+_LOCALE_DEFAULTS = InstitutionLocaleSettings()
 DEFAULT_LOCALE = {
-    name: InstitutionLocaleSettings._meta.get_field(name).default
+    name: getattr(_LOCALE_DEFAULTS, name)
     for name in ("country_code", "default_currency", "timezone", "locale")
 }
 
