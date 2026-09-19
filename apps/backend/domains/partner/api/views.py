@@ -449,11 +449,10 @@ class ConnectionViewSet(FilteredListMixin, mixins.ListModelMixin, viewsets.Gener
         ).select_related("connector")
 
 
+# One source of truth: the model's own field defaults.
 DEFAULT_LOCALE = {
-    "country_code": "GH",
-    "default_currency": "GHS",
-    "timezone": "Africa/Accra",
-    "locale": "en-GH",
+    name: InstitutionLocaleSettings._meta.get_field(name).default
+    for name in ("country_code", "default_currency", "timezone", "locale")
 }
 
 
