@@ -44,6 +44,6 @@ USER tamva
 EXPOSE 8000
 # Liveness only (process answers). Dependencies are checked by /health/ready/ at the orchestrator.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live/', timeout=3)"]
+  CMD ["python", "/app/scripts/healthcheck.py", "/health/live/"]
 ENTRYPOINT ["/app/scripts/entrypoint.sh"]
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--access-logfile", "-"]

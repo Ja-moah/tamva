@@ -27,6 +27,10 @@ api.{$TAMVA_DOMAIN} {
 		header_up X-Request-ID {http.request.header.X-Request-ID}
 		health_uri /health/live/
 		health_interval 15s
+		# Django rejects Hosts outside ALLOWED_HOSTS, so the probe must carry the real one.
+		health_headers {
+			Host api.{$TAMVA_DOMAIN}
+		}
 	}
 }
 

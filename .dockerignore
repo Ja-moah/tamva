@@ -1,6 +1,12 @@
+# Default for the frontend images (apps/admin/Dockerfile, deploy/edge/Dockerfile), which need
+# the pnpm workspace: root manifests, packages/ and apps/admin|mobile. The backend image has its
+# own Dockerfile.dockerignore.
 .git
 .github
 .env
+.env.*
+!.env.*.example
+venv
 .venv
 __pycache__
 *.pyc
@@ -8,18 +14,11 @@ __pycache__
 .mypy_cache
 .ruff_cache
 .coverage
+coverage
 docs
-tests
 node_modules
 **/node_modules
 **/.expo
-venv
-dist
-apps/admin/dist
-apps/mobile
-.env.*
-!.env.*.example
-.expo
-coverage
-apps/backend/tests
-apps/backend/requirements-dev.lock
+**/dist
+apps/backend
+scripts

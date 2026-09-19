@@ -58,7 +58,7 @@ services:
 
   migrate:
     <<: *backend
-    command: sh -c "python apps/backend/manage.py check --deploy && python apps/backend/manage.py migrate --noinput"
+    command: sh -c "python apps/backend/manage.py check --deploy && python apps/backend/manage.py migrate --noinput && python apps/backend/manage.py sync_access_catalog"
     restart: "no"
     depends_on:
       postgres:
@@ -79,7 +79,7 @@ services:
     mem_limit: 768m
     healthcheck:
       # Liveness (process only). Readiness (PostgreSQL + Redis) is /health/ready/.
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live/', timeout=3)"]
+      test: ["CMD", "python", "/app/scripts/healthcheck.py", "/health/live/"]
       interval: 15s
       timeout: 5s
       retries: 5
