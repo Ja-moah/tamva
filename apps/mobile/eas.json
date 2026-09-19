@@ -9,6 +9,11 @@
       "distribution": "internal",
       "env": { "APP_VARIANT": "development", "EXPO_PUBLIC_APP_ENV": "development" }
     },
+    "demo": {
+      "distribution": "internal",
+      "env": { "APP_VARIANT": "development", "EXPO_PUBLIC_APP_ENV": "development" },
+      "android": { "buildType": "apk" }
+    },
     "staging": {
       "distribution": "internal",
       "channel": "staging",
