@@ -48,6 +48,7 @@ DOMAIN_APPS = [
     "domains.audit.apps.AuditConfig",
     "domains.notifications.apps.NotificationsConfig",
     "domains.operations.apps.OperationsConfig",
+    "domains.customer.apps.CustomerConfig",
     "packages.events.apps.EventsConfig",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + DOMAIN_APPS
@@ -115,6 +116,12 @@ EXPORT_MAX_ROWS = int(os.getenv("EXPORT_MAX_ROWS", "50000"))
 EXPORT_LINK_TTL_SECONDS = int(os.getenv("EXPORT_LINK_TTL_SECONDS", "300"))
 
 # Safe deployment metadata surfaced by GET /api/v1/meta/version/.
+# Account recovery: deep link the customer app handles; delivery uses Django's
+# email framework (configure EMAIL_BACKEND / DEFAULT_FROM_EMAIL per environment).
+RECOVERY_LINK_BASE = os.getenv("RECOVERY_LINK_BASE", "tamva://reset-password")
+RECOVERY_TOKEN_LIFETIME_MINUTES = int(os.getenv("RECOVERY_TOKEN_LIFETIME_MINUTES", "60"))
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "TAMVA <no-reply@tamva.invalid>")
+
 APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
 APP_RELEASE = os.getenv("APP_RELEASE", "")
 APP_ENVIRONMENT = os.getenv("APP_ENVIRONMENT", "development")
@@ -122,6 +129,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "packages.auth.bearer.BearerTokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
     "EXCEPTION_HANDLER": "packages.common.exceptions.api_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_PAGINATION_CLASS": "packages.common.pagination.DefaultPagination",
@@ -135,6 +146,8 @@ REST_FRAMEWORK = {
         "passport_share_access": os.getenv("THROTTLE_RATE_PASSPORT_ACCESS", "30/min"),
         "security_observation": os.getenv("THROTTLE_RATE_SECURITY_OBSERVATION", "120/min"),
         "export": os.getenv("THROTTLE_RATE_EXPORT", "10/min"),
+        "registration": os.getenv("THROTTLE_RATE_REGISTRATION", "10/hour"),
+        "recovery": os.getenv("THROTTLE_RATE_RECOVERY", "10/hour"),
         "bulk": os.getenv("THROTTLE_RATE_BULK", "20/min"),
     },
 }

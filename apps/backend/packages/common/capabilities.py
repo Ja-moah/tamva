@@ -56,21 +56,20 @@ CAPABILITIES: dict[str, CapabilityState] = {
     "geographic_risk": CapabilityState.NOT_AVAILABLE,
     "quiet_hours": CapabilityState.NOT_AVAILABLE,
     "scheduled_reports": CapabilityState.NOT_AVAILABLE,
-    # Customer (mobile) surface. Only authentication, notifications and consent
-    # have customer-facing endpoints today; everything else is computed in the
-    # backend but has no customer read API yet.
+    # Customer (mobile) surface: /api/v1/customer/* plus token auth and recovery.
     "customer_authentication": CapabilityState.AVAILABLE,
     "customer_notifications": CapabilityState.AVAILABLE,
-    # List and revoke exist; granting needs an institution/purpose/scope catalog.
-    "customer_consent": CapabilityState.PARTIAL,
-    "customer_registration": CapabilityState.NOT_AVAILABLE,
-    "customer_account_recovery": CapabilityState.NOT_AVAILABLE,
-    "customer_home": CapabilityState.NOT_AVAILABLE,
-    "customer_activity": CapabilityState.NOT_AVAILABLE,
-    "customer_financial_profile": CapabilityState.NOT_AVAILABLE,
-    "customer_financial_confidence": CapabilityState.NOT_AVAILABLE,
-    "customer_connections": CapabilityState.NOT_AVAILABLE,
-    "customer_passport": CapabilityState.NOT_AVAILABLE,
-    "customer_protection": CapabilityState.NOT_AVAILABLE,
+    "customer_registration": CapabilityState.AVAILABLE,
+    "customer_account_recovery": CapabilityState.AVAILABLE,
+    "customer_consent": CapabilityState.AVAILABLE,
+    "customer_home": CapabilityState.AVAILABLE,
+    "customer_activity": CapabilityState.AVAILABLE,
+    "customer_financial_profile": CapabilityState.AVAILABLE,
+    "customer_financial_confidence": CapabilityState.AVAILABLE,
+    # Connections are created pending; completing provider authorization is not built.
+    "customer_connections": CapabilityState.PARTIAL,
+    "customer_passport": CapabilityState.AVAILABLE,
+    # Only new-device and unusual-location signals are produced today.
+    "customer_protection": CapabilityState.PARTIAL,
     "customer_payments": CapabilityState.NOT_AVAILABLE,
 }

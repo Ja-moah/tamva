@@ -12,6 +12,15 @@ from domains.identity.models import User
 from domains.partner.models import Institution
 
 
+@pytest.fixture(autouse=True)
+def _fresh_throttle_state():
+    """Throttle counters live in the cache; never let one test spend another's budget."""
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+
+
 @pytest.fixture
 def api_client() -> APIClient:
     return APIClient()

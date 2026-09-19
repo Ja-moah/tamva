@@ -14,6 +14,7 @@ from django.utils import timezone
 
 from domains.audit.models import AuditEvent
 from domains.consent.services import require_consent_access
+from domains.identity.models import User
 from domains.partner.models import Institution
 
 from .models import (
@@ -299,3 +300,21 @@ def fail_sync_run(
         },
     )
     return sync_run
+
+
+@transaction.atomic
+def revoke_connection(*, connection: InstitutionConnection, actor: User) -> InstitutionConnection:
+    """End a connection at the customer's request. Idempotent; no further
+    provider fetches are made for a revoked connection."""
+    if connection.status == InstitutionConnection.Status.REVOKED:
+        return connection
+    connection.status = InstitutionConnection.Status.REVOKED
+    connection.save(update_fields=["status", "updated_at"])
+    AuditEvent.objects.create(
+        actor=actor,
+        institution=connection.institution,
+        action="CONNECTOR_CONNECTION_REVOKED",
+        outcome=AuditEvent.Outcome.SUCCESS,
+        metadata={"connection_id": str(connection.id), "customer_id": str(connection.customer_id)},
+    )
+    return connection

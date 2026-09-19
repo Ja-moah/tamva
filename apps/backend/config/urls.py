@@ -31,4 +31,5 @@ urlpatterns = [
     path("api/v1/", include("domains.graph.api.urls")),
     path("api/v1/", include("domains.partner.api.urls")),
     path("api/v1/", include("domains.operations.api.urls")),
+    path("api/v1/", include("domains.customer.api.urls")),
 ]
