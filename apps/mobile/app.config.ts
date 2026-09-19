@@ -57,7 +57,7 @@ const config: ExpoConfig = {
     bundler: 'metro',
     output: 'static',
   },
-  plugins: ['expo-router', 'expo-font'],
+  plugins: ['expo-router', 'expo-font', 'expo-asset'],
 };
 
 export default config;

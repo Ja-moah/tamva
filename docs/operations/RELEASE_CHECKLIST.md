@@ -28,8 +28,26 @@ Frontends:
 
 - [ ] `pnpm install --frozen-lockfile`
 - [ ] Admin: typecheck, lint, tests, `build`, `verify:build`
-- [ ] Mobile: typecheck, lint, tests, `export:web`, `export:android`, `export:ios` with
-      `EXPO_PUBLIC_APP_ENV=production` and the real https API URL
+- [ ] Mobile quality gates:
+      - `pnpm --filter @tamva/mobile lint`
+      - `pnpm --filter @tamva/mobile typecheck`
+      - `cd apps/mobile && pnpm dlx expo-doctor` (network-backed checks may be skipped in offline CI)
+      - Set real API origins first (no localhost/private/example hosts):
+        - `export STAGING_API_ORIGIN=https://staging-api.<your-real-domain>`
+        - `export PRODUCTION_API_ORIGIN=https://api.<your-real-domain>`
+      - Staging export verification (must be explicit and use a real https origin):
+        - `EXPO_PUBLIC_APP_ENV=staging EXPO_PUBLIC_API_BASE_URL="$STAGING_API_ORIGIN" pnpm --filter @tamva/mobile export:android`
+        - `EXPO_PUBLIC_APP_ENV=staging EXPO_PUBLIC_API_BASE_URL="$STAGING_API_ORIGIN" pnpm --filter @tamva/mobile export:ios`
+        - `EXPO_PUBLIC_APP_ENV=staging EXPO_PUBLIC_API_BASE_URL="$STAGING_API_ORIGIN" pnpm --filter @tamva/mobile export:web`
+      - Production export verification (must be explicit and use a real https origin):
+        - `EXPO_PUBLIC_APP_ENV=production EXPO_PUBLIC_API_BASE_URL="$PRODUCTION_API_ORIGIN" pnpm --filter @tamva/mobile export:android`
+        - `EXPO_PUBLIC_APP_ENV=production EXPO_PUBLIC_API_BASE_URL="$PRODUCTION_API_ORIGIN" pnpm --filter @tamva/mobile export:ios`
+        - `EXPO_PUBLIC_APP_ENV=production EXPO_PUBLIC_API_BASE_URL="$PRODUCTION_API_ORIGIN" pnpm --filter @tamva/mobile export:web`
+      - Demo fixture export verification (separate explicit demo profile):
+        - `EXPO_PUBLIC_APP_ENV=development EXPO_PUBLIC_DEMO_MODE=true pnpm --filter @tamva/mobile export:web`
+- [ ] Mobile launch validation (do not stop at static checks):
+      - `cd apps/mobile && CI=1 pnpm exec expo start --web --port 19006`
+      - open `http://localhost:19006` and confirm bundle loading without native-module/runtime errors
 
 Containers:
 
@@ -50,6 +68,10 @@ Containers:
 - [ ] Wrong-tenant and wrong-customer requests are refused (403/404).
 - [ ] Logs are JSON, carry `request_id`, and contain no tokens, passwords or query strings.
 - [ ] Restore drill from the latest backup completed in the last month (BACKUP_AND_RESTORE).
+- [ ] Mobile staging internal-test builds are configured and triggered with EAS:
+      - Android installable APK: `cd apps/mobile && eas build --platform android --profile staging`
+      - iOS internal path: `cd apps/mobile && eas build --platform ios --profile staging`
+      - iOS real-device install still requires Apple Developer signing assets (certificates/profiles/TestFlight or ad-hoc); do not mark complete until Apple-side credentials are in place.
 
 ## 4. Production
 

@@ -41,11 +41,13 @@ jobs:
         with:
           python-version: "3.13"
           cache: pip
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: pnpm
-      - run: corepack enable
       - run: pip install -r apps/backend/requirements-dev.lock
       - run: pnpm install --frozen-lockfile
       - run: ruff check apps/backend
